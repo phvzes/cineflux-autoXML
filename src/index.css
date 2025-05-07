@@ -9,8 +9,8 @@
   font-weight: 400;
 
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
+  color: #F5F5F7; /* Off-white text color */
+  background-color: #121218; /* Rich black background */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,6 +24,35 @@ html, body, #root {
   padding: 0;
 }
 
+/* Focus styles for accessibility */
+*:focus {
+  outline: 2px solid #FF7A45; /* Subtle orange for focus */
+  outline-offset: 2px;
+}
+
+/* Skip to content link for keyboard users */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.skip-to-content:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  padding: 16px;
+  background: #1E1E24; /* Charcoal background */
+  color: #F5F5F7; /* Off-white text */
+  z-index: 9999;
+  border-bottom-right-radius: 8px;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -31,16 +60,16 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #1E1E24; /* Charcoal background */
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #475569;
+  background-color: #2A2A30; /* Dark grey */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #FF7A45; /* Subtle orange on hover */
 }
 
 /* Range input styling */
@@ -48,7 +77,7 @@ input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: #334155;
+  background: #2A2A30; /* Dark grey */
   border-radius: 2px;
 }
 
@@ -57,9 +86,33 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 12px;
   height: 12px;
-  background: #fff;
+  background: #FF7A45; /* Subtle orange */
   border-radius: 50%;
   cursor: pointer;
+}
+
+/* Form elements */
+input, select, textarea {
+  background-color: #1E1E24; /* Charcoal background */
+  color: #F5F5F7; /* Off-white text */
+  border: 1px solid #2A2A30; /* Dark grey border */
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #FF7A45; /* Subtle orange */
+  outline: none;
+}
+
+/* Button styles */
+button {
+  transition: all 0.2s ease;
+}
+
+button:focus-visible {
+  outline: 2px solid #FF7A45; /* Subtle orange */
+  outline-offset: 2px;
 }
 
 /* Custom animations */
@@ -74,4 +127,32 @@ input[type="range"]::-webkit-slider-thumb {
 
 .animate-pulse-slow {
   animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Accessibility helper classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  * {
+    forced-color-adjust: none;
+  }
+  
+  button, a {
+    border: 1px solid currentColor;
+  }
+  
+  :focus {
+    outline: 2px solid;
+  }
 }
