@@ -1,13 +1,37 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import mimeFix from './vite-mime-plugin';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    mimeFix()
+    {
+      name: 'mime-type-fix',
+      configureServer: (server) => {
+        server.middlewares.use((req, res, next) => {
+          // Set CORS headers for WASM support
+          res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+          
+          // Set correct MIME types for JavaScript modules
+          const url = req.url?.split('?')[0];
+          if (url?.endsWith('.js') || url?.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          } else if (url?.endsWith('.ts') || url?.endsWith('.tsx') || url?.endsWith('.jsx')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          } else if (url?.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+          } else if (url?.endsWith('.svg')) {
+            res.setHeader('Content-Type', 'image/svg+xml');
+          } else if (url?.endsWith('.html')) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          }
+          
+          next();
+        });
+      },
+    }
   ],
   resolve: {
     alias: {
@@ -18,27 +42,30 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    target: 'esnext',
+    assetsDir: 'assets',
+    emptyOutDir: true,
     rollupOptions: {
-      output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-          ffmpeg: ['@ffmpeg/ffmpeg', '@ffmpeg/core'],
-          ui: ['tailwindcss', 'lucide-react'],
-        },
+      input: {
+        main: path.resolve(__dirname, 'index.html')
       },
-    },
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    }
   },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'tailwindcss', 'lucide-react'],
-  },
+  publicDir: 'public',
   server: {
+    middlewareMode: false,
+    fs: {
+      strict: false,
+    },
     headers: {
+      'Content-Type': 'application/javascript',
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
-    },
-    // Explicitly set MIME types for TypeScript and JavaScript files
-    fs: {
-      strict: true,
     },
   },
 });
