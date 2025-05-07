@@ -20,7 +20,6 @@ import PreviewGenerator from './services/PreviewGenerator';
 export default function App() {
   const { state: projectState, dispatch } = useProject();
   const { state: workflowState, setStep } = useWorkflow();
-  const [showExportModal, setShowExportModal] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   
@@ -66,14 +65,32 @@ export default function App() {
     }
   }, [projectState.musicFile, dispatch]);
   
+  // Track the last time we started playback to prevent rapid restarts
+  const lastPlaybackStartRef = useRef<number>(0);
+  
   // Sync audio playback with state
   useEffect(() => {
     if (audioElementRef.current) {
       if (projectState.isPlaying) {
-        // Set current time if it's more than 0.5 seconds off
-        if (Math.abs(audioElementRef.current.currentTime - projectState.currentTime) > 0.5) {
+        const now = Date.now();
+        const timeSinceLastStart = now - lastPlaybackStartRef.current;
+        
+        // Prevent rapid restarts (debounce)
+        if (timeSinceLastStart < 300 && audioElementRef.current.paused === false) {
+          return;
+        }
+        
+        // Update last playback start time
+        lastPlaybackStartRef.current = now;
+        
+        // Set current time if it's more than 0.2 seconds off
+        // Reduced from 0.5 to improve accuracy
+        if (Math.abs(audioElementRef.current.currentTime - projectState.currentTime) > 0.2) {
           audioElementRef.current.currentTime = projectState.currentTime;
         }
+        
+        // Store the current playback position before playing
+        const startPosition = projectState.currentTime;
         
         audioElementRef.current.play().catch(error => {
           console.error('Playback failed:', error);
@@ -125,7 +142,7 @@ export default function App() {
   
   // Handle export
   const handleExport = () => {
-    setShowExportModal(true);
+    dispatch({ type: 'SHOW_EXPORT_MODAL', payload: true });
   };
   
   // Render the appropriate step
@@ -185,10 +202,10 @@ export default function App() {
         {renderStep()}
         
         {/* Export Modal with accessibility improvements */}
-        {showExportModal && (
+        {projectState.showExportModal && (
           <ExportModal
-            isOpen={showExportModal}
-            onClose={() => setShowExportModal(false)}
+            isOpen={projectState.showExportModal}
+            onClose={() => dispatch({ type: 'SHOW_EXPORT_MODAL', payload: false })}
             editDecisions={projectState.editDecisions}
             videoFiles={videoFilesById}
             audioFile={projectState.musicFile}

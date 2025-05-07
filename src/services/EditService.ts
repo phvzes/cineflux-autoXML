@@ -88,55 +88,82 @@ class EditService {
    * @param videoFiles The video files
    * @param audioFile The audio file
    * @param format The export format ('premiere' or 'fcpx')
-   * @returns XML string
+   * @param progressCallback Optional callback for reporting progress
+   * @returns Promise resolving to XML string
    */
-  static generateExportXML(
+  static async generateExportXML(
     editDecisions: any[],
     videoFiles: Record<string, File>,
     audioFile: File | null,
-    format: 'premiere' | 'fcpx'
-  ): string {
-    // This is a placeholder implementation
-    // In a real app, this would generate proper XML for the specified format
+    format: 'premiere' | 'fcpx',
+    progressCallback?: (progress: number, message: string) => void
+  ): Promise<string> {
+    // Import the XML generators
+    const { 
+      generatePremiereXML, 
+      generateFinalCutXML, 
+      validateExportSettings 
+    } = await import('../utils/xmlGenerators');
     
-    if (format === 'premiere') {
-      return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE xmeml>
-<xmeml version="4">
-  <sequence>
-    <name>Auto-Generated Sequence</name>
-    <duration>1000</duration>
-    <rate>
-      <timebase>30</timebase>
-      <ntsc>TRUE</ntsc>
-    </rate>
-    <media>
-      <video>
-        <!-- Video tracks would be here -->
-      </video>
-      <audio>
-        <!-- Audio tracks would be here -->
-      </audio>
-    </media>
-  </sequence>
-</xmeml>`;
-    } else {
-      return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE fcpxml>
-<fcpxml version="1.8">
-  <resources>
-    <!-- Resources would be here -->
-  </resources>
-  <library>
-    <event name="Auto-Generated Event">
-      <project name="Auto-Generated Project">
-        <sequence>
-          <!-- Sequence data would be here -->
-        </sequence>
-      </project>
-    </event>
-  </library>
-</fcpxml>`;
+    // Validate export settings
+    const validation = validateExportSettings(editDecisions, videoFiles, audioFile, format);
+    if (!validation.isValid) {
+      throw new Error(`Export validation failed: ${validation.errors.join(', ')}`);
+    }
+    
+    // Report initial progress
+    if (progressCallback) {
+      progressCallback(10, 'Starting export process...');
+    }
+    
+    try {
+      // Simulate processing time for larger projects
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (progressCallback) {
+        progressCallback(30, 'Analyzing edit decisions...');
+      }
+      
+      // Simulate more processing
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (progressCallback) {
+        progressCallback(50, 'Generating XML structure...');
+      }
+      
+      let xml: string;
+      
+      // Generate the appropriate XML format
+      if (format === 'premiere') {
+        if (progressCallback) {
+          progressCallback(70, 'Creating Premiere Pro XML...');
+        }
+        xml = generatePremiereXML(editDecisions, videoFiles, audioFile, {});
+      } else {
+        if (progressCallback) {
+          progressCallback(70, 'Creating Final Cut Pro XML...');
+        }
+        xml = generateFinalCutXML(editDecisions, videoFiles, audioFile, {});
+      }
+      
+      // Simulate final processing
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (progressCallback) {
+        progressCallback(90, 'Finalizing export...');
+      }
+      
+      // Simulate saving file
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (progressCallback) {
+        progressCallback(100, 'Export complete!');
+      }
+      
+      return xml;
+    } catch (error) {
+      console.error('Error generating export XML:', error);
+      throw error;
     }
   }
 }

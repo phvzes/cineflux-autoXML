@@ -44,39 +44,92 @@ export const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
     dispatch({ type: 'SET_PLAYING', payload: !isPlaying });
   };
   
-  // Skip to previous edit
+  // Track the last time a skip was performed to prevent rapid skips
+  const [lastSkipTime, setLastSkipTime] = useState(0);
+  
+  // Skip to previous edit with debounce
   const skipToPrevious = () => {
+    const now = Date.now();
+    // Prevent rapid skips (debounce)
+    if (now - lastSkipTime < 300) {
+      return;
+    }
+    
+    setLastSkipTime(now);
+    
     if (currentEditIndex > 0) {
       const prevIndex = currentEditIndex - 1;
       const prevTime = editDecisions[prevIndex].time;
+      
+      // First update the state
       dispatch({ type: 'SET_PLAYBACK_TIME', payload: prevTime });
+      
+      // Then update the audio element
       if (audioElement) {
         audioElement.currentTime = prevTime;
       }
     }
   };
   
-  // Skip to next edit
+  // Skip to next edit with debounce
   const skipToNext = () => {
+    const now = Date.now();
+    // Prevent rapid skips (debounce)
+    if (now - lastSkipTime < 300) {
+      return;
+    }
+    
+    setLastSkipTime(now);
+    
     if (currentEditIndex < editDecisions.length - 1) {
       const nextIndex = currentEditIndex + 1;
       const nextTime = editDecisions[nextIndex].time;
+      
+      // First update the state
       dispatch({ type: 'SET_PLAYBACK_TIME', payload: nextTime });
+      
+      // Then update the audio element
       if (audioElement) {
         audioElement.currentTime = nextTime;
       }
     }
   };
   
-  // Handle timeline click
+  // Track the last time the timeline was clicked to prevent rapid updates
+  const [lastTimelineClickTime, setLastTimelineClickTime] = useState(0);
+  
+  // Handle timeline click with debounce
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const now = Date.now();
+    // Prevent rapid clicks (debounce)
+    if (now - lastTimelineClickTime < 300) {
+      return;
+    }
+    
+    setLastTimelineClickTime(now);
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const clickPosition = (e.clientX - rect.left) / rect.width;
     const newTime = clickPosition * duration;
     
+    // First pause playback if playing
+    if (isPlaying) {
+      dispatch({ type: 'SET_PLAYING', payload: false });
+    }
+    
+    // Update the state
     dispatch({ type: 'SET_PLAYBACK_TIME', payload: newTime });
+    
+    // Then update the audio element
     if (audioElement) {
       audioElement.currentTime = newTime;
+      
+      // Resume playback after a short delay if it was playing
+      if (isPlaying) {
+        setTimeout(() => {
+          dispatch({ type: 'SET_PLAYING', payload: true });
+        }, 100);
+      }
     }
   };
   

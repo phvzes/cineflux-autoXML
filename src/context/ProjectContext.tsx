@@ -56,6 +56,7 @@ interface ProjectState {
   currentTime: number;
   duration: number;
   settings: Settings;
+  showExportModal: boolean;
 }
 
 type ProjectAction =
@@ -70,7 +71,8 @@ type ProjectAction =
   | { type: 'SET_PLAYING'; payload: boolean }
   | { type: 'SET_PLAYBACK_TIME'; payload: number }
   | { type: 'SET_DURATION'; payload: number }
-  | { type: 'SET_SETTINGS'; payload: Settings };
+  | { type: 'SET_SETTINGS'; payload: Settings }
+  | { type: 'SHOW_EXPORT_MODAL'; payload: boolean };
 
 // Create context
 interface ProjectContextType {
@@ -98,6 +100,7 @@ const initialState: ProjectState = {
     style: 'Dynamic',
     transitions: 'Auto (Based on Music)',
   },
+  showExportModal: false,
 };
 
 // Reducer
@@ -127,6 +130,8 @@ function projectReducer(state: ProjectState, action: ProjectAction): ProjectStat
       return { ...state, duration: action.payload };
     case 'SET_SETTINGS':
       return { ...state, settings: action.payload };
+    case 'SHOW_EXPORT_MODAL':
+      return { ...state, showExportModal: action.payload };
     default:
       return state;
   }

@@ -29,21 +29,60 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   
   if (!isOpen) return null;
   
+  // State for export status and errors
+  const [exportStatus, setExportStatus] = useState('');
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportedFilePath, setExportedFilePath] = useState('');
+  
   // Handle export
-  const handleExport = () => {
-    setIsExporting(true);
-    
-    // Simulate export progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      setExportProgress(progress);
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      setExportError(null);
+      setExportStatus('Preparing export...');
       
-      if (progress >= 100) {
-        clearInterval(interval);
-        setExportComplete(true);
-      }
-    }, 100);
+      // Import EditService
+      const EditService = (await import('@/services/EditService')).default;
+      
+      // Generate the XML
+      const xml = await EditService.generateExportXML(
+        editDecisions,
+        videoFiles,
+        includeAudio ? audioFile : null,
+        exportFormat as 'premiere' | 'fcpx',
+        (progress, message) => {
+          setExportProgress(progress);
+          setExportStatus(message);
+        }
+      );
+      
+      // In a real app, this would save the file to disk
+      // For now, we'll just simulate it
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `${exportFormat === 'premiere' ? 'Premiere' : 'FinalCut'}_Export_${timestamp}.xml`;
+      const filePath = `${outputPath}/${fileName}`;
+      
+      // Simulate file saving delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Set the exported file path
+      setExportedFilePath(filePath);
+      setExportComplete(true);
+      
+      // In a real app with Electron or a backend, we would save the file like this:
+      // const blob = new Blob([xml], { type: 'application/xml' });
+      // const url = URL.createObjectURL(blob);
+      // const a = document.createElement('a');
+      // a.href = url;
+      // a.download = fileName;
+      // a.click();
+      // URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      setExportError(error instanceof Error ? error.message : 'Export failed due to an unknown error');
+      setExportProgress(0);
+    }
   };
   
   // Format time as MM:SS
@@ -158,7 +197,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   <div className="mb-4 text-center">
                     <p className="mb-2">Exporting project...</p>
                     <p className="text-sm text-[#B0B0B5]">
-                      {exportFormat === 'premiere' ? 'Creating Adobe Premiere Pro XML' : 'Creating Final Cut Pro XML'}
+                      {exportStatus || (exportFormat === 'premiere' ? 'Creating Adobe Premiere Pro XML' : 'Creating Final Cut Pro XML')}
                     </p>
                   </div>
                   
@@ -172,6 +211,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   <p className="text-sm text-center text-[#B0B0B5]">
                     {exportProgress}% complete
                   </p>
+                  
+                  {exportError && (
+                    <div className="mt-4 p-3 bg-[#E53935] bg-opacity-20 border border-[#E53935] rounded-lg text-[#E53935]">
+                      <p className="font-medium mb-1">Export Error</p>
+                      <p className="text-sm">{exportError}</p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="text-center py-6">
@@ -186,7 +232,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     {exportFormat === 'premiere' ? 'Adobe Premiere Pro XML' : 'Final Cut Pro XML'} file saved to:
                     <br />
                     <span className="font-mono bg-[#2A2A30] px-2 py-1 rounded mt-1 inline-block">
-                      {outputPath}
+                      {exportedFilePath || `${outputPath}/export.xml`}
                     </span>
                   </p>
                 </div>

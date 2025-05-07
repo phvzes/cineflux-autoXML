@@ -41,18 +41,43 @@ class AudioService {
   /**
    * Extract the BPM (beats per minute) from an audio file
    * @param audioFile The audio file to analyze
-   * @returns Promise resolving to the BPM
+   * @returns Promise resolving to the BPM and beat times
    */
-  static async extractBPM(audioFile: File): Promise<number> {
-    // This is a placeholder implementation
-    // In a real app, this would use a beat detection algorithm
-    
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Return a random BPM between 80 and 160
-        resolve(Math.floor(Math.random() * 80) + 80);
-      }, 1000);
-    });
+  static async extractBPM(audioFile: File): Promise<{ bpm: number; beats: number[] }> {
+    try {
+      // Import the audio sync utilities
+      const { estimateBPM, detectBeats } = await import('../utils/audioSync');
+      
+      // Create an audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Read the file as an array buffer
+      const arrayBuffer = await audioFile.arrayBuffer();
+      
+      // Decode the audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Estimate the BPM
+      const bpm = await estimateBPM(audioBuffer);
+      
+      // Detect beats
+      const beats = await detectBeats(audioBuffer);
+      
+      // Close the audio context
+      if (audioContext.state !== 'closed') {
+        await audioContext.close();
+      }
+      
+      return { bpm, beats };
+    } catch (error) {
+      console.error('Error extracting BPM:', error);
+      
+      // Fallback to a default value
+      return {
+        bpm: 120,
+        beats: Array.from({ length: 100 }, (_, i) => i * (60 / 120)) // Generate beats at 120 BPM
+      };
+    }
   }
   
   /**
