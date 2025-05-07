@@ -1,32 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import mimeFix from './vite-mime-plugin';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    {
-      name: 'configure-response-headers',
-      configureServer(server) {
-        server.middlewares.use((_req, res, next) => {
-          // Force JavaScript MIME type for module scripts
-          const originalSetHeader = res.setHeader;
-          res.setHeader = function(name, value) {
-            if (name === 'Content-Type' && value === 'text/javascript') {
-              return originalSetHeader.call(this, name, 'application/javascript; charset=utf-8');
-            }
-            return originalSetHeader.call(this, name, value);
-          };
-          next();
-        });
-      }
-    }
+    mimeFix()
   ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
   },
   build: {
     outDir: 'dist',
@@ -48,6 +35,10 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
-    }
+    },
+    // Explicitly set MIME types for TypeScript and JavaScript files
+    fs: {
+      strict: true,
+    },
   },
 });
