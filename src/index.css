@@ -10,7 +10,7 @@
 
   color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
+  background-color: #121218;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -31,16 +31,16 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #1E1E24;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #475569;
+  background-color: #2A2A30;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #B0B0B5;
 }
 
 /* Range input styling */
@@ -48,7 +48,7 @@ input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: #334155;
+  background: #2A2A30;
   border-radius: 2px;
 }
 
@@ -57,7 +57,7 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 12px;
   height: 12px;
-  background: #fff;
+  background: #FF7A45;
   border-radius: 50%;
   cursor: pointer;
 }
