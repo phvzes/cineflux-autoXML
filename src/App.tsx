@@ -4,6 +4,7 @@ import { InputStep } from './components/steps/InputStep';
 import { AnalysisStep } from './components/steps/AnalysisStep';
 import { EditingStep } from './components/steps/EditingStep';
 import { PreviewStep } from './components/steps/PreviewStep';
+import WelcomePage from './components/welcome/WelcomePage';
 import { ExportModal } from './components/export/ExportModal';
 import { useProject } from './context/ProjectContext';
 import { useWorkflow } from './context/WorkflowContext';
@@ -148,6 +149,8 @@ export default function App() {
   // Render the appropriate step
   const renderStep = () => {
     switch (projectState.currentStep) {
+      case 'welcome':
+        return <WelcomePage />;
       case 'input':
         return <InputStep />;
       case 'analyzing':
@@ -157,7 +160,7 @@ export default function App() {
       case 'preview':
         return <PreviewStep audioElement={audioElementRef.current} />;
       default:
-        return <InputStep />;
+        return <WelcomePage />;
     }
   };
   
@@ -176,6 +179,11 @@ export default function App() {
 
   // Add workflow stepper to the layout
   const renderWorkflowStepper = () => {
+    // Don't render the workflow stepper on the welcome page
+    if (projectState.currentStep === 'welcome') {
+      return null;
+    }
+    
     return (
       <div className="mb-8">
         <WorkflowStepper

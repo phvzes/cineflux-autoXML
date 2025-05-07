@@ -23,70 +23,77 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   // Determine if export should be enabled
   const exportEnabled = currentStep !== 'input' && !isAnalyzing && editDecisions.length > 0;
   
+  // Check if we're on the welcome page
+  const isWelcomePage = currentStep === 'welcome';
+  
   return (
     <div className="flex flex-col h-screen bg-primary text-primary">
-      {/* Toolbar */}
-      <div className="bg-secondary p-md flex items-center gap-md shadow-md">
-        <button 
-          className="toolbar-button"
-          onClick={onNewProject}
-          disabled={isAnalyzing}
-          aria-label="New Project"
-        >
-          <FileText size={24} className={isAnalyzing ? 'text-secondary' : ''} />
-        </button>
-        <button 
-          className="toolbar-button"
-          onClick={onOpenProject}
-          disabled={isAnalyzing}
-          aria-label="Open Project"
-        >
-          <FolderOpen size={24} className={isAnalyzing ? 'text-secondary' : ''} />
-        </button>
-        <button 
-          className="toolbar-button"
-          onClick={onSaveProject}
-          disabled={isAnalyzing || currentStep === 'input'}
-          aria-label="Save Project"
-        >
-          <Save size={24} className={isAnalyzing || currentStep === 'input' ? 'text-secondary' : ''} />
-        </button>
-        <div className="ml-md text-xl font-semibold">Auto-Editor</div>
-        <div className="flex-grow"></div>
-        <button 
-          className={`export-button ${!exportEnabled ? 'disabled' : ''}`}
-          onClick={onExport}
-          disabled={!exportEnabled}
-          aria-label="Export to Premiere"
-        >
-          <FileUp className="inline mr-sm" size={16} />
-          Export to Premiere
-        </button>
-      </div>
+      {/* Toolbar - Only show when not on welcome page */}
+      {!isWelcomePage && (
+        <div className="bg-secondary p-md flex items-center gap-md shadow-md">
+          <button 
+            className="toolbar-button"
+            onClick={onNewProject}
+            disabled={isAnalyzing}
+            aria-label="New Project"
+          >
+            <FileText size={24} className={isAnalyzing ? 'text-secondary' : ''} />
+          </button>
+          <button 
+            className="toolbar-button"
+            onClick={onOpenProject}
+            disabled={isAnalyzing}
+            aria-label="Open Project"
+          >
+            <FolderOpen size={24} className={isAnalyzing ? 'text-secondary' : ''} />
+          </button>
+          <button 
+            className="toolbar-button"
+            onClick={onSaveProject}
+            disabled={isAnalyzing || currentStep === 'input'}
+            aria-label="Save Project"
+          >
+            <Save size={24} className={isAnalyzing || currentStep === 'input' ? 'text-secondary' : ''} />
+          </button>
+          <div className="ml-md text-xl font-semibold">Auto-Editor</div>
+          <div className="flex-grow"></div>
+          <button 
+            className={`export-button ${!exportEnabled ? 'disabled' : ''}`}
+            onClick={onExport}
+            disabled={!exportEnabled}
+            aria-label="Export to Premiere"
+          >
+            <FileUp className="inline mr-sm" size={16} />
+            Export to Premiere
+          </button>
+        </div>
+      )}
       
       {/* Main Content */}
-      <div className="flex-grow overflow-auto bg-primary">
+      <div className={`flex-grow overflow-auto ${isWelcomePage ? 'bg-[#121218]' : 'bg-primary'}`}>
         {children}
       </div>
       
-      {/* Footer */}
-      <div className="bg-secondary p-sm flex items-center">
-        <div className="text-secondary text-sm">
-          {renderStatusText(state)}
-        </div>
-        
-        {/* Progress bar for analysis */}
-        {currentStep === 'analyzing' && (
-          <div className="ml-auto">
-            <div className="progress-bar-container w-32">
-              <div 
-                className="progress-bar"
-                style={{width: `${state.analysisProgress.progress}%`}}
-              ></div>
-            </div>
+      {/* Footer - Only show when not on welcome page */}
+      {!isWelcomePage && (
+        <div className="bg-secondary p-sm flex items-center">
+          <div className="text-secondary text-sm">
+            {renderStatusText(state)}
           </div>
-        )}
-      </div>
+          
+          {/* Progress bar for analysis */}
+          {currentStep === 'analyzing' && (
+            <div className="ml-auto">
+              <div className="progress-bar-container w-32">
+                <div 
+                  className="progress-bar"
+                  style={{width: `${state.analysisProgress.progress}%`}}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -96,6 +103,8 @@ function renderStatusText(state: any) {
   const { currentStep, isAnalyzing, editDecisions, videoFiles, currentTime } = state;
   
   switch (currentStep) {
+    case 'welcome':
+      return "Welcome to CineFlux-AutoXML";
     case 'input':
       return "Ready";
     case 'analyzing':

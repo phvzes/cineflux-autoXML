@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // CineFlux color palette
+        // CineFlux color palette - Updated to match the specified palette
         'rich-black': '#121218',
         'charcoal': '#1E1E24',
         'dark-grey': '#2A2A30',

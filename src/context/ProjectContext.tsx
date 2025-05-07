@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 
 // Define types
-type Step = 'input' | 'analyzing' | 'editing' | 'preview';
+type Step = 'welcome' | 'input' | 'analyzing' | 'editing' | 'preview';
 
 interface AnalysisProgress {
   progress: number;
@@ -84,7 +84,7 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 // Initial state
 const initialState: ProjectState = {
-  currentStep: 'input',
+  currentStep: 'welcome',
   musicFile: null,
   videoFiles: [],
   isAnalyzing: false,
