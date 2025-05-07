@@ -4,7 +4,25 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'configure-response-headers',
+      configureServer(server) {
+        server.middlewares.use((_req, res, next) => {
+          // Force JavaScript MIME type for module scripts
+          const originalSetHeader = res.setHeader;
+          res.setHeader = function(name, value) {
+            if (name === 'Content-Type' && value === 'text/javascript') {
+              return originalSetHeader.call(this, name, 'application/javascript; charset=utf-8');
+            }
+            return originalSetHeader.call(this, name, value);
+          };
+          next();
+        });
+      }
+    }
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -30,6 +48,6 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
-    },
+    }
   },
 });
