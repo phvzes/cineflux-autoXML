@@ -1,5 +1,4 @@
 import React from 'react';
-import { colorPalette } from '../theme';
 
 interface LoadingProps {
   message?: string;
@@ -33,13 +32,12 @@ export const Loading: React.FC<LoadingProps> = ({
   const spinnerSize = getSpinnerSize();
 
   const containerClasses = fullScreen
-    ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-opacity-90'
-    : 'flex flex-col items-center justify-center p-6';
+    ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-opacity-90 bg-primary'
+    : 'flex flex-col items-center justify-center p-lg';
 
   return (
     <div
       className={containerClasses}
-      style={{ backgroundColor: fullScreen ? colorPalette.richBlack : 'transparent' }}
       role="status"
       aria-live="polite"
     >
@@ -56,23 +54,20 @@ export const Loading: React.FC<LoadingProps> = ({
             cx="12"
             cy="12"
             r="10"
-            stroke={colorPalette.darkGrey}
+            stroke="var(--clr-ui-element)"
             strokeWidth="4"
             strokeLinecap="round"
           />
           <path
             d="M12 2C6.47715 2 2 6.47715 2 12"
-            stroke={colorPalette.subtleOrange}
+            stroke="var(--clr-accent)"
             strokeWidth="4"
             strokeLinecap="round"
           />
         </svg>
       </div>
       {message && (
-        <p
-          className="mt-4 text-center"
-          style={{ color: colorPalette.offWhite }}
-        >
+        <p className="mt-md text-center text-primary">
           {message}
         </p>
       )}
@@ -89,13 +84,12 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   fullScreen = false,
 }) => {
   const containerClasses = fullScreen
-    ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-opacity-90'
-    : 'flex flex-col items-center justify-center p-6';
+    ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-opacity-90 bg-primary'
+    : 'flex flex-col items-center justify-center p-lg';
 
   return (
     <div
       className={containerClasses}
-      style={{ backgroundColor: fullScreen ? colorPalette.richBlack : 'transparent' }}
       role="alert"
       aria-live="assertive"
     >
@@ -106,35 +100,24 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ color: colorPalette.mutedRed }}
+          className="text-warning"
         >
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
           <path d="M12 8V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           <circle cx="12" cy="16" r="1" fill="currentColor" />
         </svg>
         
-        <h2
-          className="mt-4 text-xl font-semibold"
-          style={{ color: colorPalette.offWhite }}
-        >
+        <h2 className="mt-md text-xl font-semibold text-primary">
           Something went wrong
         </h2>
         
-        <p
-          className="mt-2"
-          style={{ color: colorPalette.lightGrey }}
-        >
+        <p className="mt-sm text-secondary">
           {message}
         </p>
         
         {retry && (
           <button
-            className="mt-6 px-4 py-2 rounded-md transition-colors duration-200"
-            style={{
-              backgroundColor: colorPalette.darkGrey,
-              color: colorPalette.offWhite,
-              border: `1px solid ${colorPalette.subtleOrange}`,
-            }}
+            className="btn btn-secondary mt-lg"
             onClick={retry}
           >
             Try Again
@@ -157,10 +140,7 @@ export const EmptyState: React.FC<{
   };
 }> = ({ message, icon, action }) => {
   return (
-    <div
-      className="flex flex-col items-center justify-center p-8 text-center"
-      style={{ color: colorPalette.lightGrey }}
-    >
+    <div className="flex flex-col items-center justify-center p-xl text-center text-secondary">
       {icon || (
         <svg
           width="48"
@@ -168,22 +148,18 @@ export const EmptyState: React.FC<{
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ color: colorPalette.lightGrey }}
+          className="text-secondary"
         >
           <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
           <path d="M9 12H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       )}
       
-      <p className="mt-4">{message}</p>
+      <p className="mt-md">{message}</p>
       
       {action && (
         <button
-          className="mt-4 px-4 py-2 rounded-md transition-colors duration-200"
-          style={{
-            backgroundColor: colorPalette.darkGrey,
-            color: colorPalette.offWhite,
-          }}
+          className="btn btn-secondary mt-md"
           onClick={action.onClick}
         >
           {action.label}

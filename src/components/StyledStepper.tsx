@@ -1,5 +1,4 @@
 import React from 'react';
-import { colorPalette } from '../theme';
 
 interface StepProps {
   label: string;
@@ -31,16 +30,19 @@ const Step: React.FC<StepProps> = ({
   onClick,
   disabled = false,
 }) => {
-  const getStepColor = () => {
-    if (isCompleted) return colorPalette.subtleGreen;
-    if (isActive) return colorPalette.subtleOrange;
-    return colorPalette.darkGrey;
-  };
+  // Determine step button class based on state
+  const stepButtonClass = `
+    step-button
+    ${isActive ? 'step-button-active' : ''}
+    ${isCompleted ? 'step-button-completed' : ''}
+    ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+  `;
 
-  const getTextColor = () => {
-    if (isActive || isCompleted) return colorPalette.offWhite;
-    return colorPalette.lightGrey;
-  };
+  // Determine label class based on state
+  const labelClass = `
+    step-label
+    ${isActive || isCompleted ? 'step-label-active' : ''}
+  `;
 
   return (
     <div
@@ -49,18 +51,7 @@ const Step: React.FC<StepProps> = ({
       aria-current={isActive ? 'step' : undefined}
     >
       <button
-        className={`
-          flex items-center justify-center
-          w-10 h-10 rounded-full
-          transition-all duration-300 ease-in-out
-          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-${colorPalette.richBlack}
-          ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
-        `}
-        style={{
-          backgroundColor: getStepColor(),
-          color: colorPalette.offWhite,
-          boxShadow: isActive ? '0 0 0 4px rgba(255, 122, 69, 0.2)' : 'none',
-        }}
+        className={stepButtonClass}
         onClick={disabled ? undefined : onClick}
         disabled={disabled}
         aria-label={`Step ${index + 1}: ${label} ${isCompleted ? '(completed)' : isActive ? '(current)' : ''}`}
@@ -75,14 +66,11 @@ const Step: React.FC<StepProps> = ({
         )}
       </button>
       <div className="mt-2 text-center">
-        <div
-          className="font-medium transition-colors duration-300"
-          style={{ color: getTextColor() }}
-        >
+        <div className={labelClass}>
           {label}
         </div>
         {description && (
-          <div className="text-xs mt-1" style={{ color: colorPalette.lightGrey }}>
+          <div className="step-description">
             {description}
           </div>
         )}
@@ -95,21 +83,22 @@ const StepConnector: React.FC<{
   isCompleted: boolean;
   orientation?: 'horizontal' | 'vertical';
 }> = ({ isCompleted, orientation = 'horizontal' }) => {
-  const connectorStyles = {
-    backgroundColor: isCompleted ? colorPalette.subtleOrange : colorPalette.darkGrey,
-    transition: 'background-color 300ms ease-in-out',
-  };
+  const connectorClass = `
+    step-connector
+    ${isCompleted ? 'step-connector-completed' : ''}
+  `;
 
   return orientation === 'horizontal' ? (
     <div className="flex-1 flex items-center mx-2">
       <div
-        className="h-1 w-full rounded-full"
-        style={connectorStyles}
+        className={connectorClass}
         role="presentation"
       />
     </div>
   ) : (
-    <div className="h-8 w-1 my-1 mx-auto" style={connectorStyles} role="presentation" />
+    <div className="h-8 w-1 my-1 mx-auto" role="presentation">
+      <div className={connectorClass} style={{ height: '100%' }} />
+    </div>
   );
 };
 
@@ -131,9 +120,14 @@ export const StyledStepper: React.FC<StepperProps> = ({
     }
   };
 
+  const stepperClass = `
+    stepper
+    ${orientation === 'vertical' ? 'stepper-vertical' : ''}
+  `;
+
   return (
     <div
-      className={`flex ${orientation === 'horizontal' ? 'flex-row' : 'flex-col'} w-full`}
+      className={stepperClass}
       role="list"
       aria-label="Workflow steps"
     >

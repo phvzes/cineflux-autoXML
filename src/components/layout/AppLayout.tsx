@@ -24,61 +24,63 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const exportEnabled = currentStep !== 'input' && !isAnalyzing && editDecisions.length > 0;
   
   return (
-    <div className="flex flex-col h-screen bg-[#121218] text-[#F5F5F7]">
+    <div className="flex flex-col h-screen bg-primary text-primary">
       {/* Toolbar */}
-      <div className="bg-[#1E1E24] p-4 flex items-center gap-4 shadow-md">
+      <div className="bg-secondary p-md flex items-center gap-md shadow-md">
         <button 
-          className="p-2 hover:bg-[#2A2A30] rounded" 
+          className="toolbar-button"
           onClick={onNewProject}
           disabled={isAnalyzing}
+          aria-label="New Project"
         >
-          <FileText size={24} className={isAnalyzing ? 'text-[#B0B0B5]' : ''} />
+          <FileText size={24} className={isAnalyzing ? 'text-secondary' : ''} />
         </button>
         <button 
-          className="p-2 hover:bg-[#2A2A30] rounded" 
+          className="toolbar-button"
           onClick={onOpenProject}
           disabled={isAnalyzing}
+          aria-label="Open Project"
         >
-          <FolderOpen size={24} className={isAnalyzing ? 'text-[#B0B0B5]' : ''} />
+          <FolderOpen size={24} className={isAnalyzing ? 'text-secondary' : ''} />
         </button>
         <button 
-          className="p-2 hover:bg-[#2A2A30] rounded" 
+          className="toolbar-button"
           onClick={onSaveProject}
           disabled={isAnalyzing || currentStep === 'input'}
+          aria-label="Save Project"
         >
-          <Save size={24} className={isAnalyzing || currentStep === 'input' ? 'text-[#B0B0B5]' : ''} />
+          <Save size={24} className={isAnalyzing || currentStep === 'input' ? 'text-secondary' : ''} />
         </button>
-        <div className="ml-4 text-xl font-semibold">Auto-Editor</div>
+        <div className="ml-md text-xl font-semibold">Auto-Editor</div>
         <div className="flex-grow"></div>
         <button 
-          className={`px-4 py-2 rounded flex items-center ${
-            exportEnabled ? 'bg-[#FF7A45] hover:bg-[#FF6A35]' : 'bg-[#2A2A30] text-[#B0B0B5] cursor-not-allowed'
-          }`}
+          className={`export-button ${!exportEnabled ? 'disabled' : ''}`}
           onClick={onExport}
           disabled={!exportEnabled}
+          aria-label="Export to Premiere"
         >
-          <FileUp className="inline mr-2" size={16} />
+          <FileUp className="inline mr-sm" size={16} />
           Export to Premiere
         </button>
       </div>
       
       {/* Main Content */}
-      <div className="flex-grow overflow-auto bg-[#121218]">
+      <div className="flex-grow overflow-auto bg-primary">
         {children}
       </div>
       
       {/* Footer */}
-      <div className="bg-[#1E1E24] p-2 flex items-center">
-        <div className="text-[#B0B0B5] text-sm">
+      <div className="bg-secondary p-sm flex items-center">
+        <div className="text-secondary text-sm">
           {renderStatusText(state)}
         </div>
         
         {/* Progress bar for analysis */}
         {currentStep === 'analyzing' && (
           <div className="ml-auto">
-            <div className="w-32 bg-[#2A2A30] rounded-full h-2">
+            <div className="progress-bar-container w-32">
               <div 
-                className="bg-[#FF7A45] h-2 rounded-full" 
+                className="progress-bar"
                 style={{width: `${state.analysisProgress.progress}%`}}
               ></div>
             </div>

@@ -3,30 +3,30 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+/* Import theme and component styles */
+@import "./styles/theme.css";
+@import "./styles/components.css";
+@import "./styles/utilities.css";
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
   line-height: 1.5;
-  font-weight: 400;
-
+  font-weight: var(--font-weight-normal);
   color-scheme: dark;
-  color: #F5F5F7; /* Off-white text color */
-  background-color: #121218; /* Rich black background */
-
+  color: var(--clr-text-primary);
+  background-color: var(--clr-bg-primary);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-
 /* Focus styles for accessibility */
 *:focus {
-  outline: 2px solid #FF7A45; /* Subtle orange for focus */
+  outline: 2px solid var(--clr-accent);
   outline-offset: 2px;
 }
 
@@ -46,11 +46,11 @@ html, body, #root {
   left: 0;
   width: auto;
   height: auto;
-  padding: 16px;
-  background: #1E1E24; /* Charcoal background */
-  color: #F5F5F7; /* Off-white text */
-  z-index: 9999;
-  border-bottom-right-radius: 8px;
+  padding: var(--space-md);
+  background: var(--clr-bg-secondary);
+  color: var(--clr-text-primary);
+  z-index: var(--z-index-tooltip);
+  border-bottom-right-radius: var(--radius-md);
 }
 
 /* Custom scrollbar */
@@ -60,16 +60,16 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1E1E24; /* Charcoal background */
+  background: var(--clr-bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #2A2A30; /* Dark grey */
-  border-radius: 4px;
+  background-color: var(--clr-ui-element);
+  border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF7A45; /* Subtle orange on hover */
+  background: var(--clr-accent);
 }
 
 /* Range input styling */
@@ -77,8 +77,8 @@ input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: #2A2A30; /* Dark grey */
-  border-radius: 2px;
+  background: var(--clr-ui-element);
+  border-radius: var(--radius-sm);
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -86,33 +86,114 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 12px;
   height: 12px;
-  background: #FF7A45; /* Subtle orange */
+  background: var(--clr-accent);
   border-radius: 50%;
   cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
 
 /* Form elements */
 input, select, textarea {
-  background-color: #1E1E24; /* Charcoal background */
-  color: #F5F5F7; /* Off-white text */
-  border: 1px solid #2A2A30; /* Dark grey border */
-  border-radius: 4px;
-  padding: 8px 12px;
+  background-color: var(--clr-bg-secondary);
+  color: var(--clr-text-primary);
+  border: 1px solid var(--clr-ui-element);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #FF7A45; /* Subtle orange */
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 2px var(--clr-accent-20);
   outline: none;
 }
 
 /* Button styles */
 button {
-  transition: all 0.2s ease;
+  transition: all var(--transition-normal);
 }
 
 button:focus-visible {
-  outline: 2px solid #FF7A45; /* Subtle orange */
+  outline: 2px solid var(--clr-accent);
   outline-offset: 2px;
+}
+
+/* Toolbar button styles */
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--clr-text-primary);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+}
+
+.toolbar-button:hover:not(:disabled) {
+  background-color: var(--clr-ui-element);
+}
+
+.toolbar-button:active:not(:disabled) {
+  background-color: rgba(42, 42, 48, 0.8);
+}
+
+.toolbar-button:disabled {
+  color: var(--clr-text-secondary);
+  cursor: not-allowed;
+}
+
+/* Export button styles */
+.export-button {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+}
+
+.export-button:not(:disabled) {
+  background-color: var(--clr-accent);
+  color: var(--clr-text-primary);
+}
+
+.export-button:hover:not(:disabled) {
+  background-color: var(--clr-accent-hover);
+}
+
+.export-button:active:not(:disabled) {
+  background-color: var(--clr-accent-active);
+}
+
+.export-button:disabled {
+  background-color: var(--clr-ui-element);
+  color: var(--clr-text-secondary);
+  cursor: not-allowed;
+}
+
+/* Progress bar styles */
+.progress-bar-container {
+  width: 100%;
+  height: 0.5rem;
+  background-color: var(--clr-ui-element);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--clr-accent);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
 }
 
 /* Custom animations */
@@ -129,19 +210,6 @@ button:focus-visible {
   animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Accessibility helper classes */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
 /* High contrast mode support */
 @media (forced-colors: active) {
   * {
@@ -154,5 +222,23 @@ button:focus-visible {
   
   :focus {
     outline: 2px solid;
+  }
+}
+
+/* Media queries for responsive design */
+@media (max-width: 640px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .toolbar-actions {
+    margin-top: var(--space-sm);
+    width: 100%;
+  }
+  
+  .export-button {
+    width: 100%;
+    justify-content: center;
   }
 }

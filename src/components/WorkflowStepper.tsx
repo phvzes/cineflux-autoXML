@@ -2,7 +2,6 @@ import React from 'react';
 import { StyledStepper } from './StyledStepper';
 import { Loading } from './AsyncStates';
 import { ApplicationStep } from '../types/UITypes';
-import { colorPalette } from '../theme';
 
 interface WorkflowStepperProps {
   currentStep: ApplicationStep;
@@ -96,16 +95,13 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
       
       {/* Processing overlay */}
       {isProcessing && (
-        <div className="mt-6">
+        <div className="mt-md animate-fade-in">
           <div className="flex items-center">
-            <div className="flex-1 mr-4">
-              <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: colorPalette.darkGrey }}>
+            <div className="flex-1 mr-md">
+              <div className="progress-bar-container">
                 <div
-                  className="h-full transition-all duration-300 ease-out"
-                  style={{
-                    width: `${progressPercentage}%`,
-                    backgroundColor: colorPalette.subtleOrange,
-                  }}
+                  className="progress-bar"
+                  style={{ width: `${progressPercentage}%` }}
                   role="progressbar"
                   aria-valuenow={progressPercentage}
                   aria-valuemin={0}
@@ -113,14 +109,14 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
                 />
               </div>
             </div>
-            <span style={{ color: colorPalette.lightGrey }}>{progressPercentage}%</span>
+            <span className="text-secondary">{progressPercentage}%</span>
           </div>
           
-          <div className="flex items-center mt-2">
-            <div className="w-5 h-5 mr-3">
+          <div className="flex items-center mt-sm">
+            <div className="w-5 h-5 mr-sm">
               <Loading size="sm" />
             </div>
-            <span style={{ color: colorPalette.lightGrey }}>
+            <span className="text-secondary">
               {statusMessage || `Processing ${stepConfig[currentStep].label.toLowerCase()}...`}
             </span>
           </div>

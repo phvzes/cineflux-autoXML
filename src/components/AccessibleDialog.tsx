@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from 'react';
-import { colorPalette } from '../theme';
 
 interface DialogProps {
   isOpen: boolean;
@@ -93,7 +92,7 @@ export const AccessibleDialog: React.FC<DialogProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center p-md bg-black bg-opacity-50 animate-fade-in"
       onClick={handleBackdropClick}
       role="presentation"
     >
@@ -103,17 +102,15 @@ export const AccessibleDialog: React.FC<DialogProps> = ({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className="relative rounded-lg shadow-xl focus:outline-none"
+        className="relative rounded-lg shadow-xl focus:outline-none bg-secondary text-primary animate-slide-in"
         style={{
-          backgroundColor: colorPalette.charcoal,
-          color: colorPalette.offWhite,
           maxWidth: getMaxWidth(),
           width: '100%',
         }}
         tabIndex={-1}
       >
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-lg">
+          <div className="flex items-center justify-between mb-md">
             <h2
               id={titleId}
               className="text-xl font-semibold"
@@ -123,8 +120,7 @@ export const AccessibleDialog: React.FC<DialogProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-opacity-10 hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2"
-              style={{ color: colorPalette.lightGrey }}
+              className="p-sm rounded-full hover:bg-ui hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-secondary transition"
               aria-label="Close dialog"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -134,7 +130,7 @@ export const AccessibleDialog: React.FC<DialogProps> = ({
           </div>
           
           {description && (
-            <p id={descriptionId} className="mb-4" style={{ color: colorPalette.lightGrey }}>
+            <p id={descriptionId} className="mb-md text-secondary">
               {description}
             </p>
           )}
