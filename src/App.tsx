@@ -15,6 +15,7 @@ import { colorPalette } from './theme';
 import TestComponent from './components/TestComponent';
 import BeatDetectionTest from './pages/BeatDetectionTest';
 import VideoProcessingTest from './pages/VideoProcessingTest';
+import EditDecisionDemo from './pages/EditDecisionDemo';
 
 export default function App() {
   const { state: projectState, dispatch } = useProject();
@@ -146,8 +147,8 @@ export default function App() {
   
   // Render the appropriate step
   const renderStep = () => {
-    // For testing purposes, show the video processing test page
-    return <VideoProcessingTest />;
+    // For testing purposes, show the edit decision demo page
+    return <EditDecisionDemo />;
   };
   
   // Create a map of video files by ID
