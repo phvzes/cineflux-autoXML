@@ -1,12 +1,11 @@
 /* src/index.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Import theme and component styles */
 @import "./styles/theme.css";
 @import "./styles/components.css";
 @import "./styles/utilities.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html, body, #root {
   height: 100%;

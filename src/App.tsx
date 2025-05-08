@@ -11,12 +11,9 @@ import { useWorkflow } from './context/WorkflowContext';
 import { WorkflowStepper } from './components/WorkflowStepper';
 import { AccessibleDialog } from './components/AccessibleDialog';
 import { Loading, ErrorState } from './components/AsyncStates';
-import { ApplicationStep } from './types/UITypes';
 import { colorPalette } from './theme';
-import AudioService from './services/AudioService';
-import VideoService from './services/VideoService';
-import EditService from './services/EditService';
-import PreviewGenerator from './services/PreviewGenerator';
+import TestComponent from './components/TestComponent';
+import BeatDetectionTest from './pages/BeatDetectionTest';
 
 export default function App() {
   const { state: projectState, dispatch } = useProject();
@@ -124,7 +121,7 @@ export default function App() {
         }
         
         // Clear preview cache
-        PreviewGenerator.clearCache();
+        // PreviewGenerator.clearCache();
       }
     }
   };
@@ -148,20 +145,8 @@ export default function App() {
   
   // Render the appropriate step
   const renderStep = () => {
-    switch (projectState.currentStep) {
-      case 'welcome':
-        return <WelcomePage />;
-      case 'input':
-        return <InputStep />;
-      case 'analyzing':
-        return <AnalysisStep />;
-      case 'editing':
-        return <EditingStep audioElement={audioElementRef.current} />;
-      case 'preview':
-        return <PreviewStep audioElement={audioElementRef.current} />;
-      default:
-        return <WelcomePage />;
-    }
+    // For testing purposes, always show the beat detection test page
+    return <BeatDetectionTest />;
   };
   
   // Create a map of video files by ID
