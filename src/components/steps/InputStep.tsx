@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Music, Video, ArrowRight, X, AlertCircle, FileType, Clock, Film, Volume2 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
+import { useAnalysis } from '../../context/AnalysisContext';
 import { useDropzone } from 'react-dropzone';
 import ReactPlayer from 'react-player/lazy';
 import { colorPalette } from '../../theme';
+import AudioService from '../../services/AudioService';
+import VideoService from '../../services/VideoService';
 
 // Maximum file size (10MB for audio, 100MB for video)
 const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
@@ -361,28 +364,112 @@ export const InputStep: React.FC = () => {
     setMusicError(null);
   };
   
+  const { dispatch: analysisDispatch } = useAnalysis();
+  
   // Start analysis
-  const startAnalysis = () => {
+  const startAnalysis = async () => {
     if (musicFile && videoFiles.length > 0) {
       dispatch({ type: 'SET_STEP', payload: 'analyzing' });
       dispatch({ type: 'SET_ANALYZING', payload: true });
       
-      // In a real app, this would trigger the analysis process
-      // For now, we'll simulate it with a timeout
-      setTimeout(() => {
+      const { dispatch: analysisDispatch } = useAnalysis();
+      
+      try {
+        // Start processing
+        analysisDispatch({ 
+          type: 'START_PROCESSING', 
+          payload: { step: 'Initializing analysis...' } 
+        });
+        
+        // Process audio file
+        const audioAnalysisPromise = AudioService.analyzeAudio(
+          musicFile,
+          (progress, step) => {
+            analysisDispatch({
+              type: 'UPDATE_PROGRESS',
+              payload: { 
+                progress: progress * 0.5, // Audio is 50% of total progress
+                step: `Audio: ${step}`
+              }
+            });
+          }
+        );
+        
+        // Process video files in parallel
+        const videoAnalysisPromises = videoFiles.map((file, index) => {
+          return VideoService.analyzeVideo(
+            file,
+            (progress, step) => {
+              // Each video contributes equally to the remaining 50% progress
+              const videoProgressWeight = 0.5 / videoFiles.length;
+              const baseProgress = 50; // Start after audio progress
+              const videoProgress = baseProgress + (progress * videoProgressWeight * 100);
+              
+              analysisDispatch({
+                type: 'UPDATE_PROGRESS',
+                payload: {
+                  progress: videoProgress,
+                  step: `Video ${index + 1}: ${step}`
+                }
+              });
+            }
+          ).then(analysis => ({ id: `video_${index}`, analysis }));
+        });
+        
+        // Wait for all analyses to complete
+        const [audioAnalysis, ...videoAnalyses] = await Promise.all([
+          audioAnalysisPromise,
+          ...videoAnalysisPromises
+        ]);
+        
+        // Store the results
+        analysisDispatch({ type: 'SET_AUDIO_ANALYSIS', payload: audioAnalysis });
+        
+        // Store each video analysis
+        videoAnalyses.forEach(({ id, analysis }) => {
+          analysisDispatch({ 
+            type: 'SET_VIDEO_ANALYSIS', 
+            payload: { id, analysis } 
+          });
+        });
+        
+        // Convert to the format expected by the project context
+        const projectAudioAnalysis = {
+          beats: audioAnalysis.beats.beats.map(beat => beat.time),
+          segments: audioAnalysis.energy.samples.map(sample => ({
+            start: sample.time,
+            duration: 0.1, // Assuming 100ms samples
+            energy: sample.level
+          }))
+        };
+        
+        const projectVideoAnalyses = {};
+        videoAnalyses.forEach(({ id, analysis }) => {
+          projectVideoAnalyses[id] = analysis;
+        });
+        
+        // Update project state
+        dispatch({ type: 'SET_AUDIO_ANALYSIS', payload: projectAudioAnalysis });
+        dispatch({ type: 'SET_VIDEO_ANALYSES', payload: projectVideoAnalyses });
+        
+        // Finish processing
+        analysisDispatch({ type: 'FINISH_PROCESSING' });
+        
+        // Move to editing step
         dispatch({ type: 'SET_ANALYZING', payload: false });
         dispatch({ type: 'SET_STEP', payload: 'editing' });
+      } catch (error) {
+        console.error('Analysis failed:', error);
         
-        // Set dummy edit decisions for demonstration
-        dispatch({ 
-          type: 'SET_EDIT_DECISIONS', 
-          payload: [
-            { time: 0, videoId: '1', sceneIndex: 0, start: 0, duration: 2.5 },
-            { time: 2.5, videoId: '2', sceneIndex: 1, start: 5, duration: 3 },
-            { time: 5.5, videoId: '1', sceneIndex: 2, start: 10, duration: 4 },
-          ] 
+        // Set error state
+        analysisDispatch({ 
+          type: 'SET_ERROR', 
+          payload: `Analysis failed: ${error instanceof Error ? error.message : String(error)}` 
         });
-      }, 3000);
+        
+        // Return to input step
+        dispatch({ type: 'SET_ANALYZING', payload: false });
+      }
     }
   };
   

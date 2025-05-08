@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Settings, ChevronRight } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Settings, ChevronRight, AlertCircle } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
+import { useAnalysis } from '@/context/AnalysisContext';
+import editDecisionEngine from '@/engine/EditDecisionEngine';
 
 interface EditingStepProps {
   audioElement: HTMLAudioElement | null;
@@ -14,11 +16,15 @@ export const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
     duration, 
     editDecisions, 
     musicFile, 
-    videoAnalyses 
+    videoAnalyses,
+    settings
   } = state;
+  const { state: analysisState } = useAnalysis();
   
   const [currentEditIndex, setCurrentEditIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Update current edit index based on playback time
   useEffect(() => {
@@ -130,6 +136,74 @@ export const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
           dispatch({ type: 'SET_PLAYING', payload: true });
         }, 100);
       }
+    }
+  };
+  
+  // Regenerate edit decisions based on current settings
+  const regenerateEditDecisions = async () => {
+    if (!analysisState.audioAnalysis || Object.keys(analysisState.videoAnalyses).length === 0) {
+      setError('Cannot regenerate edit decisions: Missing analysis data');
+      return;
+    }
+    
+    setRegenerating(true);
+    setError(null);
+    
+    try {
+      // Configure the edit decision engine with current settings
+      const config = {
+        beatCutPercentage: settings.style === 'Dynamic' ? 70 : 
+                          settings.style === 'Minimal' ? 30 : 50,
+        minSceneDuration: settings.style === 'Cinematic' ? 2.0 : 1.0,
+        maxSceneDuration: settings.style === 'Dynamic' ? 3.0 : 
+                         settings.style === 'Cinematic' ? 8.0 : 5.0,
+        prioritizeSceneBoundaries: settings.style === 'Smooth' || settings.style === 'Cinematic',
+        energyThreshold: {
+          low: 0.3,
+          medium: 0.6,
+          high: 0.8
+        }
+      };
+      
+      // Create a new engine instance with the config
+      const engine = new editDecisionEngine.constructor(config);
+      
+      // Configure with analysis data
+      engine.setAudioAnalysis(analysisState.audioAnalysis);
+      
+      // Add each video analysis
+      Object.entries(analysisState.videoAnalyses).forEach(([id, analysis]) => {
+        engine.addVideoAnalysis(id, analysis);
+      });
+      
+      // Generate new edit decisions
+      const editDecisionResult = engine.generateEditDecisions();
+      
+      // Update project state with new edit decisions
+      const newEditDecisions = editDecisionResult.edl.clips.map((clip, index) => ({
+        time: clip.timelineInPoint,
+        videoId: clip.sourceId,
+        sceneIndex: index,
+        start: clip.sourceInPoint,
+        duration: clip.timelineOutPoint - clip.timelineInPoint
+      }));
+      
+      dispatch({
+        type: 'SET_EDIT_DECISIONS',
+        payload: newEditDecisions
+      });
+      
+      // Reset playback position
+      if (audioElement) {
+        audioElement.currentTime = 0;
+      }
+      dispatch({ type: 'SET_PLAYBACK_TIME', payload: 0 });
+      
+    } catch (error) {
+      console.error('Error regenerating edit decisions:', error);
+      setError(`Failed to regenerate edit decisions: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setRegenerating(false);
     }
   };
   
@@ -270,7 +344,14 @@ export const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-[#B0B0B5] mb-1">Music Genre</label>
-                <select className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded">
+                <select 
+                  className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded"
+                  value={settings.genre}
+                  onChange={(e) => dispatch({ 
+                    type: 'SET_SETTINGS', 
+                    payload: { ...settings, genre: e.target.value } 
+                  })}
+                >
                   <option>Hip-Hop/Rap</option>
                   <option>Pop</option>
                   <option>Rock</option>
@@ -280,7 +361,14 @@ export const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
               
               <div>
                 <label className="block text-sm text-[#B0B0B5] mb-1">Editing Style</label>
-                <select className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded">
+                <select 
+                  className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded"
+                  value={settings.style}
+                  onChange={(e) => dispatch({ 
+                    type: 'SET_SETTINGS', 
+                    payload: { ...settings, style: e.target.value } 
+                  })}
+                >
                   <option>Dynamic</option>
                   <option>Smooth</option>
                   <option>Cinematic</option>
@@ -290,13 +378,39 @@ export const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
               
               <div>
                 <label className="block text-sm text-[#B0B0B5] mb-1">Transitions</label>
-                <select className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded">
+                <select 
+                  className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded"
+                  value={settings.transitions}
+                  onChange={(e) => dispatch({ 
+                    type: 'SET_SETTINGS', 
+                    payload: { ...settings, transitions: e.target.value } 
+                  })}
+                >
                   <option>Auto (Based on Music)</option>
                   <option>Cut Only</option>
                   <option>Dissolve</option>
                   <option>Wipe</option>
                 </select>
               </div>
+              
+              {error && (
+                <div className="mt-4 p-3 bg-[#3A1A1A] border border-[#E53935] rounded-lg text-sm text-[#F5F5F7] flex items-start">
+                  <AlertCircle size={16} className="text-[#E53935] mr-2 mt-0.5 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+              
+              <button
+                className={`w-full py-2 rounded-lg mt-4 flex items-center justify-center ${
+                  regenerating
+                    ? 'bg-[#2A2A30] text-[#B0B0B5] cursor-not-allowed'
+                    : 'bg-[#FF7A45] hover:bg-[#FF6A35] text-[#F5F5F7]'
+                }`}
+                onClick={regenerateEditDecisions}
+                disabled={regenerating}
+              >
+                {regenerating ? 'Regenerating...' : 'Apply Settings & Regenerate'}
+              </button>
             </div>
           ) : (
             <div className="flex-grow flex flex-col">

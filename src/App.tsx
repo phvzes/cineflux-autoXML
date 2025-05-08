@@ -12,14 +12,13 @@ import { WorkflowStepper } from './components/WorkflowStepper';
 import { AccessibleDialog } from './components/AccessibleDialog';
 import { Loading, ErrorState } from './components/AsyncStates';
 import { colorPalette } from './theme';
-import TestComponent from './components/TestComponent';
-import BeatDetectionTest from './pages/BeatDetectionTest';
-import VideoProcessingTest from './pages/VideoProcessingTest';
-import EditDecisionDemo from './pages/EditDecisionDemo';
+// Import the AnalysisContext
+import { useAnalysis } from './context/AnalysisContext';
 
 export default function App() {
   const { state: projectState, dispatch } = useProject();
   const { state: workflowState, setStep } = useWorkflow();
+  const { state: analysisState } = useAnalysis();
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   
@@ -147,8 +146,25 @@ export default function App() {
   
   // Render the appropriate step
   const renderStep = () => {
-    // For testing purposes, show the edit decision demo page
-    return <EditDecisionDemo />;
+    switch (projectState.currentStep) {
+      case 'welcome':
+        return <WelcomePage onGetStarted={() => dispatch({ type: 'SET_STEP', payload: 'input' })} />;
+      
+      case 'input':
+        return <InputStep />;
+      
+      case 'analyzing':
+        return <AnalysisStep />;
+      
+      case 'editing':
+        return <EditingStep audioElement={audioElementRef.current} />;
+      
+      case 'preview':
+        return <PreviewStep audioElement={audioElementRef.current} />;
+      
+      default:
+        return <WelcomePage onGetStarted={() => dispatch({ type: 'SET_STEP', payload: 'input' })} />;
+    }
   };
   
   // Create a map of video files by ID
