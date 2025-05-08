@@ -14,6 +14,7 @@ import { Loading, ErrorState } from './components/AsyncStates';
 import { colorPalette } from './theme';
 import TestComponent from './components/TestComponent';
 import BeatDetectionTest from './pages/BeatDetectionTest';
+import VideoProcessingTest from './pages/VideoProcessingTest';
 
 export default function App() {
   const { state: projectState, dispatch } = useProject();
@@ -145,8 +146,8 @@ export default function App() {
   
   // Render the appropriate step
   const renderStep = () => {
-    // For testing purposes, always show the beat detection test page
-    return <BeatDetectionTest />;
+    // For testing purposes, show the video processing test page
+    return <VideoProcessingTest />;
   };
   
   // Create a map of video files by ID
