@@ -1,237 +1,408 @@
 # CineFlux-AutoXML
 
-## Auto-Editor: An intelligent tool for automatically editing music videos based on audio analysis and visual content recognition
-
-![CineFlux-AutoXML Logo](./public/logo.png)
-
-CineFlux-AutoXML is a powerful browser-based application that automatically creates professional-quality music videos by intelligently synchronizing video clips with music tracks. Using advanced audio analysis and visual content recognition, it generates industry-standard XML files for seamless integration with professional editing software.
-
-## System Architecture
-
-The CineFlux-AutoXML application is built on a modular architecture consisting of six primary modules:
-
-1. **Input Module**: Handles file selection, validation, and metadata extraction for audio and video files.
-2. **Audio Analysis Module**: Processes audio tracks to identify beats, tempo, key moments, and emotional characteristics.
-3. **Video Analysis Module**: Analyzes video content for scene changes, motion, color composition, and visual interest.
-4. **Edit Decision Engine**: Combines audio and video analysis to create optimal edit points and transitions.
-5. **Preview Generator**: Provides real-time preview of the edited sequence before export.
-6. **Export Module**: Generates industry-standard XML files compatible with professional editing software.
-
-### Data Flow
-
-The application follows a linear data flow:
-
-1. User uploads audio and video files through the Input Module
-2. Audio and Video Analysis Modules process the files in parallel
-3. Edit Decision Engine combines analysis results to create an edit sequence
-4. Preview Generator renders a preview of the edited sequence
-5. Export Module generates the final XML output for professional editing software
-
-### Architecture Diagram
-
 ```
-┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │
-│  Input Module   │────▶│ Audio Analysis  │
-│                 │     │                 │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         │                       │
-         │                       ▼
-         │              ┌─────────────────┐
-         │              │                 │
-         └─────────────▶│ Video Analysis  │
-                        │                 │
-                        └────────┬────────┘
-                                 │
-                                 │
-                                 ▼
-                        ┌─────────────────┐
-                        │                 │
-                        │ Edit Decision   │
-                        │ Engine          │
-                        │                 │
-                        └────────┬────────┘
-                                 │
-                                 │
-                                 ▼
-                        ┌─────────────────┐
-                        │                 │
-                        │ Preview         │
-                        │ Generator       │
-                        │                 │
-                        └────────┬────────┘
-                                 │
-                                 │
-                                 ▼
-                        ┌─────────────────┐
-                        │                 │
-                        │ Export Module   │
-                        │                 │
-                        └─────────────────┘
+ ██████╗██╗███╗   ██╗███████╗███████╗██╗     ██╗   ██╗██╗  ██╗
+██╔════╝██║████╗  ██║██╔════╝██╔════╝██║     ██║   ██║╚██╗██╔╝
+██║     ██║██╔██╗ ██║█████╗  █████╗  ██║     ██║   ██║ ╚███╔╝ 
+██║     ██║██║╚██╗██║██╔══╝  ██╔══╝  ██║     ██║   ██║ ██╔██╗ 
+╚██████╗██║██║ ╚████║███████╗██║     ███████╗╚██████╔╝██╔╝ ██╗
+ ╚═════╝╚═╝╚═╝  ╚═══╝╚══════╝╚═╝     ╚══════╝ ╚═════╝ ╚═╝  ╚═╝
+                                                              
+ █████╗ ██╗   ██╗████████╗ ██████╗ ██╗  ██╗███╗   ███╗██╗     
+██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗╚██╗██╔╝████╗ ████║██║     
+███████║██║   ██║   ██║   ██║   ██║ ╚███╔╝ ██╔████╔██║██║     
+██╔══██║██║   ██║   ██║   ██║   ██║ ██╔██╗ ██║╚██╔╝██║██║     
+██║  ██║╚██████╔╝   ██║   ╚██████╔╝██╔╝ ██╗██║ ╚═╝ ██║███████╗
+╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝
 ```
 
-## Setup and Installation
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=white)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Vite](https://img.shields.io/badge/Vite-4.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+
+## Description
+
+CineFlux-AutoXML is a powerful browser-based application that automatically creates professional music videos by intelligently synchronizing video clips with music tracks. Using advanced audio analysis and visual content recognition, it identifies musical beats, energy levels, and video scene changes to create perfectly timed edits. The system exports industry-standard XML files compatible with professional editing software like Final Cut Pro, Adobe Premiere Pro, and DaVinci Resolve.
+
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Usage Guide](#usage-guide)
+- [Architecture Overview](#architecture-overview)
+- [Module Descriptions](#module-descriptions)
+- [Core Services](#core-services)
+- [Development Workflow](#development-workflow)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Key Features
+
+- **Intelligent Audio Analysis**: Automatically detects beats, identifies segments, and creates energy profiles from music tracks to drive video editing decisions.
+
+- **Advanced Video Analysis**: Performs scene detection, content analysis, and motion tracking to identify optimal cut points and transitions.
+
+- **Beat-Synchronized Editing**: Precisely matches video cuts and transitions with musical beats and energy changes for professional-quality results.
+
+- **Real-time Preview**: Visualizes edits in the browser before export, allowing for adjustments and fine-tuning.
+
+- **Multi-format Export**: Generates industry-standard XML files (FCPXML, Adobe Premiere Pro XML, DaVinci Resolve XML) for seamless integration with professional editing software.
+
+- **Browser-based Processing**: Performs all operations client-side using WebAssembly technologies, ensuring privacy and eliminating the need for server uploads.
+
+## Installation
 
 ### Prerequisites
 
 - Node.js 16.x or higher
-- Modern web browser with WebAssembly support (Chrome, Firefox, Edge, Safari)
+- npm or pnpm package manager
 
-### Installation
+### Setup Instructions
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/cineflux-autoxml.git
+   git clone https://github.com/your-username/cineflux-autoxml.git
    cd cineflux-autoxml
    ```
 
 2. Install dependencies:
    ```bash
+   # Using npm
    npm install
+   
+   # Using pnpm (recommended for faster installation)
+   pnpm install
    ```
 
 3. Start the development server:
    ```bash
+   # Using npm
    npm run dev
+   
+   # Using pnpm
+   pnpm dev
    ```
 
 4. Open your browser and navigate to:
    ```
-   http://localhost:3000
+   http://localhost:5173
    ```
 
-### Production Build
+### Notes on FFmpeg.wasm
 
-To create a production build:
+CineFlux-AutoXML uses FFmpeg.wasm for video processing, which requires:
 
-```bash
-npm run build
+- A modern browser with WebAssembly support
+- Sufficient memory allocation (at least 2GB recommended)
+- For local development, you may need to adjust CORS settings in your browser
+
+## Usage Guide
+
+### Creating a New Project
+
+1. **Launch the application** in your browser
+2. **Create a new project** by clicking the "New Project" button
+3. **Enter project details**:
+   - Project name
+   - Output format (FCPXML, Adobe Premiere Pro XML, DaVinci Resolve XML)
+   - Project settings (resolution, frame rate)
+
+   *Screenshot would show the project creation form with fields for name, format selection dropdown, and project settings.*
+
+### Adding Media
+
+1. **Import audio track**:
+   - Click "Add Audio" button
+   - Select a music file from your local storage
+   - The system will automatically analyze the audio for beats and energy levels
+
+   *Screenshot would show the audio import interface with waveform visualization and beat markers.*
+
+2. **Import video clips**:
+   - Click "Add Videos" button
+   - Select multiple video files or drag and drop them into the designated area
+   - The system will automatically analyze each clip for scene changes and content
+
+   *Screenshot would show the video import interface with thumbnail previews of imported clips.*
+
+### Generating and Previewing Edits
+
+1. **Configure edit parameters**:
+   - Adjust sensitivity for beat detection
+   - Set transition types and durations
+   - Configure content matching preferences
+
+   *Screenshot would show the edit configuration panel with sliders and option selectors.*
+
+2. **Generate edit preview**:
+   - Click "Generate Preview" button
+   - The system will process the media and create a synchronized edit
+   - Preview the result in the built-in player
+
+   *Screenshot would show the preview player with timeline and playback controls.*
+
+3. **Refine the edit**:
+   - Make adjustments to parameters as needed
+   - Regenerate preview until satisfied
+
+### Exporting the Project
+
+1. **Export XML**:
+   - Click "Export" button
+   - Select destination folder
+   - Choose export format (if not already specified)
+   - The system will generate the XML file
+
+   *Screenshot would show the export dialog with format options and progress indicator.*
+
+2. **Import into editing software**:
+   - Open your preferred editing software (Final Cut Pro, Adobe Premiere Pro, DaVinci Resolve)
+   - Import the generated XML file
+   - All edits, cuts, and transitions will be preserved
+
+## Architecture Overview
+
+CineFlux-AutoXML follows a modular architecture designed for extensibility and maintainability. The system is built around six primary modules and five core services that work together to provide a seamless editing experience.
+
+### System Architecture Diagram
+
+For a visual representation of the system architecture, refer to the diagram in the documentation:
+```
+/docs/architecture.svg
 ```
 
-The build artifacts will be stored in the `dist/` directory.
+*The architecture diagram would show the relationship between modules, services, and data flow.*
 
-## Usage Examples
+### Technology Stack
 
-### Basic Workflow
+- **Frontend**: React 18+, TypeScript, TailwindCSS
+- **State Management**: Zustand
+- **Build Tool**: Vite
+- **Video Processing**: FFmpeg.wasm
+- **Audio Analysis**: Web Audio API
+- **Video Analysis**: OpenCV.js
+- **Testing**: Jest, React Testing Library
 
-1. **Upload Files**: Select your music track and video clips through the file upload interface.
-2. **Analyze Content**: The system will automatically analyze your audio and video content.
-3. **Customize Parameters**: Adjust editing parameters such as cut frequency, transition types, and style preferences.
-4. **Preview Results**: View a real-time preview of your automatically edited video.
-5. **Export XML**: Generate an industry-standard XML file for use in professional editing software.
+## Module Descriptions
 
-### Advanced Features
+### 1. Input Module
 
-- **Beat Detection**: Automatically synchronize video cuts to musical beats and tempo changes.
-- **Emotional Mapping**: Match video content to the emotional characteristics of the music.
-- **Visual Interest Analysis**: Identify and prioritize visually interesting segments of your video clips.
-- **Custom Templates**: Save and reuse your editing preferences as templates for future projects.
+Handles the import and initial processing of media files:
+- Audio file import and validation
+- Video file import and validation
+- Project settings configuration
+- Input format conversion using FFmpeg.wasm
 
-## Plugin System Overview
+### 2. Audio Analysis Module
 
-CineFlux-AutoXML features a robust plugin architecture that allows for extensibility and customization. The plugin system enables developers to add new functionality without modifying the core application code.
+Processes audio tracks to extract musical features:
+- Beat detection using onset detection algorithms
+- Segment identification for verse, chorus, bridge sections
+- Energy profiling to map intensity changes
+- Tempo analysis and time signature detection
+- Spectral analysis for frequency distribution
 
-### Plugin Types
+### 3. Video Analysis Module
 
-- **Analysis Plugins**: Extend audio or video analysis capabilities
-- **Export Plugins**: Add support for additional export formats
-- **UI Plugins**: Create custom user interface components
-- **Effect Plugins**: Implement additional video or audio effects
+Analyzes video content to identify optimal editing points:
+- Scene detection using histogram comparison
+- Content analysis for object and face recognition
+- Motion analysis to track movement intensity
+- Color grading analysis for visual consistency
+- Quality assessment for optimal clip selection
 
-### Creating a Plugin
+### 4. Edit Decision Module
 
-Plugins are TypeScript modules that implement specific interfaces defined by the core application. A basic plugin structure looks like this:
+The intelligent core that matches audio and video characteristics:
+- Beat-to-cut mapping algorithms
+- Energy-to-content correlation
+- Transition selection based on musical and visual context
+- Edit timing optimization
+- Rule-based decision engine with configurable parameters
 
-```typescript
-import { PluginBase, PluginMetadata } from '@/core/plugins/types';
+### 5. Preview Module
 
-export const metadata: PluginMetadata = {
-  id: 'my-custom-plugin',
-  name: 'My Custom Plugin',
-  version: '1.0.0',
-  description: 'Adds custom functionality to CineFlux-AutoXML',
-  author: 'Your Name',
-};
+Provides real-time visualization of the edit decisions:
+- Browser-based video playback
+- Timeline visualization with markers for beats and cuts
+- Interactive adjustment of edit points
+- A/B comparison between different edit versions
+- Performance optimization for smooth playback
 
-export default class MyCustomPlugin implements PluginBase {
-  initialize(): Promise<void> {
-    // Plugin initialization code
-    return Promise.resolve();
-  }
+### 6. Export Module
 
-  // Implement additional methods based on the plugin type
-}
-```
+Generates professional-grade output files:
+- XML schema generation for different editing platforms
+- Metadata inclusion for project settings
+- Edit decision list (EDL) creation
+- Format-specific optimizations
+- Export validation and error checking
 
-### Plugin Registration
+## Core Services
 
-Plugins are registered with the application through the plugin loader system:
+### 1. AudioService
 
-```typescript
-import { registerPlugin } from '@/core/plugins/loader';
-import MyCustomPlugin, { metadata } from './my-custom-plugin';
+Manages all audio-related operations:
+- Audio decoding and processing
+- Beat detection algorithms
+- Waveform visualization
+- Audio metadata extraction
 
-registerPlugin(metadata, MyCustomPlugin);
-```
+### 2. VideoService
 
-## Development Guidelines
+Handles video processing tasks:
+- Video decoding and frame extraction
+- Scene detection
+- Content analysis
+- Thumbnail generation
 
-### Code Style
+### 3. ProjectService
 
-- Follow TypeScript best practices and maintain strict type safety
-- Use functional components with React hooks for UI development
-- Implement comprehensive error handling and user feedback
-- Write clear, descriptive comments and documentation
+Maintains project state and configuration:
+- Project settings management
+- Undo/redo functionality
+- Project saving and loading
+- Configuration persistence
 
-### Testing
+### 4. StorageService
 
-- Write unit tests for all core functionality
-- Create integration tests for module interactions
-- Implement end-to-end tests for critical user workflows
-- Test across multiple browsers and devices
+Manages data persistence:
+- Local storage for project data
+- IndexedDB for media caching
+- Export file handling
+- Temporary file management
 
-### Performance Considerations
+### 5. ExportService
 
-- Use web workers for CPU-intensive operations
-- Implement frame caching for preview performance
-- Optimize memory usage when handling large media files
-- Use progressive loading for improved user experience
+Coordinates the export process:
+- XML format generation
+- Format conversion
+- Export progress tracking
+- Error handling and reporting
 
-## Project Structure
+## Development Workflow
+
+### Environment Setup
+
+1. Ensure you have the required dependencies installed:
+   - Node.js 16+
+   - npm or pnpm
+
+2. Set up the development environment:
+   ```bash
+   # Clone the repository
+   git clone https://github.com/your-username/cineflux-autoxml.git
+   
+   # Install dependencies
+   cd cineflux-autoxml
+   pnpm install
+   
+   # Start the development server
+   pnpm dev
+   ```
+
+### Development Commands
+
+- `pnpm dev` - Start the development server
+- `pnpm build` - Build for production
+- `pnpm preview` - Preview the production build
+- `pnpm test` - Run tests
+- `pnpm lint` - Run linting
+- `pnpm format` - Format code with Prettier
+
+### Project Structure
 
 ```
 cineflux-autoxml/
-├── docs/                  # Documentation files
-├── public/                # Static assets
-├── src/                   # Source code
-│   ├── core/              # Core application logic
-│   │   ├── audio/         # Audio analysis components
-│   │   ├── video/         # Video analysis components
-│   │   ├── edit/          # Edit decision engine
-│   │   ├── export/        # Export functionality
-│   │   └── plugins/       # Plugin system
-│   ├── plugins/           # Built-in and example plugins
-│   │   ├── analysis/      # Audio and video analysis plugins
-│   │   ├── export/        # Export format plugins
-│   │   └── ui/            # User interface plugins
-│   └── ui/                # User interface components
-│       ├── components/    # Reusable UI components
-│       ├── pages/         # Application pages
-│       └── styles/        # CSS and styling
-└── tests/                 # Test files
-    ├── unit/              # Unit tests
-    ├── integration/       # Integration tests
-    └── e2e/               # End-to-end tests
+├── public/            # Static assets
+├── src/
+│   ├── components/    # React components
+│   ├── modules/       # Core modules
+│   │   ├── input/
+│   │   ├── audio/
+│   │   ├── video/
+│   │   ├── edit/
+│   │   ├── preview/
+│   │   └── export/
+│   ├── services/      # Core services
+│   │   ├── audio/
+│   │   ├── video/
+│   │   ├── project/
+│   │   ├── storage/
+│   │   └── export/
+│   ├── utils/         # Utility functions
+│   ├── hooks/         # Custom React hooks
+│   ├── types/         # TypeScript type definitions
+│   ├── App.tsx        # Main application component
+│   └── main.tsx       # Application entry point
+├── tests/             # Test files
+├── docs/              # Documentation
+└── vite.config.ts     # Vite configuration
 ```
+
+## Contributing
+
+We welcome contributions to CineFlux-AutoXML! Please follow these guidelines to contribute to the project.
+
+### Contribution Process
+
+1. **Fork the repository** to your GitHub account
+2. **Create a feature branch** from the `main` branch:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Make your changes** and commit them with descriptive messages
+4. **Push your branch** to your forked repository
+5. **Submit a pull request** to the main repository
+
+### Coding Standards
+
+- Follow the existing code style and formatting
+- Write meaningful commit messages following [Conventional Commits](https://www.conventionalcommits.org/)
+- Include tests for new features
+- Update documentation as necessary
+
+### Pull Request Guidelines
+
+- Provide a clear description of the changes
+- Link to any related issues
+- Include screenshots or GIFs for UI changes
+- Ensure all tests pass
+- Make sure your code is properly formatted
+
+### Development Practices
+
+- Use TypeScript for all new code
+- Follow React best practices
+- Write unit tests for new functionality
+- Document complex algorithms and functions
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+CineFlux-AutoXML is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+```
+MIT License
 
-- FFmpeg.wasm for browser-based video processing
-- Web Audio API for audio analysis
-- OpenCV.js for video content analysis
-- React and TypeScript for the frontend framework
+Copyright (c) 2023-2025 CineFlux-AutoXML Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
