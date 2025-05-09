@@ -580,7 +580,11 @@ export class EditDecisionEngine {
       let minDistance = Infinity;
       
       for (const beat of this.beatMap) {
-        const distance = Math.abs(beat.time - cut.time);
+        // Ensure both values are numbers before arithmetic operations
+        const beatTime = typeof beat.time === 'number' ? beat.time : 0;
+        const cutTime = typeof cut.time === 'number' ? cut.time : 0;
+        
+        const distance = Math.abs(beatTime - cutTime);
         minDistance = Math.min(minDistance, distance);
       }
       

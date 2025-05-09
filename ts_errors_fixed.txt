@@ -1,0 +1,263 @@
+src/App.tsx(7,8): error TS6133: 'React' is declared but its value is never read.
+src/App.tsx(26,9): error TS6133: 'analysisState' is declared but its value is never read.
+src/App.tsx(108,54): error TS2322: Type '{ onGetStarted: () => void; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'onGetStarted' does not exist on type 'IntrinsicAttributes'.
+src/App.tsx(125,28): error TS2322: Type '{ audioElement: HTMLAudioElement | null; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'audioElement' does not exist on type 'IntrinsicAttributes'.
+src/App.tsx(130,28): error TS2322: Type '{ audioElement: HTMLAudioElement | null; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'audioElement' does not exist on type 'IntrinsicAttributes'.
+src/components/WorkflowContainer.tsx(17,1): error TS6133: 'ApplicationStep' is declared but its value is never read.
+src/components/WorkflowContainer.tsx(85,11): error TS2322: Type 'string' is not assignable to type 'ApplicationStep'.
+src/components/WorkflowContainer.tsx(89,54): error TS2352: Conversion of type 'ApplicationStep' to type 'WorkflowStep' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/components/WorkflowContainer.tsx(115,9): error TS2322: Type '{ children: (false | Element)[]; onNewProject: () => void; onOpenProject: () => void; onSaveProject: () => void; onExport: () => void; onHelpClick: () => void; renderWorkflowStepper: () => Element | null; }' is not assignable to type 'IntrinsicAttributes & AppLayoutProps'.
+  Property 'onHelpClick' does not exist on type 'IntrinsicAttributes & AppLayoutProps'.
+src/components/audio/BeatDetectionDemo.tsx(40,10): error TS6133: 'audioFile' is declared but its value is never read.
+src/components/export/ExportModal.tsx(20,3): error TS6133: 'settings' is declared but its value is never read.
+src/components/export/ExportModal.tsx(48,13): error TS6133: 'xml' is declared but its value is never read.
+src/components/layout/AppLayout.tsx(103,24): error TS6133: 'isAnalyzing' is declared but its value is never read.
+src/components/layout/AppLayout.tsx(103,52): error TS6133: 'videoFiles' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(10,16): error TS6133: 'AudioSegment' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(16,3): error TS6133: 'Music' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(17,3): error TS6133: 'Video' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(18,3): error TS2305: Module '"lucide-react"' has no exported member 'Waveform'.
+src/components/steps/AnalysisStep.tsx(22,3): error TS6133: 'SkipForward' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(23,3): error TS6133: 'Clock' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(30,11): error TS2339: Property 'currentStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/AnalysisStep.tsx(30,11): error TS6133: 'currentStep' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(30,24): error TS2339: Property 'goToStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/AnalysisStep.tsx(30,34): error TS2339: Property 'data' does not exist on type 'WorkflowContextType'.
+src/components/steps/AnalysisStep.tsx(30,40): error TS2339: Property 'setData' does not exist on type 'WorkflowContextType'.
+src/components/steps/AnalysisStep.tsx(63,17): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/AnalysisStep.tsx(91,13): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/AnalysisStep.tsx(104,17): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/AnalysisStep.tsx(117,15): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/AnalysisStep.tsx(153,9): error TS6133: 'getAnalysisStepDescription' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(176,13): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/AnalysisStep.tsx(199,13): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/AnalysisStep.tsx(341,19): error TS2740: Type 'Float32Array<ArrayBufferLike>' is missing the following properties from type 'number[]': pop, push, concat, shift, and 5 more.
+src/components/steps/AnalysisStep.tsx(381,49): error TS7006: Parameter 'segment' implicitly has an 'any' type.
+src/components/steps/AnalysisStep.tsx(381,58): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(10,10): error TS2305: Module '"../../types/workflow"' has no exported member 'EditDecision'.
+src/components/steps/EditingStep.tsx(30,11): error TS2339: Property 'currentStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/EditingStep.tsx(30,11): error TS6133: 'currentStep' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(30,24): error TS2339: Property 'goToStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/EditingStep.tsx(30,34): error TS2339: Property 'data' does not exist on type 'WorkflowContextType'.
+src/components/steps/EditingStep.tsx(30,40): error TS2339: Property 'setData' does not exist on type 'WorkflowContextType'.
+src/components/steps/EditingStep.tsx(34,5): error TS6133: 'waveformData' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(38,5): error TS6133: 'duration' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(47,5): error TS6133: 'videoAnalysis' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(48,5): error TS6133: 'scenes' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(84,15): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(97,66): error TS7006: Parameter 'decision' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(97,76): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(180,13): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(345,39): error TS7006: Parameter 'decision' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(345,49): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(426,34): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/components/steps/EditingStep.tsx(426,40): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/steps/ExportStep.tsx(14,9): error TS6133: 'workflowState' is declared but its value is never read.
+src/components/steps/InputStep.tsx(20,7): error TS2339: Property 'setData' does not exist on type '{ updateProjectSettings: (settings: Partial<ProjectSettings>) => void; setMusicFile: (file: File | null) => Promise<void>; addVideoFile: (file: File) => void; removeVideoFile: (index: number) => void; addRawVideoFile: (file: File) => void; removeRawVideoFile: (index: number) => void; startAnalysis: () => Promise<......'.
+src/components/steps/InputStep.tsx(37,15): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(96,17): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(124,13): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(138,13): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(153,14): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type 'WorkflowStep'.
+src/components/steps/InputStep.tsx(211,46): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(272,50): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(272,56): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(335,53): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/components/steps/InputStep.tsx(335,59): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/steps/PreviewStep.tsx(10,1): error TS6133: 'EditDecision' is declared but its value is never read.
+src/components/steps/PreviewStep.tsx(10,10): error TS2305: Module '"../../types/workflow"' has no exported member 'EditDecision'.
+src/components/steps/PreviewStep.tsx(28,11): error TS2339: Property 'currentStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/PreviewStep.tsx(28,11): error TS6133: 'currentStep' is declared but its value is never read.
+src/components/steps/PreviewStep.tsx(28,24): error TS2339: Property 'goToStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/PreviewStep.tsx(28,34): error TS2339: Property 'data' does not exist on type 'WorkflowContextType'.
+src/components/steps/PreviewStep.tsx(28,40): error TS2339: Property 'setData' does not exist on type 'WorkflowContextType'.
+src/components/steps/PreviewStep.tsx(28,40): error TS6133: 'setData' is declared but its value is never read.
+src/components/steps/PreviewStep.tsx(95,9): error TS6133: 'videoFiles' is declared but its value is never read.
+src/components/steps/PreviewStep.tsx(130,39): error TS7006: Parameter 'edit' implicitly has an 'any' type.
+src/components/steps/PreviewStep.tsx(130,45): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/components/steps/PreviewStep.tsx(228,39): error TS7006: Parameter 'edit' implicitly has an 'any' type.
+src/components/steps/PreviewStep.tsx(228,45): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/components/timeline/VideoTimeline.tsx(9,33): error TS2307: Cannot find module '../hooks/useVideoService' or its corresponding type declarations.
+src/components/timeline/VideoTimeline.tsx(10,33): error TS2307: Cannot find module '../hooks/useAudioService' or its corresponding type declarations.
+src/components/timeline/VideoTimeline.tsx(11,10): error TS6133: 'Scene' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(11,17): error TS6133: 'VideoFrame' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(11,63): error TS2307: Cannot find module '../types/video-types' or its corresponding type declarations.
+src/components/timeline/VideoTimeline.tsx(12,1): error TS6192: All imports in import declaration are unused.
+src/components/timeline/VideoTimeline.tsx(12,36): error TS2307: Cannot find module '../types/audio-types' or its corresponding type declarations.
+src/components/timeline/VideoTimeline.tsx(63,5): error TS6133: 'extractedFrames' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(65,5): error TS6133: 'getFrameAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(66,5): error TS6133: 'getSceneAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(75,5): error TS6133: 'getBeatAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(76,5): error TS6133: 'getSegmentAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(82,9): error TS6133: 'pixelsPerSecond' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(291,25): error TS7006: Parameter 'scene' implicitly has an 'any' type.
+src/components/timeline/VideoTimeline.tsx(291,32): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/timeline/VideoTimeline.tsx(321,23): error TS7006: Parameter 'beat' implicitly has an 'any' type.
+src/components/timeline/VideoTimeline.tsx(334,27): error TS7006: Parameter 'segment' implicitly has an 'any' type.
+src/components/timeline/VideoTimeline.tsx(334,36): error TS6133: 'index' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(334,36): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/video/VideoAnalyzer.tsx(8,33): error TS2307: Cannot find module '../hooks/useVideoService' or its corresponding type declarations.
+src/components/video/VideoAnalyzer.tsx(10,3): error TS6133: 'VideoFile' is declared but its value is never read.
+src/components/video/VideoAnalyzer.tsx(13,3): error TS6133: 'VideoFrame' is declared but its value is never read.
+src/components/video/VideoAnalyzer.tsx(16,8): error TS2307: Cannot find module '../types/video-types' or its corresponding type declarations.
+src/components/video/VideoAnalyzer.tsx(40,10): error TS6133: 'currentFrame' is declared but its value is never read.
+src/components/video/VideoAnalyzer.tsx(40,24): error TS6133: 'setCurrentFrame' is declared but its value is never read.
+src/components/video/VideoAnalyzer.tsx(60,5): error TS6133: 'getFrameAtTime' is declared but its value is never read.
+src/components/video/VideoAnalyzer.tsx(115,25): error TS7006: Parameter 'scene' implicitly has an 'any' type.
+src/components/video/VideoAnalyzer.tsx(115,32): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/video/VideoAnalyzer.tsx(239,33): error TS7006: Parameter 'frame' implicitly has an 'any' type.
+src/components/video/VideoAnalyzer.tsx(268,24): error TS7006: Parameter 'scene' implicitly has an 'any' type.
+src/components/video/VideoAnalyzer.tsx(330,60): error TS7006: Parameter 'motion' implicitly has an 'any' type.
+src/components/video/VideoAnalyzer.tsx(330,68): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/welcome/WelcomePage.tsx(15,1): error TS6133: 'colorPalette' is declared but its value is never read.
+src/components/welcome/WelcomePage.tsx(156,26): error TS6133: 'setRecentProjects' is declared but its value is never read.
+src/components/workflow/WorkflowContainer.tsx(13,10): error TS2614: Module '"../../services/AudioService"' has no exported member 'AudioService'. Did you mean to use 'import AudioService from "../../services/AudioService"' instead?
+src/context/WorkflowContext.tsx(14,3): error TS6133: 'VideoFile' is declared but its value is never read.
+src/context/WorkflowContext.tsx(19,10): error TS2614: Module '"../services/AudioService"' has no exported member 'AudioService'. Did you mean to use 'import AudioService from "../services/AudioService"' instead?
+src/context/WorkflowContext.tsx(80,3): error TS6133: 'currentStep' is declared but its value is never read.
+src/context/WorkflowContext.tsx(201,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(223,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(250,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(265,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(279,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(292,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(304,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(318,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(335,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(360,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(373,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(397,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(419,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(434,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(447,14): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(465,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(481,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(494,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/context/WorkflowContext.tsx(515,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/core/PluginRegistry.ts(257,48): error TS6133: 'options' is declared but its value is never read.
+src/core/PluginRegistry.ts(300,28): error TS6133: 'initOptions' is declared but its value is never read.
+src/core/PluginRegistry.ts(309,25): error TS6133: 'processOptions' is declared but its value is never read.
+src/engine/EditDecisionEngine.ts(5,3): error TS6133: 'BeatAnalysis' is declared but its value is never read.
+src/engine/EditDecisionEngine.ts(6,3): error TS6133: 'EnergyAnalysis' is declared but its value is never read.
+src/engine/EditDecisionEngine.ts(287,71): error TS2339: Property 'ACTION' does not exist on type 'typeof SceneType'.
+src/engine/EditDecisionEngine.ts(378,9): error TS6133: 'currentTime' is declared but its value is never read.
+src/engine/EditDecisionEngine.ts(644,23): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+src/engine/EditDecisionEngine.ts(644,47): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+src/engine/EditDecisionEngine.ts(645,25): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+src/examples/pluginUsageExample.ts(9,3): error TS6133: 'getPluginById' is declared but its value is never read.
+src/examples/pluginUsageExample.ts(10,3): error TS6133: 'loadPluginFromModule' is declared but its value is never read.
+src/examples/pluginUsageExample.ts(11,3): error TS6133: 'loadWasmPlugin' is declared but its value is never read.
+src/examples/pluginUsageExample.ts(121,50): error TS18048: 'frameResult.data' is possibly 'undefined'.
+src/examples/pluginUsageExample.ts(161,21): error TS18048: 'convertResult.data' is possibly 'undefined'.
+src/hooks/useAudioService.ts(20,10): error TS6133: 'startedAt' is declared but its value is never read.
+src/hooks/useVideoService.ts(15,3): error TS6133: 'ThumbnailOptions' is declared but its value is never read.
+src/main.tsx(15,10): error TS2741: Property 'audioService' is missing in type '{ children: Element; }' but required in type 'WorkflowProviderProps'.
+src/pages/EditDecisionDemo.tsx(90,32): error TS2351: This expression is not constructable.
+  Type 'VideoService' has no construct signatures.
+src/pages/EditDecisionDemo.tsx(93,10): error TS7006: Parameter 'progress' implicitly has an 'any' type.
+src/pages/EditDecisionDemo.tsx(93,20): error TS7006: Parameter 'step' implicitly has an 'any' type.
+src/pages/EditDecisionDemo.tsx(117,40): error TS7006: Parameter 'scene' implicitly has an 'any' type.
+src/pages/EditDecisionDemo.tsx(117,47): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/pages/EditDecisionDemo.tsx(126,57): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/pages/EditDecisionDemo.tsx(126,62): error TS7006: Parameter 'scene' implicitly has an 'any' type.
+src/pages/VideoProcessingTest.tsx(4,24): error TS2614: Module '"../services/VideoService"' has no exported member 'VideoProcessingResult'. Did you mean to use 'import VideoProcessingResult from "../services/VideoService"' instead?
+src/pages/VideoProcessingTest.tsx(71,41): error TS2339: Property 'processVideo' does not exist on type 'VideoService'.
+src/pages/VideoProcessingTest.tsx(77,22): error TS7006: Parameter 'progress' implicitly has an 'any' type.
+src/pages/VideoProcessingTest.tsx(77,32): error TS7006: Parameter 'step' implicitly has an 'any' type.
+src/pages/VideoProcessingTest.tsx(232,58): error TS7006: Parameter 'scene' implicitly has an 'any' type.
+src/plugins/audio/BasicAudioAnalyzer.ts(47,27): error TS6133: 'options' is declared but its value is never read.
+src/plugins/audio/BasicAudioAnalyzer.ts(135,5): error TS6133: 'audioData' is declared but its value is never read.
+src/plugins/audio/BasicAudioAnalyzer.ts(136,5): error TS6133: 'options' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(45,27): error TS6133: 'options' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(127,5): error TS6133: 'subtitleData' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(140,13): error TS6133: 'subtitleText' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(140,28): error TS2448: Block-scoped variable 'subtitleData' used before its declaration.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(140,28): error TS2454: Variable 'subtitleData' is used before being assigned.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(141,36): error TS2448: Block-scoped variable 'subtitleData' used before its declaration.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(142,11): error TS2448: Block-scoped variable 'subtitleData' used before its declaration.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(142,11): error TS2454: Variable 'subtitleData' is used before being assigned.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(324,42): error TS6133: 'index' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(50,27): error TS6133: 'options' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(149,5): error TS6133: 'videoData' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(150,5): error TS6133: 'options' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(198,5): error TS6133: 'videoData' is declared but its value is never read.
+src/services/AudioService.ts(598,5): error TS6133: 'beatAnalysis' is declared but its value is never read.
+src/services/EditDecisionEngine.ts(10,3): error TS6133: 'Scene' is declared but its value is never read.
+src/services/EditDecisionEngine.ts(28,8): error TS2307: Cannot find module '../types/edit-types' or its corresponding type declarations.
+src/services/EditDecisionEngine.ts(169,56): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(173,61): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(233,41): error TS2345: Argument of type 'import("/home/ubuntu/cineflux-autoXML/src/types/AudioAnalysis").AudioAnalysis' is not assignable to parameter of type 'import("/home/ubuntu/cineflux-autoXML/src/types/audio-types").AudioAnalysis'.
+  Property 'duration' is missing in type 'import("/home/ubuntu/cineflux-autoXML/src/types/AudioAnalysis").AudioAnalysis' but required in type 'import("/home/ubuntu/cineflux-autoXML/src/types/audio-types").AudioAnalysis'.
+src/services/EditDecisionEngine.ts(239,63): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(243,68): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(318,55): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditDecisionEngine.ts(488,57): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditDecisionEngine.ts(601,55): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditDecisionEngine.ts(642,55): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditService.ts(17,5): error TS6133: 'settings' is declared but its value is never read.
+src/services/EditService.ts(74,5): error TS6133: 'audioAnalysis' is declared but its value is never read.
+src/services/EditService.ts(75,5): error TS6133: 'videoAnalyses' is declared but its value is never read.
+src/services/EditService.ts(76,5): error TS6133: 'settings' is declared but its value is never read.
+src/services/PreviewGenerator.ts(47,5): error TS6133: 'editDecisions' is declared but its value is never read.
+src/services/PreviewGenerator.ts(48,5): error TS6133: 'videoFiles' is declared but its value is never read.
+src/services/PreviewGenerator.ts(49,5): error TS6133: 'audioFile' is declared but its value is never read.
+src/services/VideoService.ts(8,10): error TS2305: Module '"@ffmpeg/ffmpeg"' has no exported member 'createFFmpeg'.
+src/services/VideoService.ts(8,24): error TS2305: Module '"@ffmpeg/ffmpeg"' has no exported member 'fetchFile'.
+src/services/VideoService.ts(108,53): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(300,46): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(304,51): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(407,52): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(470,26): error TS18048: 'options.threshold' is possibly 'undefined'.
+src/services/VideoService.ts(500,51): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(530,29): error TS2554: Expected 3-4 arguments, but got 1.
+src/services/VideoService.ts(531,44): error TS2339: Property 'mean' does not exist on type 'void'.
+src/services/VideoService.ts(532,40): error TS2339: Property 'mean' does not exist on type 'void'.
+src/services/VideoService.ts(533,40): error TS2339: Property 'mean' does not exist on type 'void'.
+src/services/VideoService.ts(534,42): error TS2339: Property 'stddev' does not exist on type 'void'.
+src/services/VideoService.ts(535,39): error TS2339: Property 'stddev' does not exist on type 'void'.
+src/services/VideoService.ts(536,39): error TS2339: Property 'stddev' does not exist on type 'void'.
+src/services/VideoService.ts(585,14): error TS2339: Property 'KMEANS_PP_CENTERS' does not exist on type 'typeof import("/home/ubuntu/cineflux-autoXML/node_modules/@techstark/opencv-js/dist/src/index")'.
+src/services/__tests__/AudioService.test.ts(2,65): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.
+src/services/__tests__/AudioService.test.ts(4,10): error TS6133: 'AudioAnalysis' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(4,61): error TS6133: 'EnergySample' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(12,19): error TS6133: 'buffer' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(12,82): error TS6133: 'onError' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(24,7): error TS2739: Type '{ length: number; duration: number; sampleRate: number; numberOfChannels: number; getChannelData: any; }' is missing the following properties from type 'AudioBuffer': copyFromChannel, copyToChannel
+src/services/__tests__/AudioService.test.ts(29,26): error TS6133: 'channel' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(29,26): error TS7006: Parameter 'channel' implicitly has an 'any' type.
+src/services/__tests__/AudioService.test.ts(49,17): error TS7006: Parameter 'name' implicitly has an 'any' type.
+src/services/__tests__/AudioService.test.ts(165,27): error TS6133: 'buffer' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(165,48): error TS6133: 'onSuccess' is declared but its value is never read.
+src/services/__tests__/VideoService.test.ts(7,79): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.
+src/services/__tests__/VideoService.test.ts(18,39): error TS7006: Parameter 'cmd' implicitly has an 'any' type.
+src/services/__tests__/VideoService.test.ts(18,44): error TS7006: Parameter 'fileName' implicitly has an 'any' type.
+src/services/__tests__/VideoService.test.ts(18,54): error TS6133: 'data' is declared but its value is never read.
+src/services/__tests__/VideoService.test.ts(18,54): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/__tests__/VideoService.test.ts(126,61): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/services/__tests__/VideoService.test.ts(235,39): error TS7006: Parameter 'cmd' implicitly has an 'any' type.
+src/services/__tests__/VideoService.test.ts(235,44): error TS7006: Parameter 'fileName' implicitly has an 'any' type.
+src/types/ApplicationState.ts(1,10): error TS2724: '"./AudioAnalysis"' has no exported member named 'AudioAnalysisResult'. Did you mean 'AudioAnalysis'?
+src/types/EditDecision.ts(10,10): error TS2724: '"./AudioAnalysis"' has no exported member named 'AudioAnalysisResult'. Did you mean 'AudioAnalysis'?
+src/types/ProjectState.ts(7,10): error TS2724: '"./FileTypes"' has no exported member named 'VideoFile'. Did you mean 'isVideoFile'?
+src/types/index.ts(17,1): error TS2308: Module './EditDecision' has already exported a member named 'TransitionType'. Consider explicitly re-exporting to resolve the ambiguity.
+src/types/index.ts(26,1): error TS2308: Module './ApplicationState' has already exported a member named 'ModalType'. Consider explicitly re-exporting to resolve the ambiguity.
+src/types/index.ts(26,1): error TS2308: Module './ApplicationState' has already exported a member named 'UIState'. Consider explicitly re-exporting to resolve the ambiguity.
+src/types/workflow/index.ts(7,10): error TS1205: Re-exporting a type when 'isolatedModules' is enabled requires using 'export type'.
+src/types/workflow/index.ts(8,10): error TS1205: Re-exporting a type when 'isolatedModules' is enabled requires using 'export type'.
+src/types/workflow/index.ts(13,10): error TS1205: Re-exporting a type when 'isolatedModules' is enabled requires using 'export type'.
+src/types/workflow/index.ts(15,15): error TS2724: '"../FileTypes"' has no exported member named 'VideoFile'. Did you mean 'isVideoFile'?
+src/types/workflow/index.ts(16,15): error TS2305: Module '"../ApplicationState"' has no exported member 'AppState'.
+src/utils/safeStringify.ts(15,31): error TS6133: 'key' is declared but its value is never read.
+src/utils/xmlGenerators.ts(3,1): error TS6133: 'EditDecision' is declared but its value is never read.
+src/utils/xmlGenerators.ts(3,10): error TS2459: Module '"@/context/ProjectContext"' declares 'EditDecision' locally, but it is not exported.
+src/utils/xmlGenerators.ts(17,3): error TS6133: 'settings' is declared but its value is never read.
+src/utils/xmlGenerators.ts(152,3): error TS6133: 'settings' is declared but its value is never read.
+src/utils/xmlGenerators.ts(180,42): error TS6133: 'id' is declared but its value is never read.
+src/utils/xmlGenerators.ts(245,3): error TS6133: 'audioFile' is declared but its value is never read.

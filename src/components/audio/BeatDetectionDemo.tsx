@@ -3,6 +3,7 @@ import AudioService from '../../services/AudioService';
 import WaveformVisualizer from './WaveformVisualizer';
 import AudioProcessingProgress from './AudioProcessingProgress';
 import { Beat, AudioAnalysis } from '../../types/AudioAnalysis';
+import { safeStringify } from '../../utils/safeStringify';
 
 interface BeatDetectionDemoProps {
   /**
@@ -313,7 +314,7 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
           <h3>Analysis Results</h3>
           
           <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', borderRadius: '4px' }}>
-            <pre>{JSON.stringify(analysisResults, null, 2)}</pre>
+            <pre>{safeStringify(analysisResults, 2)}</pre>
           </div>
         </div>
       )}

@@ -1,7 +1,10 @@
 // src/engine/index.ts
 export { 
   EditDecisionEngine, 
-  editDecisionEngine, 
+  editDecisionEngine
+} from './EditDecisionEngine';
+
+export type { 
   EditDecisionEngineConfig, 
   EditDecisionResult 
 } from './EditDecisionEngine';

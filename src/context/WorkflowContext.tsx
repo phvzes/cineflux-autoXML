@@ -386,7 +386,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
         ...prev.ui,
         errors: {
           ...prev.ui.errors,
-          videoUpload: null // Clear any previous errors
+          videoUpload: "" // Use empty string instead of null
         }
       }
     }));

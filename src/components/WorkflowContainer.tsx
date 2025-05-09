@@ -15,10 +15,27 @@ import { useProject } from '../context/ProjectContext';
 import { useWorkflow } from '../context/WorkflowContext';
 import { colorPalette } from '../theme';
 import { ApplicationStep } from '../types/UITypes';
+import { WorkflowStep } from '../types/workflow';
+
+// Define the AppState interface to match what's expected
+interface AppState {
+  currentStep: string;
+  isProcessing: boolean;
+  progressPercentage: number;
+  statusMessage: string;
+}
 
 const WorkflowContainer: React.FC = () => {
   const { state: projectState, dispatch } = useProject();
-  const { state: workflowState, setStep } = useWorkflow();
+  const { state, navigation } = useWorkflow();
+  
+  // Extract workflow state from the context state
+  const workflowState: AppState = {
+    currentStep: state.workflow.currentStep,
+    isProcessing: state.analysis.isAnalyzing,
+    progressPercentage: state.workflow.analysisProgress.percentage,
+    statusMessage: state.workflow.analysisProgress.currentStep
+  };
   const [showHelpDialog, setShowHelpDialog] = React.useState(false);
   
   // Handle new project
@@ -69,7 +86,7 @@ const WorkflowContainer: React.FC = () => {
           isProcessing={workflowState.isProcessing}
           progressPercentage={workflowState.progressPercentage}
           statusMessage={workflowState.statusMessage}
-          onStepClick={setStep}
+          onStepClick={(step) => navigation.goToStep(step as WorkflowStep)}
         />
       </div>
     );

@@ -52,14 +52,16 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
     
     // Update local state
     setLocalConfig(prev => {
-      const newConfig = { 
-        ...prev, 
-        energyThreshold: { 
-          ...prev.energyThreshold,
-          [level]: value 
-        } 
+      // Ensure energyThreshold exists with default values if not present
+      const currentThreshold = prev.energyThreshold || { low: 0.3, medium: 0.6, high: 0.8 };
+      
+      return {
+        ...prev,
+        energyThreshold: {
+          ...currentThreshold,
+          [level]: value
+        }
       };
-      return newConfig;
     });
   };
   
@@ -226,7 +228,10 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
         </label>
         <select
           value={localConfig.framerate}
-          onChange={(e) => handleSliderChange(e, 'framerate')}
+          onChange={(e) => {
+            const value = parseFloat(e.target.value);
+            setLocalConfig(prev => ({ ...prev, framerate: value }));
+          }}
           disabled={disabled}
           style={{ width: '100%', padding: '5px' }}
         >

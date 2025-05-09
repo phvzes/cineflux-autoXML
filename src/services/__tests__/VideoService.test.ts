@@ -7,6 +7,7 @@
 import { vi, describe, it, expect, beforeEach, afterEach, MockInstance } from 'vitest';
 import { VideoService } from '../VideoService';
 import { ClipType, VideoServiceEvents } from '../../types/video-types';
+import { safeStringify } from '../../utils/safeStringify';
 
 // Mock dependencies
 vi.mock('@ffmpeg/ffmpeg', () => {
@@ -17,7 +18,7 @@ vi.mock('@ffmpeg/ffmpeg', () => {
       FS: vi.fn().mockImplementation((cmd, fileName, data) => {
         if (cmd === 'readFile') {
           if (fileName === 'output.json') {
-            return new TextEncoder().encode(JSON.stringify({
+            return new TextEncoder().encode(safeStringify({
               streams: [{
                 width: 1920,
                 height: 1080,
@@ -233,7 +234,7 @@ describe('VideoService', () => {
       const ffmpegFsSpy = vi.spyOn(videoService['ffmpeg'], 'FS');
       ffmpegFsSpy.mockImplementation((cmd, fileName) => {
         if (cmd === 'readFile' && fileName === 'output.json') {
-          return new TextEncoder().encode(JSON.stringify({
+          return new TextEncoder().encode(safeStringify({
             streams: [{
               width: 1920,
               height: 1080,
