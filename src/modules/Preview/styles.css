@@ -1,0 +1,354 @@
+/* Preview Module Styles */
+
+.preview-module {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Preview Player */
+.preview-player-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000000;
+  overflow: hidden;
+}
+
+.preview-player {
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+}
+
+.preview-player-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: #222222;
+  color: #888888;
+  font-size: 1.2rem;
+}
+
+.frame-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+/* Playback Controls */
+.preview-controls {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.playback-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.playback-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.playback-button, .frame-button {
+  background-color: #3a3a3a;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.playback-button:hover, .frame-button:hover {
+  background-color: #4a4a4a;
+}
+
+.playback-rate-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.playback-rate-controls select {
+  background-color: #3a3a3a;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+/* Timeline Scrubber */
+.preview-timeline {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background-color: #2a2a2a;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.timeline-scrubber {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.timeline {
+  position: relative;
+  height: 40px;
+  background-color: #3a3a3a;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.timeline-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #3a3a3a;
+  border-radius: 4px;
+}
+
+.timeline-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #4353ff;
+  border-radius: 4px 0 0 4px;
+  pointer-events: none;
+}
+
+.timeline-playhead {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background-color: #ffffff;
+  pointer-events: none;
+}
+
+.timeline-hover-indicator {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.timeline-cut-point {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background-color: #ff0000;
+  pointer-events: none;
+}
+
+.timeline-transition {
+  position: absolute;
+  top: 10px;
+  height: 20px;
+  background-color: rgba(25, 130, 196, 0.5);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.timeline-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.current-time, .current-frame, .hover-time {
+  font-family: monospace;
+}
+
+.frame-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.frame-navigation input {
+  width: 80px;
+  background-color: #3a3a3a;
+  color: #ffffff;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: monospace;
+}
+
+.frame-navigation button {
+  background-color: #3a3a3a;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+/* Audio Waveform */
+.audio-waveform {
+  margin-top: 20px;
+  width: 100%;
+  background-color: #2a2a2a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.waveform-container {
+  width: 100%;
+  background-color: #2a2a2a;
+}
+
+/* Edit Markers */
+.edit-markers {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.markers-section {
+  flex: 1;
+  min-width: 250px;
+}
+
+.markers-section h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #c2c8d1;
+}
+
+.markers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.edit-marker {
+  padding: 8px;
+  background-color: #3a3a3a;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-marker:hover {
+  background-color: #4a4a4a;
+}
+
+.edit-marker.active {
+  background-color: #4353ff;
+}
+
+.marker-time {
+  font-family: monospace;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.marker-label {
+  font-weight: 600;
+}
+
+.marker-type, .marker-source, .marker-duration {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+}
+
+/* Transition Preview */
+.transition-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.transition-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.transition-info {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.transition-type {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.transition-duration {
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .preview-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .playback-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .timeline-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .edit-markers {
+    flex-direction: column;
+  }
+}

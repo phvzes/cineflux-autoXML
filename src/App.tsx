@@ -14,6 +14,10 @@ import WelcomePage from './components/welcome/WelcomePage';
 // Import main container
 import WorkflowContainer from './components/WorkflowContainer';
 
+// Import demo pages
+const VideoAnalysisDemo = lazy(() => import('./pages/VideoAnalysisDemo'));
+const PreviewModuleDemo = lazy(() => import('./pages/PreviewModuleDemo'));
+
 // Lazy load step components for better performance
 const InputStep = lazy(() => import('./components/steps/InputStep'));
 const AnalysisStep = lazy(() => import('./components/steps/AnalysisStep'));
@@ -106,6 +110,18 @@ export default function App() {
       <Routes>
         {/* Welcome page route */}
         <Route path="/welcome" element={<WelcomePage onGetStarted={() => dispatch({ type: 'SET_STEP', payload: 'input' })} />} />
+        
+        {/* Demo pages */}
+        <Route path="/demo/video-analysis" element={
+          <Suspense fallback={<Loading message="Loading Video Analysis Demo..." />}>
+            <VideoAnalysisDemo />
+          </Suspense>
+        } />
+        <Route path="/demo/preview-module" element={
+          <Suspense fallback={<Loading message="Loading Preview Module Demo..." />}>
+            <PreviewModuleDemo />
+          </Suspense>
+        } />
         
         {/* Main workflow routes nested under WorkflowContainer */}
         <Route path="/" element={<WorkflowContainer />}>
