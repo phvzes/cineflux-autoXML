@@ -5,9 +5,12 @@
  * users can see a full preview of the edited video.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { EditDecision } from '../../types/workflow';
+import { PreviewWrapper } from '../preview';
+import { EditDecisionList, createEmptyEDL, TransitionType, MarkerType, TrackType } from '../../types/EditDecision';
+import { editDecisionEngine } from '../../engine/EditDecisionEngine';
 
 // Import icons 
 import { 
@@ -23,266 +26,199 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const PreviewStep: React.FC = () => {
+interface PreviewStepProps {
+  audioElement?: HTMLAudioElement | null;
+}
+
+const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
   // Get workflow context
-  const { currentStep, goToStep, data, setData } = useWorkflow();
+  const { state, navigation, actions } = useWorkflow();
   
   // Local state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(75);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [edl, setEdl] = useState<EditDecisionList | null>(null);
+  const [videoSources, setVideoSources] = useState<Record<string, string>>({});
   
-  // Find current edit based on time
-  const getCurrentEdit = () => {
-    if (!data.edit.decisions || data.edit.decisions.length === 0) return null;
+  // Create a sample EDL for testing
+  useEffect(() => {
+    // Create an empty EDL
+    const sampleEdl = createEmptyEDL('Preview EDL', 30);
     
-    for (let i = data.edit.decisions.length - 1; i >= 0; i--) {
-      if (currentTime >= data.edit.decisions[i].time) {
-        return { ...data.edit.decisions[i], index: i };
+    // Add clips from the project's video files
+    const videoFiles = state.project.rawVideoFiles.length > 0 
+      ? state.project.rawVideoFiles 
+      : [
+          { name: 'video1.mp4', size: 1000000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+          { name: 'video2.mp4', size: 2000000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+          { name: 'video3.mp4', size: 1500000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }
+        ];
+    
+    // Create video sources map
+    const sources: Record<string, string> = {};
+    videoFiles.forEach((file, index) => {
+      sources[`video_${index + 1}`] = file.url;
+    });
+    
+    setVideoSources(sources);
+    
+    // Add some clips
+    sampleEdl.clips = [
+      {
+        id: 'clip_1',
+        sourceId: 'video_1',
+        trackType: TrackType.VIDEO,
+        trackNumber: 1,
+        timelineInPoint: 0,
+        timelineOutPoint: 5,
+        sourceInPoint: 10,
+        sourceOutPoint: 15,
+        enabled: true
+      },
+      {
+        id: 'clip_2',
+        sourceId: 'video_2',
+        trackType: TrackType.VIDEO,
+        trackNumber: 1,
+        timelineInPoint: 5,
+        timelineOutPoint: 10,
+        sourceInPoint: 5,
+        sourceOutPoint: 10,
+        enabled: true
+      },
+      {
+        id: 'clip_3',
+        sourceId: 'video_3',
+        trackType: TrackType.VIDEO,
+        trackNumber: 1,
+        timelineInPoint: 10,
+        timelineOutPoint: 15,
+        sourceInPoint: 0,
+        sourceOutPoint: 5,
+        enabled: true
       }
-    }
-    return { ...data.edit.decisions[0], index: 0 };
-  };
+    ];
+    
+    // Add some transitions
+    sampleEdl.transitions = [
+      {
+        id: 'transition_1',
+        type: TransitionType.DISSOLVE,
+        duration: 1,
+        outgoingClipId: 'clip_1',
+        incomingClipId: 'clip_2',
+        centerPoint: 5
+      },
+      {
+        id: 'transition_2',
+        type: TransitionType.WIPE,
+        duration: 1,
+        outgoingClipId: 'clip_2',
+        incomingClipId: 'clip_3',
+        centerPoint: 10
+      }
+    ];
+    
+    // Add some cut points
+    sampleEdl.cutPoints = [
+      {
+        id: 'cut_1',
+        type: MarkerType.MARKER,
+        position: 2.5,
+        label: 'Beat 1'
+      },
+      {
+        id: 'cut_2',
+        type: MarkerType.MARKER,
+        position: 7.5,
+        label: 'Beat 2'
+      },
+      {
+        id: 'cut_3',
+        type: MarkerType.MARKER,
+        position: 12.5,
+        label: 'Beat 3'
+      }
+    ];
+    
+    // Set the total duration
+    sampleEdl.totalDuration = 15;
+    
+    // Set the EDL
+    setEdl(sampleEdl);
+  }, [state.project.rawVideoFiles]);
   
-  // Current edit
-  const currentEdit = getCurrentEdit();
-  
-  // Handle play/pause
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-  
-  // Handle seek
-  const handleSeek = (time: number) => {
+  // Handle time update
+  const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
   };
   
-  // Go to next edit point
-  const handleNextEdit = () => {
-    if (!currentEdit || currentEdit.index >= (data.edit.decisions.length - 1)) return;
-    
-    const nextEdit = data.edit.decisions[currentEdit.index + 1];
-    setCurrentTime(nextEdit.time);
+  // Handle playback end
+  const handlePlaybackEnd = () => {
+    setIsPlaying(false);
   };
   
-  // Go to previous edit point
-  const handlePrevEdit = () => {
-    if (!currentEdit || currentEdit.index <= 0) return;
-    
-    const prevEdit = data.edit.decisions[currentEdit.index - 1];
-    setCurrentTime(prevEdit.time);
+  // Handle marker click
+  const handleMarkerClick = (marker: any) => {
+    console.log('Marker clicked:', marker);
   };
   
   // Handle back to editing
   const handleBackToEdit = () => {
-    goToStep('editing');
+    navigation.goToStep('edit');
   };
   
   // Handle export
   const handleExport = () => {
-    goToStep('export');
+    navigation.goToStep('export');
   };
-  
-  // Format time as MM:SS
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  // Simulate video files if none exist
-  const videoFiles = data.project.videoFiles.length > 0 
-    ? data.project.videoFiles 
-    : [
-        { name: 'video1.mp4', size: 1000000, duration: 30, type: 'video/mp4', url: '' },
-        { name: 'video2.mp4', size: 2000000, duration: 45, type: 'video/mp4', url: '' },
-        { name: 'video3.mp4', size: 1500000, duration: 60, type: 'video/mp4', url: '' }
-      ];
   
   return (
     <div className="flex-grow flex flex-col">
-      {/* Main Preview Area */}
-      <div className="flex-grow bg-black relative">
-        {/* Video preview */}
-        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xl">
-          Full video preview will be displayed here
-        </div>
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-4">Preview</h1>
+        <p className="mb-4">Preview your video with frame-accurate playback, visual markers, and synchronized waveform display.</p>
         
-        {/* Playback controls overlay */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-4">
-          {/* Progress bar */}
-          <div 
-            className="w-full h-1 bg-gray-700 rounded-full mb-4 relative cursor-pointer"
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left;
-              const percentage = x / rect.width;
-              handleSeek(percentage * data.workflow.totalDuration);
-            }}
+        {edl ? (
+          <div className="preview-container">
+            <PreviewWrapper
+              edl={edl}
+              videoSources={videoSources}
+              audioSrc={state.project.musicFile?.url || 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg'}
+              width={800}
+              height={450}
+              showWaveform={true}
+              showTransitions={true}
+              onTimeUpdate={handleTimeUpdate}
+              onEnded={handlePlaybackEnd}
+              onMarkerClick={handleMarkerClick}
+            />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+            <p className="text-gray-500">Loading preview...</p>
+          </div>
+        )}
+        
+        <div className="mt-8 flex justify-between">
+          <button 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 flex items-center"
+            onClick={handleBackToEdit}
           >
-            <div 
-              className="absolute inset-y-0 left-0 bg-blue-500 rounded-full" 
-              style={{width: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
-            />
-            
-            {/* Edit point markers */}
-            {data.edit.decisions.map((edit, i) => {
-              const position = (edit.time / data.workflow.totalDuration) * 100;
-              return (
-                <div 
-                  key={i} 
-                  className="absolute top-0 bottom-0 w-0.5 bg-yellow-500" 
-                  style={{ left: `${position}%` }}
-                />
-              );
-            })}
-            
-            {/* Scrubber handle */}
-            <div 
-              className="absolute -top-1.5 w-4 h-4 bg-white rounded-full transform -translate-x-1/2" 
-              style={{left: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
-            />
-          </div>
+            <Edit size={16} className="mr-2" />
+            Back to Editor
+          </button>
           
-          {/* Controls */}
-          <div className="flex items-center">
-            <div className="flex items-center space-x-4">
-              <button 
-                className="text-white hover:text-blue-400"
-                onClick={handlePrevEdit}
-              >
-                <SkipBack size={20} />
-              </button>
-              <button 
-                className="p-2 bg-white rounded-full text-black hover:bg-blue-400"
-                onClick={handlePlayPause}
-              >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-              </button>
-              <button 
-                className="text-white hover:text-blue-400"
-                onClick={handleNextEdit}
-              >
-                <SkipForward size={20} />
-              </button>
-              <div className="text-sm text-white ml-2">
-                {formatTime(currentTime)} / {formatTime(data.workflow.totalDuration)}
-              </div>
-            </div>
-            
-            <div className="flex-grow"></div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <Volume2 size={16} className="text-white mr-2" />
-                <div className="w-20 h-1 bg-gray-700 rounded-full relative cursor-pointer"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const percentage = (x / rect.width) * 100;
-                    setVolume(Math.round(percentage));
-                  }}
-                >
-                  <div 
-                    className="absolute inset-y-0 left-0 bg-white rounded-full" 
-                    style={{width: `${volume}%`}}
-                  />
-                </div>
-              </div>
-              <button 
-                className="text-white hover:text-blue-400"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-              >
-                <Maximize2 size={16} />
-              </button>
-            </div>
-          </div>
+          <button 
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
+            onClick={handleExport}
+          >
+            <FileUp size={16} className="mr-2" />
+            Export
+          </button>
         </div>
-      </div>
-      
-      {/* Timeline Section */}
-      <div className="h-24 bg-gray-800 p-2">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-medium">Timeline</h3>
-          <div className="flex items-center">
-            <button className="p-1 hover:bg-gray-700 rounded">
-              <ChevronLeft size={16} />
-            </button>
-            <button className="p-1 hover:bg-gray-700 rounded">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-        
-        {/* Timeline with clips */}
-        <div className="relative h-16 bg-gray-900 rounded">
-          {/* Current position indicator */}
-          <div 
-            className="absolute top-0 bottom-0 w-0.5 bg-white z-10" 
-            style={{left: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
-          />
-          
-          {/* Clips visualization */}
-          <div className="absolute inset-y-0 left-0 right-0 flex items-center">
-            {data.edit.decisions.map((edit, i) => {
-              // Duration is until next edit or end
-              const nextTime = i < data.edit.decisions.length - 1 
-                ? data.edit.decisions[i+1].time 
-                : data.workflow.totalDuration;
-                
-              const duration = nextTime - edit.time;
-              const widthPercent = (duration / data.workflow.totalDuration) * 100;
-              
-              // Color based on clip type
-              const clipType = "performance"; // This would come from video analysis
-              const color = clipType === "performance" ? "bg-blue-700" : "bg-green-700";
-              
-              return (
-                <div 
-                  key={i} 
-                  className={`h-full ${color} relative cursor-pointer`} 
-                  style={{width: `${widthPercent}%`}}
-                  onClick={() => setCurrentTime(edit.time)}
-                >
-                  {/* Thumbnail or clip label */}
-                  <div className="absolute inset-0 flex items-center justify-center text-xs text-white">
-                    {i + 1}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* Time markers */}
-          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 pt-1">
-            <span>00:00</span>
-            <span>00:30</span>
-            <span>01:00</span>
-            <span>01:30</span>
-            <span>02:00</span>
-            <span>02:30</span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Bottom Action Bar */}
-      <div className="bg-gray-900 p-4 flex justify-between">
-        <button 
-          className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600 flex items-center"
-          onClick={handleBackToEdit}
-        >
-          <Edit size={16} className="mr-2" />
-          Back to Editor
-        </button>
-        
-        <button 
-          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 flex items-center"
-          onClick={handleExport}
-        >
-          <FileUp size={16} className="mr-2" />
-          Export
-        </button>
       </div>
     </div>
   );

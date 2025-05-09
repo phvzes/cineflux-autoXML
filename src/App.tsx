@@ -12,6 +12,7 @@ import Loading from './components/Loading';
 import WelcomePage from './components/welcome/WelcomePage';
 import ErrorBoundary from './components/ErrorBoundary';
 import errorLogger from './utils/errorLogger';
+import { PreviewPage } from './pages';
 
 // Import main container
 import WorkflowContainer from './components/WorkflowContainer';
@@ -159,6 +160,9 @@ export default function App() {
               </Suspense>
             } />
           </Route>
+          
+          {/* Preview Module test route */}
+          <Route path="/preview-module" element={<PreviewPage />} />
           
           {/* Fallback route */}
           <Route path="*" element={<Navigate to="/welcome" replace />} />
