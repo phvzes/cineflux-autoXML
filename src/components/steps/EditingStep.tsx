@@ -12,6 +12,7 @@ import useAudioService from '../../hooks/useAudioService';
 import { useVideoService } from '../../hooks/useVideoService';
 import VideoTimeline from '../timeline/VideoTimeline';
 import { TimelineMarker, MarkerType } from '../../types/video-types';
+import AccessibleDialog from '../AccessibleDialog';
 
 // Import icons 
 import { 
@@ -393,82 +394,95 @@ const EditingStep: React.FC = () => {
       
       {/* Edit Properties Modal */}
       {editingDecision !== null && selectedEditIndex !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Edit Properties</h2>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                Time
-              </label>
-              <input 
-                type="text" 
-                value={formatTime(editingDecision.time)} 
-                readOnly
-                className="w-full bg-gray-700 border border-gray-600 rounded p-2"
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                Clip
-              </label>
-              <select
-                className="w-full bg-gray-700 border border-gray-600 rounded p-2"
-                value={editingDecision.clipIndex}
-                onChange={(e) => {
-                  setEditingDecision({
-                    ...editingDecision,
-                    clipIndex: parseInt(e.target.value)
-                  });
-                }}
-              >
-                {videoFiles.map((file, index) => (
-                  <option key={index} value={index}>
-                    {file.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                Transition
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['none', 'cut', 'dissolve', 'fade', 'wipe'] as TransitionType[]).map(type => (
-                  <button
-                    key={type}
-                    className={`p-2 rounded border ${
-                      editingDecision.transition === type
-                        ? 'border-blue-500 bg-blue-900 bg-opacity-30'
-                        : 'border-gray-600 hover:bg-gray-700'
-                    }`}
-                    onClick={() => handleTransitionChange(type)}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
-                onClick={() => setEditingDecision(null)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 flex items-center"
-                onClick={handleSaveEdit}
-              >
-                <Save size={16} className="mr-2" />
-                Save Changes
-              </button>
+        <AccessibleDialog
+          isOpen={true}
+          onClose={() => setEditingDecision(null)}
+          title="Edit Properties"
+          description="Modify the properties of this edit decision"
+          maxWidth="md"
+        >
+          <div className="mb-4">
+            <label htmlFor="edit-time" className="block text-sm font-medium mb-1">
+              Time
+            </label>
+            <input 
+              id="edit-time"
+              type="text" 
+              value={formatTime(editingDecision.time)} 
+              readOnly
+              className="w-full bg-gray-700 border border-gray-600 rounded p-2"
+              aria-label="Edit time"
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label htmlFor="clip-select" className="block text-sm font-medium mb-1">
+              Clip
+            </label>
+            <select
+              id="clip-select"
+              className="w-full bg-gray-700 border border-gray-600 rounded p-2"
+              value={editingDecision.clipIndex}
+              onChange={(e) => {
+                setEditingDecision({
+                  ...editingDecision,
+                  clipIndex: parseInt(e.target.value)
+                });
+              }}
+              aria-label="Select clip"
+            >
+              {videoFiles.map((file, index) => (
+                <option key={index} value={index}>
+                  {file.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="mb-4">
+            <label id="transition-group-label" className="block text-sm font-medium mb-1">
+              Transition
+            </label>
+            <div 
+              className="grid grid-cols-3 gap-2" 
+              role="radiogroup"
+              aria-labelledby="transition-group-label"
+            >
+              {(['none', 'cut', 'dissolve', 'fade', 'wipe'] as TransitionType[]).map(type => (
+                <button
+                  key={type}
+                  className={`p-2 rounded border ${
+                    editingDecision.transition === type
+                      ? 'border-blue-500 bg-blue-900 bg-opacity-30'
+                      : 'border-gray-600 hover:bg-gray-700'
+                  }`}
+                  onClick={() => handleTransitionChange(type)}
+                  role="radio"
+                  aria-checked={editingDecision.transition === type}
+                  tabIndex={editingDecision.transition === type ? 0 : -1}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
+          
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+              onClick={() => setEditingDecision(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 flex items-center"
+              onClick={handleSaveEdit}
+            >
+              <Save size={16} className="mr-2" aria-hidden="true" />
+              Save Changes
+            </button>
+          </div>
+        </AccessibleDialog>
       )}
     </div>
   );

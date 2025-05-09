@@ -10,6 +10,8 @@ import { useProject } from './context/ProjectContext';
 import { useAnalysis } from './context/AnalysisContext';
 import Loading from './components/Loading';
 import WelcomePage from './components/welcome/WelcomePage';
+import ErrorBoundary from './components/ErrorBoundary';
+import errorLogger from './utils/errorLogger';
 
 // Import main container
 import WorkflowContainer from './components/WorkflowContainer';
@@ -25,6 +27,11 @@ export default function App() {
   const { state: projectState, dispatch } = useProject();
   const { state: analysisState } = useAnalysis();
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Set up global error handlers
+  useEffect(() => {
+    errorLogger.setupGlobalErrorHandlers();
+  }, []);
   
   // Create audio element for playback
   useEffect(() => {
@@ -101,45 +108,62 @@ export default function App() {
     }
   }, [projectState.isPlaying, projectState.currentTime, dispatch]);
   
+  // Handle errors in the application
+  const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
+    errorLogger.logError(error, errorInfo.componentStack);
+  };
+
   return (
-    <Suspense fallback={<Loading />}>
-      <Routes>
-        {/* Welcome page route */}
-        <Route path="/welcome" element={<WelcomePage onGetStarted={() => dispatch({ type: 'SET_STEP', payload: 'input' })} />} />
-        
-        {/* Main workflow routes nested under WorkflowContainer */}
-        <Route path="/" element={<WorkflowContainer />}>
-          <Route index element={<Navigate to="/input" replace />} />
-          <Route path="input" element={
-            <Suspense fallback={<Loading message="Loading input step..." />}>
-              <InputStep />
-            </Suspense>
-          } />
-          <Route path="analysis" element={
-            <Suspense fallback={<Loading message="Loading analysis step..." />}>
-              <AnalysisStep />
-            </Suspense>
-          } />
-          <Route path="editing" element={
-            <Suspense fallback={<Loading message="Loading editing step..." />}>
-              <EditingStep audioElement={audioElementRef.current} />
-            </Suspense>
-          } />
-          <Route path="preview" element={
-            <Suspense fallback={<Loading message="Loading preview step..." />}>
-              <PreviewStep audioElement={audioElementRef.current} />
-            </Suspense>
-          } />
-          <Route path="export" element={
-            <Suspense fallback={<Loading message="Loading export step..." />}>
-              <ExportStep />
-            </Suspense>
-          } />
-        </Route>
-        
-        {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/welcome" replace />} />
-      </Routes>
-    </Suspense>
+    <ErrorBoundary onError={handleError}>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          {/* Welcome page route */}
+          <Route path="/welcome" element={<WelcomePage onGetStarted={() => dispatch({ type: 'SET_STEP', payload: 'input' })} />} />
+          
+          {/* Main workflow routes nested under WorkflowContainer */}
+          <Route path="/" element={<WorkflowContainer />}>
+            <Route index element={<Navigate to="/input" replace />} />
+            <Route path="input" element={
+              <Suspense fallback={<Loading message="Loading input step..." />}>
+                <ErrorBoundary>
+                  <InputStep />
+                </ErrorBoundary>
+              </Suspense>
+            } />
+            <Route path="analysis" element={
+              <Suspense fallback={<Loading message="Loading analysis step..." />}>
+                <ErrorBoundary>
+                  <AnalysisStep />
+                </ErrorBoundary>
+              </Suspense>
+            } />
+            <Route path="editing" element={
+              <Suspense fallback={<Loading message="Loading editing step..." />}>
+                <ErrorBoundary>
+                  <EditingStep audioElement={audioElementRef.current} />
+                </ErrorBoundary>
+              </Suspense>
+            } />
+            <Route path="preview" element={
+              <Suspense fallback={<Loading message="Loading preview step..." />}>
+                <ErrorBoundary>
+                  <PreviewStep audioElement={audioElementRef.current} />
+                </ErrorBoundary>
+              </Suspense>
+            } />
+            <Route path="export" element={
+              <Suspense fallback={<Loading message="Loading export step..." />}>
+                <ErrorBoundary>
+                  <ExportStep />
+                </ErrorBoundary>
+              </Suspense>
+            } />
+          </Route>
+          
+          {/* Fallback route */}
+          <Route path="*" element={<Navigate to="/welcome" replace />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }

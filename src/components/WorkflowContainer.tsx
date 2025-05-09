@@ -16,6 +16,8 @@ import { useWorkflow } from '../context/WorkflowContext';
 import { colorPalette } from '../theme';
 import { ApplicationStep } from '../types/UITypes';
 import { WorkflowStep } from '../types/workflow';
+import useKeyboardNavigation from '../hooks/useKeyboardNavigation';
+import ErrorBoundary from './ErrorBoundary';
 
 // Define the AppState interface to match what's expected
 interface AppState {
@@ -37,6 +39,66 @@ const WorkflowContainer: React.FC = () => {
     statusMessage: state.workflow.analysisProgress.currentStep
   };
   const [showHelpDialog, setShowHelpDialog] = React.useState(false);
+  
+  // Define keyboard shortcuts
+  const { shortcuts } = useKeyboardNavigation([
+    {
+      key: 'ArrowRight',
+      altKey: true,
+      handler: () => {
+        if (!state.analysis.isAnalyzing) {
+          const currentStepIndex = Object.values(WorkflowStep).indexOf(state.workflow.currentStep as WorkflowStep);
+          if (currentStepIndex < Object.values(WorkflowStep).length - 1) {
+            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex + 1]);
+          }
+        }
+      },
+      description: 'Go to next step'
+    },
+    {
+      key: 'ArrowLeft',
+      altKey: true,
+      handler: () => {
+        if (!state.analysis.isAnalyzing) {
+          const currentStepIndex = Object.values(WorkflowStep).indexOf(state.workflow.currentStep as WorkflowStep);
+          if (currentStepIndex > 0) {
+            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex - 1]);
+          }
+        }
+      },
+      description: 'Go to previous step'
+    },
+    {
+      key: 'e',
+      altKey: true,
+      handler: () => {
+        if (!state.analysis.isAnalyzing && projectState.editDecisions.length > 0) {
+          dispatch({ type: 'SHOW_EXPORT_MODAL', payload: true });
+        }
+      },
+      description: 'Open export dialog'
+    },
+    {
+      key: 'h',
+      altKey: true,
+      handler: () => {
+        setShowHelpDialog(true);
+      },
+      description: 'Show help'
+    },
+    {
+      key: 'Escape',
+      handler: () => {
+        if (showHelpDialog) {
+          setShowHelpDialog(false);
+        }
+        if (projectState.showExportModal) {
+          dispatch({ type: 'SHOW_EXPORT_MODAL', payload: false });
+        }
+      },
+      description: 'Close dialog'
+    }
+  ]);
   
   // Handle new project
   const handleNewProject = () => {
@@ -116,7 +178,9 @@ const WorkflowContainer: React.FC = () => {
         renderWorkflowStepper={renderWorkflowStepper}
       >
         {/* This is where the route components will be rendered */}
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
         
         {/* Export Modal with accessibility improvements */}
         {projectState.showExportModal && (
@@ -148,15 +212,13 @@ const WorkflowContainer: React.FC = () => {
               className="p-4 rounded-md mb-4"
               style={{ backgroundColor: colorPalette.darkGrey }}
             >
-              <div className="grid grid-cols-2 gap-2">
-                <div style={{ color: colorPalette.lightGrey }}>Next Step</div>
-                <div style={{ color: colorPalette.offWhite }}>Alt + Right Arrow</div>
-                <div style={{ color: colorPalette.lightGrey }}>Previous Step</div>
-                <div style={{ color: colorPalette.offWhite }}>Alt + Left Arrow</div>
-                <div style={{ color: colorPalette.lightGrey }}>Open Settings</div>
-                <div style={{ color: colorPalette.offWhite }}>Alt + S</div>
-                <div style={{ color: colorPalette.lightGrey }}>Help</div>
-                <div style={{ color: colorPalette.offWhite }}>Alt + H</div>
+              <div className="grid grid-cols-2 gap-2" role="list">
+                {shortcuts.map((shortcut, index) => (
+                  <React.Fragment key={index}>
+                    <div style={{ color: colorPalette.lightGrey }} role="listitem">{shortcut.description}</div>
+                    <div style={{ color: colorPalette.offWhite }} role="listitem">{shortcut.key}</div>
+                  </React.Fragment>
+                ))}
               </div>
             </div>
             
@@ -166,6 +228,17 @@ const WorkflowContainer: React.FC = () => {
             <p className="mb-4" style={{ color: colorPalette.lightGrey }}>
               CineFlux-AutoXML helps you generate XML files for video editing software. Follow the step-by-step process to upload your media, analyze it, configure settings, and export the final XML.
             </p>
+            
+            <h3 className="text-lg font-medium mb-2" style={{ color: colorPalette.offWhite }}>
+              Accessibility Features
+            </h3>
+            <ul className="mb-4 list-disc pl-5" style={{ color: colorPalette.lightGrey }}>
+              <li>Keyboard navigation throughout the application</li>
+              <li>Screen reader support with ARIA attributes</li>
+              <li>Focus management in dialogs and interactive elements</li>
+              <li>High contrast text and UI elements</li>
+              <li>Descriptive labels and instructions</li>
+            </ul>
             
             <button
               className="w-full px-4 py-2 rounded-md"
