@@ -10,7 +10,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   AppState, 
   WorkflowStep,
-  ProjectSettings
+  ProjectSettings,
+  VideoFile
 } from '../types/workflow';
 
 // Import services
@@ -38,7 +39,8 @@ const defaultState: AppState = {
       exportFormat: 'Premiere Pro XML'
     },
     musicFile: null,
-    videoFiles: []
+    videoFiles: [],
+    rawVideoFiles: [] // Added for storing raw video files
   },
   analysis: {
     audio: null,
@@ -136,6 +138,8 @@ interface WorkflowContextType {
     setMusicFile: (file: File | null) => Promise<void>;
     addVideoFile: (file: File) => void;
     removeVideoFile: (index: number) => void;
+    addRawVideoFile: (file: File) => void; // New method for raw video files
+    removeRawVideoFile: (index: number) => void; // New method for raw video files
     startAnalysis: () => Promise<void>;
   };
 }
@@ -152,6 +156,8 @@ const WorkflowContext = createContext<WorkflowContextType>({
     setMusicFile: async () => {},
     addVideoFile: () => {},
     removeVideoFile: () => {},
+    addRawVideoFile: () => {}, // New method for raw video files
+    removeRawVideoFile: () => {}, // New method for raw video files
     startAnalysis: async () => {}
   }
 });
@@ -345,6 +351,68 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       };
     });
   };
+
+  // New method for adding raw video files
+  const addRawVideoFile = (file: File) => {
+    // Validate file type
+    const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    if (!validVideoTypes.includes(file.type)) {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            videoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
+          }
+        }
+      }));
+      return;
+    }
+
+    setState(prev => ({
+      ...prev,
+      project: {
+        ...prev.project,
+        rawVideoFiles: [...prev.project.rawVideoFiles, {
+          file,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: URL.createObjectURL(file)
+        }]
+      },
+      ui: {
+        ...prev.ui,
+        errors: {
+          ...prev.ui.errors,
+          videoUpload: null // Clear any previous errors
+        }
+      }
+    }));
+  };
+
+  // New method for removing raw video files
+  const removeRawVideoFile = (index: number) => {
+    setState(prev => {
+      const newFiles = [...prev.project.rawVideoFiles];
+      
+      // Release the object URL to prevent memory leaks
+      if (newFiles[index]?.url) {
+        URL.revokeObjectURL(newFiles[index].url);
+      }
+      
+      newFiles.splice(index, 1);
+      
+      return {
+        ...prev,
+        project: {
+          ...prev.project,
+          rawVideoFiles: newFiles
+        }
+      };
+    });
+  };
   
   const startAnalysis = async () => {
     if (!state.project.musicFile?.file) {
@@ -355,6 +423,21 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
           errors: {
             ...prev.ui.errors,
             analysis: 'No music file selected'
+          }
+        }
+      }));
+      return;
+    }
+
+    // Check if we have raw video files
+    if (state.project.rawVideoFiles.length === 0) {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            analysis: 'No raw video files selected'
           }
         }
       }));
@@ -459,6 +542,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       setMusicFile,
       addVideoFile,
       removeVideoFile,
+      addRawVideoFile,
+      removeRawVideoFile,
       startAnalysis
     }
   };

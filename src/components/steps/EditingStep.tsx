@@ -9,7 +9,9 @@ import React, { useState, useEffect } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { EditDecision, TransitionType } from '../../types/workflow';
 import useAudioService from '../../hooks/useAudioService';
-import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
+import { useVideoService } from '../../hooks/useVideoService';
+import VideoTimeline from '../timeline/VideoTimeline';
+import { TimelineMarker, MarkerType } from '../../types/video-types';
 
 // Import icons 
 import { 
@@ -39,9 +41,18 @@ const EditingStep: React.FC = () => {
     seekTo
   } = useAudioService();
   
+  // Use video service hook
+  const {
+    videoFile,
+    videoAnalysis,
+    scenes,
+    loadVideoFile
+  } = useVideoService();
+  
   // Local state
   const [selectedEditIndex, setSelectedEditIndex] = useState<number | null>(null);
   const [editingDecision, setEditingDecision] = useState<EditDecision | null>(null);
+  const [timelineMarkers, setTimelineMarkers] = useState<TimelineMarker[]>([]);
   
   // Load audio file when component mounts
   useEffect(() => {
@@ -49,6 +60,13 @@ const EditingStep: React.FC = () => {
       loadAudio(data.project.musicFile);
     }
   }, [data.project.musicFile, audioBuffer]);
+  
+  // Load primary video file if available
+  useEffect(() => {
+    if (data.project.videoFiles.length > 0 && !videoFile) {
+      loadVideoFile(data.project.videoFiles[0]);
+    }
+  }, [data.project.videoFiles, videoFile, loadVideoFile]);
   
   // Generate mock edit decisions if none exist
   useEffect(() => {
@@ -72,6 +90,21 @@ const EditingStep: React.FC = () => {
       }));
     }
   }, [data.edit.decisions, setData]);
+  
+  // Convert edit decisions to timeline markers
+  useEffect(() => {
+    if (data.edit.decisions && data.edit.decisions.length > 0) {
+      const markers: TimelineMarker[] = data.edit.decisions.map((decision, index) => ({
+        id: `edit-${index}`,
+        time: decision.time,
+        type: MarkerType.EDIT_POINT,
+        label: `Cut ${index + 1}`,
+        data: { ...decision, index }
+      }));
+      
+      setTimelineMarkers(markers);
+    }
+  }, [data.edit.decisions]);
   
   // Find current edit based on time
   const getCurrentEdit = () => {
@@ -98,6 +131,13 @@ const EditingStep: React.FC = () => {
   // Handle seek
   const handleSeek = (time: number) => {
     seekTo(time);
+  };
+  
+  // Handle timeline marker selection
+  const handleMarkerSelect = (marker: TimelineMarker) => {
+    if (marker.data && typeof marker.data.index === 'number') {
+      setSelectedEditIndex(marker.data.index);
+    }
   };
   
   // Go to next edit point
@@ -185,43 +225,19 @@ const EditingStep: React.FC = () => {
       <div className="border border-gray-700 rounded-lg p-4">
         <h2 className="text-lg font-semibold mb-2">Timeline</h2>
         
-        {/* Waveform display */}
-        <div className="h-32 bg-gray-800 rounded overflow-hidden relative">
-          {waveformData ? (
-            <WaveformVisualizer
-              waveformData={waveformData}
-              beats={data.analysis.audio?.beatTimes}
-              currentTime={currentTime}
-              width={800}
-              height={128}
-              waveformColor="#2196f3"
-              beatColor="#ff5722"
-              positionColor="#4caf50"
-              showBeats={true}
-              showPosition={true}
-              onPositionClick={handleSeek}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-600">
-              Waveform visualization will be displayed here
-            </div>
-          )}
-          
-          {/* Edit points */}
-          <div className="absolute inset-0 pointer-events-none">
-            {data.edit.decisions.map((edit, i) => {
-              const position = (edit.time / data.workflow.totalDuration) * 100;
-              return (
-                <div 
-                  key={i} 
-                  className={`absolute top-0 bottom-0 w-0.5 ${
-                    selectedEditIndex === i ? 'bg-yellow-400' : 'bg-yellow-600'
-                  }`}
-                  style={{ left: `${position}%` }}
-                />
-              );
-            })}
-          </div>
+        {/* VideoTimeline component */}
+        <div className="h-48 bg-gray-800 rounded overflow-hidden relative">
+          <VideoTimeline
+            videoFile={data.project.videoFiles[0]}
+            audioFile={data.project.musicFile}
+            width="100%"
+            height={192}
+            currentTime={currentTime}
+            onTimeChange={handleSeek}
+            markers={timelineMarkers}
+            onMarkerSelect={handleMarkerSelect}
+            className="w-full h-full"
+          />
         </div>
         
         {/* Playback controls */}
@@ -247,28 +263,8 @@ const EditingStep: React.FC = () => {
             <SkipForward size={20} />
           </button>
           
-          {/* Timeline slider */}
-          <div 
-            className="flex-grow mx-4 bg-gray-700 h-2 rounded-full relative cursor-pointer"
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left;
-              const percentage = x / rect.width;
-              handleSeek(percentage * data.workflow.totalDuration);
-            }}
-          >
-            <div 
-              className="absolute inset-y-0 left-0 bg-blue-500 rounded-full" 
-              style={{width: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
-            />
-            <div 
-              className="absolute w-3 h-3 bg-white rounded-full -mt-0.5" 
-              style={{left: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
-            />
-          </div>
-          
           {/* Time display */}
-          <div className="text-sm text-gray-400">
+          <div className="ml-4 text-sm text-gray-400">
             {formatTime(currentTime)} / {formatTime(data.workflow.totalDuration)}
           </div>
         </div>

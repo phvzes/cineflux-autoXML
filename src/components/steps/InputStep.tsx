@@ -7,17 +7,28 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Music, Video, FileUp, X, Info, Settings } from 'lucide-react';
+import { Music, Video, FileUp, X, Info, Settings, Film } from 'lucide-react';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { ProjectSettings } from '../../types/workflow';
 
 const InputStep: React.FC = () => {
   // Get workflow context
-  const { currentStep, goToStep, data, setData } = useWorkflow();
+  const { 
+    state, 
+    navigation: { goToStep }, 
+    actions: { 
+      setData, 
+      addVideoFile, 
+      removeVideoFile, 
+      addRawVideoFile, 
+      removeRawVideoFile 
+    } 
+  } = useWorkflow();
   
   // Local state for drag-and-drop highlighting
   const [isDraggingAudio, setIsDraggingAudio] = useState(false);
   const [isDraggingVideo, setIsDraggingVideo] = useState(false);
+  const [isDraggingRawVideo, setIsDraggingRawVideo] = useState(false);
   
   // Setup dropzone for audio
   const onAudioDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -57,25 +68,9 @@ const InputStep: React.FC = () => {
   // Setup dropzone for videos
   const onVideoDrop = useCallback((acceptedFiles: File[]) => {
     acceptedFiles.forEach(file => {
-      setData(prev => ({
-        ...prev,
-        project: {
-          ...prev.project,
-          videoFiles: [
-            ...prev.project.videoFiles,
-            {
-              file,
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              duration: 0, // This would be set after analysis
-              url: URL.createObjectURL(file)
-            }
-          ]
-        }
-      }));
+      addVideoFile(file);
     });
-  }, [setData]);
+  }, [addVideoFile]);
   
   const {
     getRootProps: getVideoRootProps,
@@ -84,6 +79,41 @@ const InputStep: React.FC = () => {
     onDrop: onVideoDrop,
     onDragEnter: () => setIsDraggingVideo(true),
     onDragLeave: () => setIsDraggingVideo(false),
+    accept: {
+      'video/*': ['.mp4', '.mov', '.avi', '.webm']
+    }
+  });
+  
+  // Setup dropzone for raw video files
+  const onRawVideoDrop = useCallback((acceptedFiles: File[]) => {
+    acceptedFiles.forEach(file => {
+      // Validate video file format
+      const validVideoFormats = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+      if (validVideoFormats.includes(file.type)) {
+        addRawVideoFile(file);
+      } else {
+        // Show error for invalid format
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            errors: {
+              ...prev.ui.errors,
+              videoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
+            }
+          }
+        }));
+      }
+    });
+  }, [addRawVideoFile, setData]);
+  
+  const {
+    getRootProps: getRawVideoRootProps,
+    getInputProps: getRawVideoInputProps,
+  } = useDropzone({
+    onDrop: onRawVideoDrop,
+    onDragEnter: () => setIsDraggingRawVideo(true),
+    onDragLeave: () => setIsDraggingRawVideo(false),
     accept: {
       'video/*': ['.mp4', '.mov', '.avi', '.webm']
     }
@@ -150,7 +180,7 @@ const InputStep: React.FC = () => {
             <span>Music Track:</span>
           </div>
           
-          {!data.project.musicFile ? (
+          {!state.project.musicFile ? (
             // Dropzone for music file when none is selected
             <div 
               {...getAudioRootProps()} 
@@ -175,7 +205,7 @@ const InputStep: React.FC = () => {
               <div className="flex gap-2 mb-2">
                 <div className="flex-grow bg-gray-800 border border-gray-600 rounded p-3">
                   <div className="flex justify-between">
-                    <div className="font-medium">{data.project.musicFile.name}</div>
+                    <div className="font-medium">{state.project.musicFile.name}</div>
                     <button 
                       className="text-gray-400 hover:text-red-400"
                       onClick={() => setData(prev => ({
@@ -190,9 +220,9 @@ const InputStep: React.FC = () => {
                     </button>
                   </div>
                   <div className="text-sm text-gray-400 mt-1 flex gap-4">
-                    <span>{formatFileSize(data.project.musicFile.size)}</span>
-                    <span>{data.project.musicFile.duration.toFixed(2)}s</span>
-                    <span>{data.project.musicFile.type}</span>
+                    <span>{formatFileSize(state.project.musicFile.size)}</span>
+                    <span>{state.project.musicFile.duration.toFixed(2)}s</span>
+                    <span>{state.project.musicFile.type}</span>
                   </div>
                 </div>
               </div>
@@ -217,7 +247,7 @@ const InputStep: React.FC = () => {
           
           <div className="flex gap-4">
             <div className="flex-grow">
-              {data.project.videoFiles.length === 0 ? (
+              {state.project.videoFiles.length === 0 ? (
                 // Dropzone for video files when none are selected
                 <div 
                   {...getVideoRootProps()} 
@@ -239,7 +269,7 @@ const InputStep: React.FC = () => {
               ) : (
                 // Display selected video files
                 <div className="bg-gray-800 border border-gray-600 rounded p-2 max-h-64 overflow-y-auto">
-                  {data.project.videoFiles.map((file, index) => (
+                  {state.project.videoFiles.map((file, index) => (
                     <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-700 rounded">
                       <div className="flex items-center gap-2">
                         <Video size={16} />
@@ -249,13 +279,7 @@ const InputStep: React.FC = () => {
                         <span className="text-sm text-gray-400">{formatFileSize(file.size)}</span>
                         <button 
                           className="text-gray-400 hover:text-red-400"
-                          onClick={() => setData(prev => ({
-                            ...prev,
-                            project: {
-                              ...prev.project,
-                              videoFiles: prev.project.videoFiles.filter((_, i) => i !== index)
-                            }
-                          }))}
+                          onClick={() => removeVideoFile(index)}
                         >
                           <X size={16} />
                         </button>
@@ -277,8 +301,79 @@ const InputStep: React.FC = () => {
           </div>
         </div>
         
+        {/* Raw Video Files Selection */}
+        <div className="mb-4">
+          <div className="flex items-center gap-4 mb-2">
+            <Film size={20} />
+            <span>Raw Video Files:</span>
+          </div>
+          
+          <div className="flex gap-4">
+            <div className="flex-grow">
+              {state.project.rawVideoFiles.length === 0 ? (
+                // Dropzone for raw video files when none are selected
+                <div 
+                  {...getRawVideoRootProps()} 
+                  className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer h-48 transition-colors ${
+                    isDraggingRawVideo 
+                      ? 'border-blue-500 bg-blue-900 bg-opacity-10' 
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}
+                >
+                  <input {...getRawVideoInputProps()} />
+                  <FileUp className="mb-2 text-gray-400" size={36} />
+                  <p className="text-center text-gray-400">
+                    Drag & drop your raw video files here, or click to select
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Supported formats: MP4, MOV, AVI, WebM
+                  </p>
+                </div>
+              ) : (
+                // Display selected raw video files
+                <div className="bg-gray-800 border border-gray-600 rounded p-2 max-h-64 overflow-y-auto">
+                  {state.project.rawVideoFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-700 rounded">
+                      <div className="flex items-center gap-2">
+                        <Film size={16} />
+                        <span>{file.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">{formatFileSize(file.size)}</span>
+                        <button 
+                          className="text-gray-400 hover:text-red-400"
+                          onClick={() => removeRawVideoFile(index)}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Add more raw videos button */}
+                  <div 
+                    {...getRawVideoRootProps()} 
+                    className="mt-2 border border-dashed border-gray-600 rounded p-2 text-center cursor-pointer hover:border-gray-500"
+                  >
+                    <input {...getRawVideoInputProps()} />
+                    <span className="text-gray-400">+ Add more raw videos</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Display error message if there's an error with video upload */}
+          {state.ui.errors.videoUpload && (
+            <div className="mt-2 text-red-400 text-sm">
+              {state.ui.errors.videoUpload}
+            </div>
+          )}
+        </div>
+        
         {/* Options - Only show if files are selected */}
-        {data.project.musicFile && data.project.videoFiles.length > 0 && (
+        {state.project.musicFile && 
+         (state.project.videoFiles.length > 0 || state.project.rawVideoFiles.length > 0) && (
           <div className="mt-6">
             <div className="flex items-center gap-2 mb-4">
               <Settings size={18} />
@@ -290,7 +385,7 @@ const InputStep: React.FC = () => {
                 <label className="mb-1 text-sm">Music Genre:</label>
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
-                  value={data.project.settings.genre}
+                  value={state.project.settings.genre}
                   onChange={(e) => handleSettingChange('genre', e.target.value)}
                 >
                   <option>Hip-Hop/Rap</option>
@@ -304,7 +399,7 @@ const InputStep: React.FC = () => {
                 <label className="mb-1 text-sm">Edit Style:</label>
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
-                  value={data.project.settings.style}
+                  value={state.project.settings.style}
                   onChange={(e) => handleSettingChange('style', e.target.value)}
                 >
                   <option>Dynamic</option>
@@ -317,7 +412,7 @@ const InputStep: React.FC = () => {
                 <label className="mb-1 text-sm">Transitions:</label>
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
-                  value={data.project.settings.transitions}
+                  value={state.project.settings.transitions}
                   onChange={(e) => handleSettingChange('transitions', e.target.value)}
                 >
                   <option>Auto (Based on Music)</option>
@@ -330,7 +425,7 @@ const InputStep: React.FC = () => {
                 <label className="mb-1 text-sm">Export:</label>
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
-                  value={data.project.settings.exportFormat}
+                  value={state.project.settings.exportFormat}
                   onChange={(e) => handleSettingChange('exportFormat', e.target.value)}
                 >
                   <option>Premiere Pro XML</option>
@@ -354,11 +449,13 @@ const InputStep: React.FC = () => {
         {/* Analyze Button */}
         <button 
           className={`w-full py-3 rounded-md font-semibold ${
-            data.project.musicFile && data.project.videoFiles.length > 0
+            state.project.musicFile && 
+            (state.project.videoFiles.length > 0 || state.project.rawVideoFiles.length > 0)
               ? 'bg-purple-700 hover:bg-purple-600'
               : 'bg-gray-700 text-gray-500 cursor-not-allowed'
           }`}
-          disabled={!data.project.musicFile || data.project.videoFiles.length === 0}
+          disabled={!state.project.musicFile || 
+                   (state.project.videoFiles.length === 0 && state.project.rawVideoFiles.length === 0)}
           onClick={handleAnalyze}
         >
           Analyze & Create Edit
@@ -366,7 +463,8 @@ const InputStep: React.FC = () => {
       </div>
       
       {/* Instructions */}
-      {(!data.project.musicFile || data.project.videoFiles.length === 0) && (
+      {(!state.project.musicFile || 
+        (state.project.videoFiles.length === 0 && state.project.rawVideoFiles.length === 0)) && (
         <div className="border border-gray-700 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4">Getting Started</h3>
           <div className="space-y-4">
@@ -393,6 +491,16 @@ const InputStep: React.FC = () => {
             <div className="flex gap-4">
               <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center shrink-0">3</div>
               <div>
+                <h4 className="font-medium">Add raw video files</h4>
+                <p className="text-sm text-gray-400 mt-1">
+                  Upload raw video files that will be processed and included in your edit. These files will be analyzed for content and quality.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center shrink-0">4</div>
+              <div>
                 <h4 className="font-medium">Configure settings</h4>
                 <p className="text-sm text-gray-400 mt-1">
                   Select the music genre, edit style, and transition preferences. These settings help the system create an edit that matches your vision.
@@ -401,7 +509,7 @@ const InputStep: React.FC = () => {
             </div>
             
             <div className="flex gap-4">
-              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center shrink-0">4</div>
+              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center shrink-0">5</div>
               <div>
                 <h4 className="font-medium">Start analysis</h4>
                 <p className="text-sm text-gray-400 mt-1">
