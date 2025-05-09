@@ -1,465 +1,481 @@
-import { useState, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Settings, ChevronRight, AlertCircle } from 'lucide-react';
-import { useProject } from '@/context/ProjectContext';
-import { useAnalysis } from '@/context/AnalysisContext';
-import editDecisionEngine from '@/engine/EditDecisionEngine';
+/**
+ * EditingStep.tsx
+ * 
+ * This component represents the editing step in the workflow where
+ * users can view and adjust the automatic edit decisions.
+ */
 
-interface EditingStepProps {
-  audioElement: HTMLAudioElement | null;
-}
+import React, { useState, useEffect } from 'react';
+import { useWorkflow } from '../../context/WorkflowContext';
+import { EditDecision, TransitionType } from '../../types/workflow';
+import useAudioService from '../../hooks/useAudioService';
+import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
 
-export const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
-  const { state, dispatch } = useProject();
-  const { 
-    isPlaying, 
-    currentTime, 
-    duration, 
-    editDecisions, 
-    musicFile, 
-    videoAnalyses,
-    settings
-  } = state;
-  const { state: analysisState } = useAnalysis();
+// Import icons 
+import { 
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  RefreshCw,
+  Maximize2,
+  Edit,
+  Save
+} from 'lucide-react';
+
+const EditingStep: React.FC = () => {
+  // Get workflow context
+  const { currentStep, goToStep, data, setData } = useWorkflow();
   
-  const [currentEditIndex, setCurrentEditIndex] = useState(0);
-  const [showSettings, setShowSettings] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use audio service hook
+  const {
+    waveformData,
+    audioBuffer,
+    isPlaying,
+    currentTime,
+    duration,
+    loadAudio,
+    togglePlayPause,
+    seekTo
+  } = useAudioService();
   
-  // Update current edit index based on playback time
+  // Local state
+  const [selectedEditIndex, setSelectedEditIndex] = useState<number | null>(null);
+  const [editingDecision, setEditingDecision] = useState<EditDecision | null>(null);
+  
+  // Load audio file when component mounts
   useEffect(() => {
-    if (editDecisions.length > 0) {
-      for (let i = editDecisions.length - 1; i >= 0; i--) {
-        if (currentTime >= editDecisions[i].time) {
-          setCurrentEditIndex(i);
-          break;
+    if (data.project.musicFile && !audioBuffer) {
+      loadAudio(data.project.musicFile);
+    }
+  }, [data.project.musicFile, audioBuffer]);
+  
+  // Generate mock edit decisions if none exist
+  useEffect(() => {
+    if (!data.edit.decisions || data.edit.decisions.length === 0) {
+      // Create mock edit decisions
+      const mockDecisions: EditDecision[] = [
+        { time: 0, clipIndex: 0, videoTime: 0, duration: 4, transition: 'none' },
+        { time: 4, clipIndex: 1, videoTime: 2, duration: 4, transition: 'cut' },
+        { time: 8, clipIndex: 2, videoTime: 0, duration: 4, transition: 'dissolve' },
+        { time: 12, clipIndex: 0, videoTime: 4, duration: 4, transition: 'cut' },
+        { time: 16, clipIndex: 1, videoTime: 6, duration: 4, transition: 'fade' },
+        { time: 20, clipIndex: 2, videoTime: 4, duration: 4, transition: 'wipe' }
+      ];
+      
+      setData(prev => ({
+        ...prev,
+        edit: {
+          ...prev.edit,
+          decisions: mockDecisions
         }
+      }));
+    }
+  }, [data.edit.decisions, setData]);
+  
+  // Find current edit based on time
+  const getCurrentEdit = () => {
+    if (!data.edit.decisions || data.edit.decisions.length === 0) return null;
+    
+    for (let i = data.edit.decisions.length - 1; i >= 0; i--) {
+      if (currentTime >= data.edit.decisions[i].time) {
+        return { ...data.edit.decisions[i], index: i };
       }
     }
-  }, [currentTime, editDecisions]);
-  
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return { ...data.edit.decisions[0], index: 0 };
   };
   
-  // Toggle play/pause
-  const togglePlayback = () => {
-    dispatch({ type: 'SET_PLAYING', payload: !isPlaying });
+  // Current edit
+  const currentEdit = getCurrentEdit();
+  
+  // Update selected edit when current time changes
+  useEffect(() => {
+    if (currentEdit) {
+      setSelectedEditIndex(currentEdit.index);
+    }
+  }, [currentTime, currentEdit]);
+  
+  // Handle seek
+  const handleSeek = (time: number) => {
+    seekTo(time);
   };
   
-  // Track the last time a skip was performed to prevent rapid skips
-  const [lastSkipTime, setLastSkipTime] = useState(0);
-  
-  // Skip to previous edit with debounce
-  const skipToPrevious = () => {
-    const now = Date.now();
-    // Prevent rapid skips (debounce)
-    if (now - lastSkipTime < 300) {
-      return;
-    }
+  // Go to next edit point
+  const handleNextEdit = () => {
+    if (!currentEdit || currentEdit.index >= (data.edit.decisions.length - 1)) return;
     
-    setLastSkipTime(now);
-    
-    if (currentEditIndex > 0) {
-      const prevIndex = currentEditIndex - 1;
-      const prevTime = editDecisions[prevIndex].time;
-      
-      // First update the state
-      dispatch({ type: 'SET_PLAYBACK_TIME', payload: prevTime });
-      
-      // Then update the audio element
-      if (audioElement) {
-        audioElement.currentTime = prevTime;
-      }
-    }
+    const nextEdit = data.edit.decisions[currentEdit.index + 1];
+    handleSeek(nextEdit.time);
   };
   
-  // Skip to next edit with debounce
-  const skipToNext = () => {
-    const now = Date.now();
-    // Prevent rapid skips (debounce)
-    if (now - lastSkipTime < 300) {
-      return;
-    }
+  // Go to previous edit point
+  const handlePrevEdit = () => {
+    if (!currentEdit || currentEdit.index <= 0) return;
     
-    setLastSkipTime(now);
-    
-    if (currentEditIndex < editDecisions.length - 1) {
-      const nextIndex = currentEditIndex + 1;
-      const nextTime = editDecisions[nextIndex].time;
-      
-      // First update the state
-      dispatch({ type: 'SET_PLAYBACK_TIME', payload: nextTime });
-      
-      // Then update the audio element
-      if (audioElement) {
-        audioElement.currentTime = nextTime;
-      }
-    }
+    const prevEdit = data.edit.decisions[currentEdit.index - 1];
+    handleSeek(prevEdit.time);
   };
   
-  // Track the last time the timeline was clicked to prevent rapid updates
-  const [lastTimelineClickTime, setLastTimelineClickTime] = useState(0);
-  
-  // Handle timeline click with debounce
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const now = Date.now();
-    // Prevent rapid clicks (debounce)
-    if (now - lastTimelineClickTime < 300) {
-      return;
-    }
-    
-    setLastTimelineClickTime(now);
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickPosition = (e.clientX - rect.left) / rect.width;
-    const newTime = clickPosition * duration;
-    
-    // First pause playback if playing
-    if (isPlaying) {
-      dispatch({ type: 'SET_PLAYING', payload: false });
-    }
-    
-    // Update the state
-    dispatch({ type: 'SET_PLAYBACK_TIME', payload: newTime });
-    
-    // Then update the audio element
-    if (audioElement) {
-      audioElement.currentTime = newTime;
-      
-      // Resume playback after a short delay if it was playing
-      if (isPlaying) {
-        setTimeout(() => {
-          dispatch({ type: 'SET_PLAYING', payload: true });
-        }, 100);
-      }
-    }
+  // Handle showing preview
+  const handleShowPreview = () => {
+    goToStep('preview');
   };
   
-  // Regenerate edit decisions based on current settings
-  const regenerateEditDecisions = async () => {
-    if (!analysisState.audioAnalysis || Object.keys(analysisState.videoAnalyses).length === 0) {
-      setError('Cannot regenerate edit decisions: Missing analysis data');
-      return;
-    }
+  // Handle regenerating edit
+  const handleRegenerate = () => {
+    // This would trigger a regeneration of edit decisions
+    alert('Regenerate edit functionality will be implemented');
+  };
+  
+  // Handle editing a decision
+  const handleEditDecision = (index: number) => {
+    setSelectedEditIndex(index);
+    setEditingDecision({ ...data.edit.decisions[index] });
+  };
+  
+  // Handle saving edit changes
+  const handleSaveEdit = () => {
+    if (editingDecision === null || selectedEditIndex === null) return;
     
-    setRegenerating(true);
-    setError(null);
-    
-    try {
-      // Configure the edit decision engine with current settings
-      const config = {
-        beatCutPercentage: settings.style === 'Dynamic' ? 70 : 
-                          settings.style === 'Minimal' ? 30 : 50,
-        minSceneDuration: settings.style === 'Cinematic' ? 2.0 : 1.0,
-        maxSceneDuration: settings.style === 'Dynamic' ? 3.0 : 
-                         settings.style === 'Cinematic' ? 8.0 : 5.0,
-        prioritizeSceneBoundaries: settings.style === 'Smooth' || settings.style === 'Cinematic',
-        energyThreshold: {
-          low: 0.3,
-          medium: 0.6,
-          high: 0.8
+    setData(prev => {
+      const newDecisions = [...prev.edit.decisions];
+      newDecisions[selectedEditIndex] = editingDecision;
+      
+      return {
+        ...prev,
+        edit: {
+          ...prev.edit,
+          decisions: newDecisions
         }
       };
-      
-      // Create a new engine instance with the config
-      const engine = new editDecisionEngine.constructor(config);
-      
-      // Configure with analysis data
-      engine.setAudioAnalysis(analysisState.audioAnalysis);
-      
-      // Add each video analysis
-      Object.entries(analysisState.videoAnalyses).forEach(([id, analysis]) => {
-        engine.addVideoAnalysis(id, analysis);
-      });
-      
-      // Generate new edit decisions
-      const editDecisionResult = engine.generateEditDecisions();
-      
-      // Update project state with new edit decisions
-      const newEditDecisions = editDecisionResult.edl.clips.map((clip, index) => ({
-        time: clip.timelineInPoint,
-        videoId: clip.sourceId,
-        sceneIndex: index,
-        start: clip.sourceInPoint,
-        duration: clip.timelineOutPoint - clip.timelineInPoint
-      }));
-      
-      dispatch({
-        type: 'SET_EDIT_DECISIONS',
-        payload: newEditDecisions
-      });
-      
-      // Reset playback position
-      if (audioElement) {
-        audioElement.currentTime = 0;
-      }
-      dispatch({ type: 'SET_PLAYBACK_TIME', payload: 0 });
-      
-    } catch (error) {
-      console.error('Error regenerating edit decisions:', error);
-      setError(`Failed to regenerate edit decisions: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setRegenerating(false);
-    }
+    });
+    
+    setEditingDecision(null);
   };
   
-  // Go to preview
-  const goToPreview = () => {
-    dispatch({ type: 'SET_STEP', payload: 'preview' });
+  // Handle transition change
+  const handleTransitionChange = (transition: TransitionType) => {
+    if (editingDecision === null) return;
+    
+    setEditingDecision({
+      ...editingDecision,
+      transition
+    });
   };
   
-  // Get current edit decision
-  const currentEdit = editDecisions[currentEditIndex] || null;
-  
-  // Get video name for current edit
-  const getVideoName = (videoId: string) => {
-    if (videoAnalyses[videoId]) {
-      return videoAnalyses[videoId].clip.name;
-    }
-    return 'Unknown Video';
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+  
+  // Simulate video files if none exist
+  const videoFiles = data.project.videoFiles.length > 0 
+    ? data.project.videoFiles 
+    : [
+        { name: 'video1.mp4', size: 1000000, duration: 30, type: 'video/mp4', url: '' },
+        { name: 'video2.mp4', size: 2000000, duration: 45, type: 'video/mp4', url: '' },
+        { name: 'video3.mp4', size: 1500000, duration: 60, type: 'video/mp4', url: '' }
+      ];
   
   return (
-    <div className="flex flex-col h-full">
-      {/* Main editing area */}
-      <div className="flex-grow flex">
-        {/* Left panel - Timeline and controls */}
-        <div className="w-3/4 p-6 flex flex-col">
-          <h2 className="text-xl font-bold mb-4">Edit Timeline</h2>
+    <div className="flex-grow flex flex-col p-6 gap-6">
+      {/* Timeline Section */}
+      <div className="border border-gray-700 rounded-lg p-4">
+        <h2 className="text-lg font-semibold mb-2">Timeline</h2>
+        
+        {/* Waveform display */}
+        <div className="h-32 bg-gray-800 rounded overflow-hidden relative">
+          {waveformData ? (
+            <WaveformVisualizer
+              waveformData={waveformData}
+              beats={data.analysis.audio?.beatTimes}
+              currentTime={currentTime}
+              width={800}
+              height={128}
+              waveformColor="#2196f3"
+              beatColor="#ff5722"
+              positionColor="#4caf50"
+              showBeats={true}
+              showPosition={true}
+              onPositionClick={handleSeek}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+              Waveform visualization will be displayed here
+            </div>
+          )}
           
-          {/* Timeline */}
-          <div className="flex-grow flex flex-col">
-            <div 
-              className="relative h-12 bg-[#1E1E24] rounded-lg mb-4 cursor-pointer"
-              onClick={handleTimelineClick}
-            >
-              {/* Progress bar */}
-              <div 
-                className="absolute h-full bg-[#2A2A30] rounded-lg"
-                style={{ width: `${(currentTime / duration) * 100}%` }}
-              ></div>
-              
-              {/* Edit decision markers */}
-              {editDecisions.map((edit, index) => (
+          {/* Edit points */}
+          <div className="absolute inset-0 pointer-events-none">
+            {data.edit.decisions.map((edit, i) => {
+              const position = (edit.time / data.workflow.totalDuration) * 100;
+              return (
                 <div 
-                  key={index}
-                  className={`absolute h-full w-1 ${
-                    index === currentEditIndex ? 'bg-[#FF7A45]' : 'bg-[#B0B0B5]'
+                  key={i} 
+                  className={`absolute top-0 bottom-0 w-0.5 ${
+                    selectedEditIndex === i ? 'bg-yellow-400' : 'bg-yellow-600'
                   }`}
-                  style={{ left: `${(edit.time / duration) * 100}%` }}
-                ></div>
-              ))}
-              
-              {/* Current time indicator */}
-              <div 
-                className="absolute h-full w-0.5 bg-white"
-                style={{ left: `${(currentTime / duration) * 100}%` }}
-              ></div>
-            </div>
-            
-            {/* Playback controls */}
-            <div className="flex items-center justify-center mb-6">
-              <button 
-                className="p-2 rounded-full hover:bg-[#2A2A30]"
-                onClick={skipToPrevious}
-                disabled={currentEditIndex === 0}
-              >
-                <SkipBack size={24} className={currentEditIndex === 0 ? 'text-[#B0B0B5]' : ''} />
-              </button>
-              
-              <button 
-                className="p-3 mx-4 rounded-full bg-[#2A2A30] hover:bg-[#FF7A45]"
-                onClick={togglePlayback}
-              >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-              </button>
-              
-              <button 
-                className="p-2 rounded-full hover:bg-[#2A2A30]"
-                onClick={skipToNext}
-                disabled={currentEditIndex === editDecisions.length - 1}
-              >
-                <SkipForward size={24} className={currentEditIndex === editDecisions.length - 1 ? 'text-[#B0B0B5]' : ''} />
-              </button>
-            </div>
-            
-            {/* Time display */}
-            <div className="flex justify-between text-sm text-[#B0B0B5] mb-8">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-            
-            {/* Edit decisions list */}
-            <div className="flex-grow overflow-y-auto">
-              <h3 className="text-lg font-medium mb-2">Edit Decisions</h3>
-              
-              <div className="space-y-2">
-                {editDecisions.map((edit, index) => (
-                  <div 
-                    key={index}
-                    className={`p-3 rounded-lg flex items-center ${
-                      index === currentEditIndex ? 'bg-[#2A2A30] border-l-4 border-[#FF7A45]' : 'bg-[#1E1E24]'
-                    }`}
-                    onClick={() => {
-                      dispatch({ type: 'SET_PLAYBACK_TIME', payload: edit.time });
-                      if (audioElement) {
-                        audioElement.currentTime = edit.time;
-                      }
-                    }}
-                  >
-                    <div className="mr-3 text-[#B0B0B5]">{index + 1}</div>
-                    <div className="flex-grow">
-                      <p className="font-medium">{getVideoName(edit.videoId)}</p>
-                      <p className="text-sm text-[#B0B0B5]">
-                        {formatTime(edit.time)} - Scene {edit.sceneIndex + 1}
-                      </p>
-                    </div>
-                    <div className="text-right text-[#B0B0B5]">
-                      {edit.duration.toFixed(1)}s
-                    </div>
-                  </div>
-                ))}
+                  style={{ left: `${position}%` }}
+                />
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Playback controls */}
+        <div className="flex items-center mt-3">
+          <button 
+            className="p-2 bg-gray-700 rounded hover:bg-gray-600"
+            onClick={togglePlayPause}
+          >
+            {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+          </button>
+          
+          <button 
+            className="ml-2 p-2 bg-gray-700 rounded hover:bg-gray-600"
+            onClick={handlePrevEdit}
+          >
+            <SkipBack size={20} />
+          </button>
+          
+          <button 
+            className="ml-2 p-2 bg-gray-700 rounded hover:bg-gray-600"
+            onClick={handleNextEdit}
+          >
+            <SkipForward size={20} />
+          </button>
+          
+          {/* Timeline slider */}
+          <div 
+            className="flex-grow mx-4 bg-gray-700 h-2 rounded-full relative cursor-pointer"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const percentage = x / rect.width;
+              handleSeek(percentage * data.workflow.totalDuration);
+            }}
+          >
+            <div 
+              className="absolute inset-y-0 left-0 bg-blue-500 rounded-full" 
+              style={{width: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
+            />
+            <div 
+              className="absolute w-3 h-3 bg-white rounded-full -mt-0.5" 
+              style={{left: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
+            />
+          </div>
+          
+          {/* Time display */}
+          <div className="text-sm text-gray-400">
+            {formatTime(currentTime)} / {formatTime(data.workflow.totalDuration)}
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Content Area */}
+      <div className="flex flex-1 gap-6">
+        {/* Preview Panel */}
+        <div className="flex-1 border border-gray-700 rounded-lg p-4">
+          <h2 className="text-lg font-semibold mb-2">Preview</h2>
+          <div className="flex flex-col h-full">
+            <div className="flex-grow bg-black rounded relative">
+              {/* Video preview placeholder */}
+              <div className="w-full h-full flex items-center justify-center text-gray-600">
+                Video preview will be displayed here
               </div>
+              
+              {/* Current clip info overlay */}
+              {currentEdit && (
+                <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs p-1 rounded">
+                  Clip: {videoFiles[currentEdit.clipIndex]?.name} 
+                  ({formatTime(currentTime)} - {formatTime(Math.min(data.workflow.totalDuration, currentTime + 4))})
+                </div>
+              )}
+              
+              {/* Transition indicator */}
+              {currentEdit && (
+                <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs p-1 rounded">
+                  Transition: {currentEdit.transition}
+                </div>
+              )}
+              
+              {/* Playback controls overlay */}
+              <div 
+                className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-30"
+                onClick={togglePlayPause}
+              >
+                <button className="p-4 bg-white bg-opacity-20 rounded-full">
+                  {isPlaying ? <Pause size={32} className="text-white" /> : <Play size={32} className="text-white" />}
+                </button>
+              </div>
+            </div>
+            
+            {/* Control buttons */}
+            <div className="flex gap-2 mt-3">
+              <button 
+                className="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600 flex items-center"
+                onClick={handlePrevEdit}
+              >
+                <SkipBack size={16} className="mr-1" />
+                Prev Cut
+              </button>
+              <button 
+                className="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600 flex items-center"
+                onClick={handleNextEdit}
+              >
+                <SkipForward size={16} className="mr-1" />
+                Next Cut
+              </button>
+              <div className="flex-grow" />
+              <button 
+                className="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600 flex items-center"
+                onClick={handleShowPreview}
+              >
+                <Maximize2 size={16} className="mr-1" />
+                Full Preview
+              </button>
             </div>
           </div>
         </div>
         
-        {/* Right panel - Settings and preview */}
-        <div className="w-1/4 bg-[#1E1E24] p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Settings</h2>
-            <button 
-              className="p-2 rounded-full hover:bg-[#2A2A30]"
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              <Settings size={20} />
-            </button>
+        {/* Edit Decision Panel */}
+        <div className="w-64 border border-gray-700 rounded-lg p-4">
+          <h2 className="text-lg font-semibold mb-4">Edit Decisions</h2>
+          
+          {/* Edit decision list */}
+          <div className="mb-4 max-h-96 overflow-y-auto pr-2">
+            {data.edit.decisions.map((decision, index) => (
+              <div 
+                key={index}
+                className={`p-3 rounded mb-2 cursor-pointer ${
+                  selectedEditIndex === index
+                    ? 'bg-blue-900 bg-opacity-30 border border-blue-700'
+                    : 'bg-gray-800 hover:bg-gray-700'
+                }`}
+                onClick={() => {
+                  setSelectedEditIndex(index);
+                  handleSeek(decision.time);
+                }}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-medium">Cut {index + 1}</span>
+                  <span className="text-xs bg-gray-700 px-1.5 py-0.5 rounded">
+                    {formatTime(decision.time)}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-400 mb-1">
+                  Clip: {videoFiles[decision.clipIndex]?.name}
+                </div>
+                <div className="text-xs flex justify-between">
+                  <span>Transition: {decision.transition}</span>
+                  <button 
+                    className="text-blue-400 hover:text-blue-300"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditDecision(index);
+                    }}
+                  >
+                    <Edit size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
           
-          {showSettings ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-[#B0B0B5] mb-1">Music Genre</label>
-                <select 
-                  className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded"
-                  value={settings.genre}
-                  onChange={(e) => dispatch({ 
-                    type: 'SET_SETTINGS', 
-                    payload: { ...settings, genre: e.target.value } 
-                  })}
-                >
-                  <option>Hip-Hop/Rap</option>
-                  <option>Pop</option>
-                  <option>Rock</option>
-                  <option>Electronic</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm text-[#B0B0B5] mb-1">Editing Style</label>
-                <select 
-                  className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded"
-                  value={settings.style}
-                  onChange={(e) => dispatch({ 
-                    type: 'SET_SETTINGS', 
-                    payload: { ...settings, style: e.target.value } 
-                  })}
-                >
-                  <option>Dynamic</option>
-                  <option>Smooth</option>
-                  <option>Cinematic</option>
-                  <option>Minimal</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm text-[#B0B0B5] mb-1">Transitions</label>
-                <select 
-                  className="w-full bg-[#2A2A30] text-[#F5F5F7] p-2 rounded"
-                  value={settings.transitions}
-                  onChange={(e) => dispatch({ 
-                    type: 'SET_SETTINGS', 
-                    payload: { ...settings, transitions: e.target.value } 
-                  })}
-                >
-                  <option>Auto (Based on Music)</option>
-                  <option>Cut Only</option>
-                  <option>Dissolve</option>
-                  <option>Wipe</option>
-                </select>
-              </div>
-              
-              {error && (
-                <div className="mt-4 p-3 bg-[#3A1A1A] border border-[#E53935] rounded-lg text-sm text-[#F5F5F7] flex items-start">
-                  <AlertCircle size={16} className="text-[#E53935] mr-2 mt-0.5 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-              
-              <button
-                className={`w-full py-2 rounded-lg mt-4 flex items-center justify-center ${
-                  regenerating
-                    ? 'bg-[#2A2A30] text-[#B0B0B5] cursor-not-allowed'
-                    : 'bg-[#FF7A45] hover:bg-[#FF6A35] text-[#F5F5F7]'
-                }`}
-                onClick={regenerateEditDecisions}
-                disabled={regenerating}
-              >
-                {regenerating ? 'Regenerating...' : 'Apply Settings & Regenerate'}
-              </button>
-            </div>
-          ) : (
-            <div className="flex-grow flex flex-col">
-              {/* Current edit info */}
-              {currentEdit && (
-                <div className="bg-[#2A2A30] p-4 rounded-lg mb-4">
-                  <h3 className="font-medium mb-2">Current Clip</h3>
-                  <p className="text-sm mb-1">
-                    <span className="text-[#B0B0B5]">Video: </span>
-                    {getVideoName(currentEdit.videoId)}
-                  </p>
-                  <p className="text-sm mb-1">
-                    <span className="text-[#B0B0B5]">Scene: </span>
-                    {currentEdit.sceneIndex + 1}
-                  </p>
-                  <p className="text-sm mb-1">
-                    <span className="text-[#B0B0B5]">Start: </span>
-                    {formatTime(currentEdit.start)}
-                  </p>
-                  <p className="text-sm">
-                    <span className="text-[#B0B0B5]">Duration: </span>
-                    {currentEdit.duration.toFixed(1)}s
-                  </p>
-                </div>
-              )}
-              
-              {/* Music file info */}
-              {musicFile && (
-                <div className="bg-[#2A2A30] p-4 rounded-lg">
-                  <h3 className="font-medium mb-2">Music Track</h3>
-                  <p className="text-sm mb-1">{musicFile.name}</p>
-                  <p className="text-sm text-[#B0B0B5]">
-                    {formatTime(0)} - {formatTime(duration)}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Preview button */}
+          {/* Actions */}
           <button 
-            className="mt-auto py-3 bg-[#FF7A45] hover:bg-[#FF6A35] rounded-lg flex items-center justify-center"
-            onClick={goToPreview}
+            className="w-full bg-purple-700 py-2 rounded-md font-semibold hover:bg-purple-600 flex items-center justify-center mb-2"
+            onClick={handleRegenerate}
           >
-            Preview
-            <ChevronRight size={18} className="ml-1" />
+            <RefreshCw size={16} className="mr-2" />
+            Regenerate Edit
           </button>
         </div>
       </div>
+      
+      {/* Edit Properties Modal */}
+      {editingDecision !== null && selectedEditIndex !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold mb-4">Edit Properties</h2>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Time
+              </label>
+              <input 
+                type="text" 
+                value={formatTime(editingDecision.time)} 
+                readOnly
+                className="w-full bg-gray-700 border border-gray-600 rounded p-2"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Clip
+              </label>
+              <select
+                className="w-full bg-gray-700 border border-gray-600 rounded p-2"
+                value={editingDecision.clipIndex}
+                onChange={(e) => {
+                  setEditingDecision({
+                    ...editingDecision,
+                    clipIndex: parseInt(e.target.value)
+                  });
+                }}
+              >
+                {videoFiles.map((file, index) => (
+                  <option key={index} value={index}>
+                    {file.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Transition
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['none', 'cut', 'dissolve', 'fade', 'wipe'] as TransitionType[]).map(type => (
+                  <button
+                    key={type}
+                    className={`p-2 rounded border ${
+                      editingDecision.transition === type
+                        ? 'border-blue-500 bg-blue-900 bg-opacity-30'
+                        : 'border-gray-600 hover:bg-gray-700'
+                    }`}
+                    onClick={() => handleTransitionChange(type)}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+                onClick={() => setEditingDecision(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 flex items-center"
+                onClick={handleSaveEdit}
+              >
+                <Save size={16} className="mr-2" />
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default EditingStep;

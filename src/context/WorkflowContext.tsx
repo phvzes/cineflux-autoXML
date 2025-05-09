@@ -1,188 +1,476 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { ApplicationStep, WorkflowState } from '../types/UITypes';
+/**
+ * WorkflowContext.tsx
+ * 
+ * This file provides the context for managing workflow state across the application.
+ * It includes the context definition, provider component, and custom hooks.
+ */
 
-// Initial workflow state
-const initialWorkflowState: WorkflowState = {
-  currentStep: ApplicationStep.WELCOME,
-  isProcessing: false,
-  progressPercentage: 0,
-  stepHistory: [],
-};
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  AppState, 
+  WorkflowStep,
+  ProjectSettings
+} from '../types/workflow';
 
-// Action types
-type WorkflowAction =
-  | { type: 'SET_STEP'; payload: ApplicationStep }
-  | { type: 'START_PROCESSING'; payload?: { statusMessage?: string } }
-  | { type: 'UPDATE_PROGRESS'; payload: { progressPercentage: number; statusMessage?: string } }
-  | { type: 'COMPLETE_PROCESSING' }
-  | { type: 'GO_BACK' }
-  | { type: 'SET_SUB_STEP'; payload: { subStep: string } };
+// Import services
+// We'll need to create or import the AudioService
+import { AudioService } from '../services/AudioService';
 
-// Reducer function
-const workflowReducer = (state: WorkflowState, action: WorkflowAction): WorkflowState => {
-  switch (action.type) {
-    case 'SET_STEP':
-      return {
-        ...state,
-        currentStep: action.payload,
-        stepHistory: [...state.stepHistory, state.currentStep],
-        isProcessing: false,
-        progressPercentage: 0,
-        statusMessage: undefined,
-      };
-    
-    case 'START_PROCESSING':
-      return {
-        ...state,
-        isProcessing: true,
-        progressPercentage: 0,
-        statusMessage: action.payload?.statusMessage,
-      };
-    
-    case 'UPDATE_PROGRESS':
-      return {
-        ...state,
-        progressPercentage: action.payload.progressPercentage,
-        statusMessage: action.payload.statusMessage || state.statusMessage,
-      };
-    
-    case 'COMPLETE_PROCESSING':
-      return {
-        ...state,
-        isProcessing: false,
-        progressPercentage: 100,
-      };
-    
-    case 'GO_BACK':
-      const previousStep = state.stepHistory.length > 0
-        ? state.stepHistory[state.stepHistory.length - 1]
-        : state.currentStep;
-      
-      return {
-        ...state,
-        currentStep: previousStep,
-        stepHistory: state.stepHistory.slice(0, -1),
-        isProcessing: false,
-        progressPercentage: 0,
-        statusMessage: undefined,
-      };
-    
-    case 'SET_SUB_STEP':
-      return {
-        ...state,
-        subStep: action.payload.subStep,
-      };
-    
-    default:
-      return state;
+// Default state for the application
+const defaultState: AppState = {
+  workflow: {
+    currentStep: WorkflowStep.INPUT,
+    analysisProgress: {
+      percentage: 0,
+      currentStep: '',
+      isComplete: false
+    },
+    isPlaying: false,
+    currentTime: 0,
+    totalDuration: 0
+  },
+  project: {
+    settings: {
+      genre: 'Hip-Hop/Rap',
+      style: 'Dynamic',
+      transitions: 'Auto (Based on Music)',
+      exportFormat: 'Premiere Pro XML'
+    },
+    musicFile: null,
+    videoFiles: []
+  },
+  analysis: {
+    audio: null,
+    video: null,
+    isAnalyzing: false
+  },
+  edit: {
+    decisions: [],
+    currentEdit: null,
+    selectedEditIndex: null
+  },
+  export: {
+    settings: {
+      format: 'premiere',
+      includeAudio: true,
+      includeMarkers: true,
+      generateNotes: true,
+      outputPath: '/User/username/Documents/Projects/My Music Video'
+    },
+    showExportModal: false,
+    exportProgress: 0,
+    exportComplete: false,
+    exportError: null
+  },
+  ui: {
+    errors: {},
+    modals: {
+      showSettings: false,
+      showHelp: false
+    }
   }
 };
 
-// Context type
+// Helper functions for route navigation
+const canAccessRoute = (
+  targetStep: WorkflowStep, 
+  currentStep: WorkflowStep, 
+  hasAnalysisResults: boolean, 
+  hasEditDecisions: boolean
+): boolean => {
+  // Logic to determine if a step can be accessed
+  switch (targetStep) {
+    case WorkflowStep.INPUT:
+      return true; // Always accessible
+    case WorkflowStep.ANALYSIS:
+      return true; // Accessible if we have a music file (would be checked in component)
+    case WorkflowStep.EDIT:
+      return hasAnalysisResults; // Need analysis results
+    case WorkflowStep.EXPORT:
+      return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
+    default:
+      return false;
+  }
+};
+
+const getNextRoute = (currentStep: WorkflowStep): WorkflowStep => {
+  switch (currentStep) {
+    case WorkflowStep.INPUT:
+      return WorkflowStep.ANALYSIS;
+    case WorkflowStep.ANALYSIS:
+      return WorkflowStep.EDIT;
+    case WorkflowStep.EDIT:
+      return WorkflowStep.EXPORT;
+    case WorkflowStep.EXPORT:
+    default:
+      return WorkflowStep.EXPORT; // No next step after export
+  }
+};
+
+const getPreviousRoute = (currentStep: WorkflowStep): WorkflowStep | null => {
+  switch (currentStep) {
+    case WorkflowStep.INPUT:
+      return null; // No previous step
+    case WorkflowStep.ANALYSIS:
+      return WorkflowStep.INPUT;
+    case WorkflowStep.EDIT:
+      return WorkflowStep.ANALYSIS;
+    case WorkflowStep.EXPORT:
+      return WorkflowStep.EDIT;
+    default:
+      return null;
+  }
+};
+
+// Create the context with a default value
 interface WorkflowContextType {
-  state: WorkflowState;
-  setStep: (step: ApplicationStep) => void;
-  startProcessing: (statusMessage?: string) => void;
-  updateProgress: (progressPercentage: number, statusMessage?: string) => void;
-  completeProcessing: () => void;
-  goBack: () => void;
-  setSubStep: (subStep: string) => void;
-  canNavigateTo: (step: ApplicationStep) => boolean;
+  state: AppState;
+  navigation: {
+    goToNextStep: () => void;
+    goToPreviousStep: () => void;
+    goToStep: (step: WorkflowStep) => void;
+  };
+  actions: {
+    updateProjectSettings: (settings: Partial<ProjectSettings>) => void;
+    setMusicFile: (file: File | null) => Promise<void>;
+    addVideoFile: (file: File) => void;
+    removeVideoFile: (index: number) => void;
+    startAnalysis: () => Promise<void>;
+  };
 }
 
-// Create context
-const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined);
+const WorkflowContext = createContext<WorkflowContextType>({
+  state: defaultState,
+  navigation: {
+    goToNextStep: () => {},
+    goToPreviousStep: () => {},
+    goToStep: () => {}
+  },
+  actions: {
+    updateProjectSettings: () => {},
+    setMusicFile: async () => {},
+    addVideoFile: () => {},
+    removeVideoFile: () => {},
+    startAnalysis: async () => {}
+  }
+});
 
 // Provider component
-export const WorkflowProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(workflowReducer, initialWorkflowState);
+interface WorkflowProviderProps {
+  children: ReactNode;
+  initialState?: Partial<AppState>;
+  audioService: AudioService;
+}
 
-  // Helper function to determine if a step is accessible
-  const canNavigateTo = (step: ApplicationStep): boolean => {
-    // Define the workflow order (excluding settings which is accessible from anywhere)
-    const workflowOrder = [
-      ApplicationStep.WELCOME,
-      ApplicationStep.FILE_UPLOAD,
-      ApplicationStep.MEDIA_ANALYSIS,
-      ApplicationStep.EDIT_CONFIGURATION,
-      ApplicationStep.PREVIEW,
-      ApplicationStep.EXPORT,
-    ];
-
-    // Settings is always accessible
-    if (step === ApplicationStep.SETTINGS) {
-      return true;
-    }
-
-    // Get current step index
-    const currentIndex = workflowOrder.indexOf(state.currentStep);
-    const targetIndex = workflowOrder.indexOf(step);
-
-    // Can't navigate if processing
-    if (state.isProcessing) {
-      return false;
-    }
-
-    // Can navigate to current step or any previous step
-    // Can also navigate to the next step in sequence
-    return targetIndex <= currentIndex || targetIndex === currentIndex + 1;
+export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ 
+  children, 
+  initialState,
+  audioService
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Extract current step from location
+  const getCurrentStep = (): WorkflowStep => {
+    const path = location.pathname.split('/')[1] || 'input';
+    return path as WorkflowStep;
   };
-
-  // Action creators
-  const setStep = (step: ApplicationStep) => {
-    if (canNavigateTo(step)) {
-      dispatch({ type: 'SET_STEP', payload: step });
+  
+  // State with default values
+  const [state, setState] = useState<AppState>({
+    ...defaultState,
+    workflow: {
+      ...defaultState.workflow,
+      currentStep: getCurrentStep()
+    },
+    ...(initialState || {})
+  });
+  
+  // Sync current step with URL
+  useEffect(() => {
+    const currentRouteStep = getCurrentStep();
+    
+    if (state.workflow.currentStep !== currentRouteStep) {
+      setState(prev => ({
+        ...prev,
+        workflow: {
+          ...prev.workflow,
+          currentStep: currentRouteStep
+        }
+      }));
+    }
+  }, [location.pathname]);
+  
+  // Navigation methods
+  const goToNextStep = () => {
+    const nextRoute = getNextRoute(state.workflow.currentStep);
+    
+    // Check if we can access the next route
+    const hasAnalysisResults = Boolean(state.analysis.audio && state.analysis.video);
+    const hasEditDecisions = state.edit.decisions.length > 0;
+    
+    if (canAccessRoute(nextRoute, state.workflow.currentStep, hasAnalysisResults, hasEditDecisions)) {
+      navigate(`/${nextRoute}`);
+    } else {
+      // Handle case where next step is not accessible
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            navigation: `Cannot proceed to ${nextRoute} without completing current step`
+          }
+        }
+      }));
     }
   };
-
-  const startProcessing = (statusMessage?: string) => {
-    dispatch({ type: 'START_PROCESSING', payload: { statusMessage } });
+  
+  const goToPreviousStep = () => {
+    const prevRoute = getPreviousRoute(state.workflow.currentStep);
+    if (prevRoute) {
+      navigate(`/${prevRoute}`);
+    }
   };
-
-  const updateProgress = (progressPercentage: number, statusMessage?: string) => {
-    dispatch({
-      type: 'UPDATE_PROGRESS',
-      payload: { progressPercentage, statusMessage },
+  
+  const goToStep = (step: WorkflowStep) => {
+    const hasAnalysisResults = Boolean(state.analysis.audio && state.analysis.video);
+    const hasEditDecisions = state.edit.decisions.length > 0;
+    
+    if (canAccessRoute(step, state.workflow.currentStep, hasAnalysisResults, hasEditDecisions)) {
+      navigate(`/${step}`);
+    } else {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            navigation: `Cannot access ${step} without completing required steps`
+          }
+        }
+      }));
+    }
+  };
+  
+  // State update methods
+  const updateProjectSettings = (settings: Partial<ProjectSettings>) => {
+    setState(prev => ({
+      ...prev,
+      project: {
+        ...prev.project,
+        settings: {
+          ...prev.project.settings,
+          ...settings
+        }
+      }
+    }));
+  };
+  
+  const setMusicFile = async (file: File | null) => {
+    if (!file) {
+      setState(prev => ({
+        ...prev,
+        project: {
+          ...prev.project,
+          musicFile: null
+        }
+      }));
+      return;
+    }
+    
+    try {
+      const audioFile = await audioService.loadAudioFile(file);
+      
+      setState(prev => ({
+        ...prev,
+        project: {
+          ...prev.project,
+          musicFile: audioFile
+        },
+        workflow: {
+          ...prev.workflow,
+          totalDuration: audioFile.duration
+        }
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            audioLoad: error instanceof Error ? error.message : 'Failed to load audio file'
+          }
+        }
+      }));
+    }
+  };
+  
+  const addVideoFile = (file: File) => {
+    setState(prev => ({
+      ...prev,
+      project: {
+        ...prev.project,
+        videoFiles: [...prev.project.videoFiles, {
+          file,
+          name: file.name,
+          size: file.size,
+          duration: 0, // This would be calculated
+          type: file.type,
+          url: URL.createObjectURL(file)
+        }]
+      }
+    }));
+  };
+  
+  const removeVideoFile = (index: number) => {
+    setState(prev => {
+      const newFiles = [...prev.project.videoFiles];
+      
+      // Release the object URL to prevent memory leaks
+      if (newFiles[index]?.url) {
+        URL.revokeObjectURL(newFiles[index].url);
+      }
+      
+      newFiles.splice(index, 1);
+      
+      return {
+        ...prev,
+        project: {
+          ...prev.project,
+          videoFiles: newFiles
+        }
+      };
     });
   };
-
-  const completeProcessing = () => {
-    dispatch({ type: 'COMPLETE_PROCESSING' });
+  
+  const startAnalysis = async () => {
+    if (!state.project.musicFile?.file) {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            analysis: 'No music file selected'
+          }
+        }
+      }));
+      return;
+    }
+    
+    setState(prev => ({
+      ...prev,
+      analysis: {
+        ...prev.analysis,
+        isAnalyzing: true
+      },
+      workflow: {
+        ...prev.workflow,
+        analysisProgress: {
+          percentage: 0,
+          currentStep: 'Initializing analysis...',
+          isComplete: false
+        }
+      }
+    }));
+    
+    try {
+      // Update progress state (this would normally happen throughout analysis)
+      setState(prev => ({
+        ...prev,
+        workflow: {
+          ...prev.workflow,
+          analysisProgress: {
+            percentage: 20,
+            currentStep: 'Beat detection in progress...',
+            isComplete: false
+          }
+        }
+      }));
+      
+      // Perform audio analysis
+      const audioAnalysis = await audioService.analyzeAudio(state.project.musicFile.file);
+      
+      // Update progress
+      setState(prev => ({
+        ...prev,
+        workflow: {
+          ...prev.workflow,
+          analysisProgress: {
+            percentage: 80,
+            currentStep: 'Finalizing analysis...',
+            isComplete: false
+          }
+        }
+      }));
+      
+      // Save analysis results
+      setState(prev => ({
+        ...prev,
+        analysis: {
+          ...prev.analysis,
+          audio: audioAnalysis,
+          isAnalyzing: false
+        },
+        workflow: {
+          ...prev.workflow,
+          analysisProgress: {
+            percentage: 100,
+            currentStep: 'Analysis complete',
+            isComplete: true
+          }
+        }
+      }));
+      
+      // Navigate to editing step
+      goToNextStep();
+      
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        analysis: {
+          ...prev.analysis,
+          isAnalyzing: false
+        },
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            analysis: error instanceof Error ? error.message : 'Analysis failed'
+          }
+        }
+      }));
+    }
   };
-
-  const goBack = () => {
-    dispatch({ type: 'GO_BACK' });
-  };
-
-  const setSubStep = (subStep: string) => {
-    dispatch({ type: 'SET_SUB_STEP', payload: { subStep } });
-  };
-
-  const value = {
+  
+  // Create a context value with state and methods
+  const contextValue = {
     state,
-    setStep,
-    startProcessing,
-    updateProgress,
-    completeProcessing,
-    goBack,
-    setSubStep,
-    canNavigateTo,
+    navigation: {
+      goToNextStep,
+      goToPreviousStep,
+      goToStep
+    },
+    actions: {
+      updateProjectSettings,
+      setMusicFile,
+      addVideoFile,
+      removeVideoFile,
+      startAnalysis
+    }
   };
-
+  
   return (
-    <WorkflowContext.Provider value={value}>
+    <WorkflowContext.Provider value={contextValue}>
       {children}
     </WorkflowContext.Provider>
   );
 };
 
 // Custom hook for using the workflow context
-export const useWorkflow = (): WorkflowContextType => {
-  const context = useContext(WorkflowContext);
-  if (context === undefined) {
-    throw new Error('useWorkflow must be used within a WorkflowProvider');
-  }
-  return context;
-};
+export const useWorkflow = () => useContext(WorkflowContext);
 
 export default WorkflowContext;

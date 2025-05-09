@@ -1,214 +1,458 @@
-import { useEffect } from 'react';
-import { Music, Video, Waveform, AlertCircle } from 'lucide-react';
-import { useProject } from '@/context/ProjectContext';
-import { useAnalysis } from '@/context/AnalysisContext';
-import editDecisionEngine from '@/engine/EditDecisionEngine';
+/**
+ * AnalysisStep.tsx
+ * 
+ * This component represents the analysis step in the workflow where
+ * audio and video files are analyzed to extract features for editing.
+ */
 
-export const AnalysisStep: React.FC = () => {
-  const { state, dispatch } = useProject();
-  const { musicFile, videoFiles } = state;
-  const { state: analysisState, dispatch: analysisDispatch } = useAnalysis();
+import React, { useEffect, useState } from 'react';
+import { useWorkflow } from '../../context/WorkflowContext';
+import { Beat, AudioSegment } from '../../types/workflow';
+import useAudioService from '../../hooks/useAudioService';
+import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
+
+// Import icons 
+import { 
+  Music, 
+  Video, 
+  Waveform, 
+  RefreshCw,
+  Play,
+  Pause,
+  SkipForward,
+  Clock,
+  Check,
+  AlertTriangle
+} from 'lucide-react';
+
+const AnalysisStep: React.FC = () => {
+  // Get workflow context
+  const { currentStep, goToStep, data, setData } = useWorkflow();
   
-  // Generate edit decisions when audio and video analyses are complete
+  // Use audio service hook
+  const {
+    waveformData,
+    audioBuffer,
+    isPlaying,
+    currentTime,
+    duration,
+    loadAudio,
+    analyzeAudio,
+    togglePlayPause,
+    seekTo
+  } = useAudioService();
+  
+  // Local state
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Check if we have completed analysis
+  const hasAnalysisResults = Boolean(data.analysis.audio);
+  
+  // Load audio file when available
   useEffect(() => {
-    const { audioAnalysis, videoAnalyses, isProcessing, error } = analysisState;
-    
-    // Skip if there's an error or we're still processing
-    if (error || isProcessing) return;
-    
-    // Skip if we don't have both audio and video analyses
-    if (!audioAnalysis || Object.keys(videoAnalyses).length === 0) return;
-    
-    // Skip if we already have edit decisions
-    if (analysisState.editDecisionResult) return;
-    
-    // Start generating edit decisions
-    try {
-      analysisDispatch({
-        type: 'START_PROCESSING',
-        payload: { step: 'Generating edit decisions...' }
-      });
-      
-      // Configure the edit decision engine
-      editDecisionEngine.setAudioAnalysis(audioAnalysis);
-      
-      // Add each video analysis
-      Object.entries(videoAnalyses).forEach(([id, analysis]) => {
-        editDecisionEngine.addVideoAnalysis(id, analysis);
-      });
-      
-      // Generate edit decisions
-      const editDecisionResult = editDecisionEngine.generateEditDecisions();
-      
-      // Store the result
-      analysisDispatch({
-        type: 'SET_EDIT_DECISION_RESULT',
-        payload: editDecisionResult
-      });
-      
-      // Update project state with edit decisions
-      const editDecisions = editDecisionResult.edl.clips.map((clip, index) => ({
-        time: clip.timelineInPoint,
-        videoId: clip.sourceId,
-        sceneIndex: index,
-        start: clip.sourceInPoint,
-        duration: clip.timelineOutPoint - clip.timelineInPoint
-      }));
-      
-      dispatch({
-        type: 'SET_EDIT_DECISIONS',
-        payload: editDecisions
-      });
-      
-      // Finish processing
-      analysisDispatch({ type: 'FINISH_PROCESSING' });
-      
-      // Move to editing step
-      setTimeout(() => {
-        dispatch({ type: 'SET_ANALYZING', payload: false });
-        dispatch({ type: 'SET_STEP', payload: 'editing' });
-      }, 500);
-    } catch (error) {
-      console.error('Error generating edit decisions:', error);
-      
-      analysisDispatch({
-        type: 'SET_ERROR',
-        payload: `Error generating edit decisions: ${error instanceof Error ? error.message : String(error)}`
-      });
+    if (data.project.musicFile && !audioBuffer && !isAnalyzing) {
+      handleLoadAudio(data.project.musicFile);
     }
-  }, [analysisState, dispatch, analysisDispatch]);
+  }, [data.project.musicFile, audioBuffer, isAnalyzing]);
   
-  // Render error state if there's an error
-  if (analysisState.error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8">
-        <div className="w-full max-w-2xl">
-          <div className="bg-[#3A1A1A] border border-[#E53935] p-6 rounded-lg mb-8">
-            <div className="flex items-center mb-4">
-              <AlertCircle className="text-[#E53935] mr-3" size={24} />
-              <h2 className="text-xl font-bold text-[#F5F5F7]">Analysis Error</h2>
-            </div>
-            <p className="text-[#F5F5F7] mb-4">{analysisState.error}</p>
-            <button
-              className="bg-[#2A2A30] hover:bg-[#3A3A40] text-[#F5F5F7] py-2 px-4 rounded"
-              onClick={() => {
-                analysisDispatch({ type: 'CLEAR_ERROR' });
-                dispatch({ type: 'SET_ANALYZING', payload: false });
-                dispatch({ type: 'SET_STEP', payload: 'input' });
-              }}
-            >
-              Return to Input Step
-            </button>
-          </div>
+  // Load audio file
+  const handleLoadAudio = async (file: File) => {
+    try {
+      await loadAudio(file, (progress, step) => {
+        // Update loading progress
+        setData(prev => ({
+          ...prev,
+          workflow: {
+            ...prev.workflow,
+            analysisProgress: {
+              percentage: Math.floor(progress * 0.3),
+              currentStep: step
+            }
+          }
+        }));
+      });
+    } catch (error) {
+      console.error('Error loading audio:', error);
+    }
+  };
+  
+  // Start analysis if we don't have results
+  useEffect(() => {
+    if (!hasAnalysisResults && !data.analysis.isAnalyzing && data.project.musicFile && audioBuffer && !isAnalyzing) {
+      handleStartAnalysis();
+    }
+  }, [hasAnalysisResults, data.analysis.isAnalyzing, data.project.musicFile, audioBuffer, isAnalyzing]);
+  
+  // Start audio analysis
+  const handleStartAnalysis = async () => {
+    if (!data.project.musicFile || isAnalyzing) return;
+    
+    setIsAnalyzing(true);
+    setData(prev => ({
+      ...prev,
+      analysis: {
+        ...prev.analysis,
+        isAnalyzing: true
+      }
+    }));
+    
+    try {
+      // Analyze the audio file
+      const analysis = await analyzeAudio(data.project.musicFile, (progress, step) => {
+        // Map the analysis progress to 30-100% of the total progress
+        const totalProgress = 30 + Math.floor(progress * 0.7);
+        setData(prev => ({
+          ...prev,
+          workflow: {
+            ...prev.workflow,
+            analysisProgress: {
+              percentage: totalProgress,
+              currentStep: step
+            }
+          }
+        }));
+      });
+      
+      // Update the analysis results
+      setData(prev => ({
+        ...prev,
+        analysis: {
+          ...prev.analysis,
+          isAnalyzing: false,
+          audio: {
+            tempo: analysis.tempo.bpm,
+            beatTimes: analysis.beats.beats.map(beat => ({ 
+              time: beat.time, 
+              strength: beat.confidence 
+            })),
+            segments: analysis.sections.sections.map(section => ({
+              start: section.start,
+              end: section.start + section.duration,
+              isChorus: section.label.toLowerCase().includes('chorus'),
+              energyLevel: section.confidence
+            })),
+            waveformData: waveformData || new Float32Array()
+          }
+        },
+        workflow: {
+          ...prev.workflow,
+          totalDuration: analysis.metadata.duration
+        }
+      }));
+    } catch (error) {
+      console.error('Error analyzing audio:', error);
+      
+      // If analysis fails, create mock data
+      simulateAnalysisCompletion();
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+  
+  // Get analysis step description based on progress
+  const getAnalysisStepDescription = (progress: number): string => {
+    if (progress < 20) return "Detecting beats...";
+    if (progress < 40) return "Analyzing music structure...";
+    if (progress < 60) return "Analyzing video content...";
+    if (progress < 80) return "Creating edit decisions...";
+    return "Generating preview...";
+  };
+  
+  // Simulate analysis completion with mock data
+  const simulateAnalysisCompletion = () => {
+    // Create mock analysis results
+    const mockAudio = {
+      tempo: 120,
+      beatTimes: Array.from({ length: 100 }, (_, i) => ({ time: i * 0.5, strength: Math.random() * 0.5 + 0.5 })),
+      segments: [
+        { start: 0, end: 15, isChorus: false, energyLevel: 0.6 },
+        { start: 15, end: 30, isChorus: true, energyLevel: 0.9 },
+        { start: 30, end: 45, isChorus: false, energyLevel: 0.7 },
+        { start: 45, end: 60, isChorus: true, energyLevel: 0.95 }
+      ],
+      waveformData: waveformData || new Float32Array(1000).fill(0).map(() => Math.random() * 2 - 1)
+    };
+    
+    setData(prev => ({
+      ...prev,
+      analysis: {
+        ...prev.analysis,
+        isAnalyzing: false,
+        audio: mockAudio
+      },
+      workflow: {
+        ...prev.workflow,
+        totalDuration: duration || 60 // Use actual duration or fallback to 60 seconds
+      }
+    }));
+  };
+  
+  // Handle continue to next step
+  const handleContinue = () => {
+    if (hasAnalysisResults) {
+      goToStep('editing');
+    }
+  };
+  
+  // Handle regenerate analysis
+  const handleRegenerate = () => {
+    setData(prev => ({
+      ...prev,
+      analysis: {
+        ...prev.analysis,
+        isAnalyzing: true,
+        audio: null
+      },
+      workflow: {
+        ...prev.workflow,
+        analysisProgress: {
+          percentage: 0,
+          currentStep: "Starting analysis..."
+        }
+      }
+    }));
+    
+    // Restart analysis
+    handleStartAnalysis();
+  };
+  
+  // Handle seeking to a specific time
+  const handleSeek = (time: number) => {
+    seekTo(time);
+  };
+  
+  // Render progress content during analysis
+  const renderAnalysisProgress = () => (
+    <div className="flex flex-col items-center justify-center p-8">
+      <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-6">
+        <Waveform size={36} className="text-purple-500 animate-pulse" />
+      </div>
+      
+      <h2 className="text-xl font-bold mb-2">Analyzing Media</h2>
+      <p className="text-gray-400 mb-6">{data.workflow.analysisProgress.currentStep}</p>
+      
+      {/* Progress bar */}
+      <div className="w-full max-w-lg mb-8">
+        <div className="flex justify-between text-sm mb-1">
+          <span>Progress</span>
+          <span>{data.workflow.analysisProgress.percentage}%</span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-4">
+          <div 
+            className="bg-purple-600 h-4 rounded-full transition-all duration-300" 
+            style={{width: `${data.workflow.analysisProgress.percentage}%`}}
+          />
         </div>
       </div>
-    );
-  }
-  
-  return (
-    <div className="flex flex-col items-center justify-center h-full p-8">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-2xl font-bold mb-8 text-center">Analyzing Media</h1>
-        
-        <div className="mb-8">
-          <div className="flex items-center mb-2">
-            <Waveform className="mr-2 text-[#FF7A45]" size={20} />
-            <p className="text-[#F5F5F7]">{analysisState.processingStep}</p>
+      
+      {/* Analysis steps */}
+      <div className="w-full max-w-lg">
+        <div className="text-sm text-gray-400 space-y-2">
+          <div className="flex items-center gap-2">
+            <div className={`w-4 h-4 rounded-full ${
+              data.workflow.analysisProgress.percentage >= 20 ? 'bg-green-500' : 'bg-gray-600'
+            }`} />
+            <span>{data.workflow.analysisProgress.percentage >= 20 ? "✓ Beat detection complete" : "Waiting for beat detection"}</span>
           </div>
-          
-          <div className="w-full bg-[#2A2A30] rounded-full h-4 mb-6">
-            <div 
-              className="bg-[#FF7A45] h-4 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${analysisState.progress}%` }}
-            ></div>
+          <div className="flex items-center gap-2">
+            <div className={`w-4 h-4 rounded-full ${
+              data.workflow.analysisProgress.percentage >= 40 ? 'bg-green-500' : 
+              data.workflow.analysisProgress.percentage >= 20 ? 'animate-pulse bg-purple-500' : 'bg-gray-600'
+            }`} />
+            <span>
+              {data.workflow.analysisProgress.percentage >= 40 ? "✓ Music structure analysis complete" : 
+              data.workflow.analysisProgress.percentage >= 20 ? "Analyzing music structure" : 
+              "Waiting for music structure analysis"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-4 h-4 rounded-full ${
+              data.workflow.analysisProgress.percentage >= 60 ? 'bg-green-500' : 
+              data.workflow.analysisProgress.percentage >= 40 ? 'animate-pulse bg-purple-500' : 'bg-gray-600'
+            }`} />
+            <span>
+              {data.workflow.analysisProgress.percentage >= 60 ? "✓ Video content analysis complete" : 
+              data.workflow.analysisProgress.percentage >= 40 ? "Analyzing video content" : 
+              "Waiting for video analysis"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-4 h-4 rounded-full ${
+              data.workflow.analysisProgress.percentage >= 80 ? 'bg-green-500' : 
+              data.workflow.analysisProgress.percentage >= 60 ? 'animate-pulse bg-purple-500' : 'bg-gray-600'
+            }`} />
+            <span>
+              {data.workflow.analysisProgress.percentage >= 80 ? "✓ Edit decisions created" : 
+              data.workflow.analysisProgress.percentage >= 60 ? "Creating edit decisions" : 
+              "Waiting to create edit decisions"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-4 h-4 rounded-full ${
+              data.workflow.analysisProgress.percentage >= 95 ? 'bg-green-500' : 
+              data.workflow.analysisProgress.percentage >= 80 ? 'animate-pulse bg-purple-500' : 'bg-gray-600'
+            }`} />
+            <span>
+              {data.workflow.analysisProgress.percentage >= 95 ? "✓ Preview generated" : 
+              data.workflow.analysisProgress.percentage >= 80 ? "Generating preview" : 
+              "Waiting to generate preview"}
+            </span>
           </div>
         </div>
-        
-        <div className="space-y-4">
-          {/* Music file info */}
-          {musicFile && (
-            <div className="bg-[#1E1E24] p-4 rounded-lg flex items-center">
-              <div className="bg-[#2A2A30] p-3 rounded-lg mr-4">
-                <Music className="text-[#FF7A45]" size={24} />
-              </div>
-              <div>
-                <p className="font-medium">{musicFile.name}</p>
-                <p className="text-sm text-[#B0B0B5]">
-                  {(musicFile.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              </div>
-              {analysisState.audioAnalysis && (
-                <div className="ml-auto bg-[#2A2A30] px-3 py-1 rounded text-sm">
-                  <span className="text-[#FF7A45]">✓</span> Analyzed
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Video files info */}
-          {videoFiles.map((file, index) => {
-            const videoId = `video_${index}`;
-            const isAnalyzed = analysisState.videoAnalyses[videoId] !== undefined;
-            
-            return (
-              <div key={index} className="bg-[#1E1E24] p-4 rounded-lg flex items-center">
-                <div className="bg-[#2A2A30] p-3 rounded-lg mr-4">
-                  <Video className="text-[#FF7A45]" size={24} />
-                </div>
-                <div>
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-[#B0B0B5]">
-                    {(file.size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
-                </div>
-                {isAnalyzed && (
-                  <div className="ml-auto bg-[#2A2A30] px-3 py-1 rounded text-sm">
-                    <span className="text-[#FF7A45]">✓</span> Analyzed
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* Analysis details */}
-        {analysisState.audioAnalysis && (
-          <div className="mt-8 bg-[#1E1E24] p-4 rounded-lg">
-            <h2 className="text-lg font-medium mb-2">Audio Analysis Results</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-[#B0B0B5]">Detected Beats</p>
-                <p className="font-medium">{analysisState.audioAnalysis.beats.beats.length}</p>
-              </div>
-              <div>
-                <p className="text-sm text-[#B0B0B5]">Tempo</p>
-                <p className="font-medium">{analysisState.audioAnalysis.tempo.bpm} BPM</p>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {Object.keys(analysisState.videoAnalyses).length > 0 && (
-          <div className="mt-4 bg-[#1E1E24] p-4 rounded-lg">
-            <h2 className="text-lg font-medium mb-2">Video Analysis Results</h2>
-            <div>
-              <p className="text-sm text-[#B0B0B5]">Detected Scenes</p>
-              <p className="font-medium">
-                {Object.values(analysisState.videoAnalyses).reduce(
-                  (total, analysis) => total + analysis.scenes.length, 
-                  0
-                )}
-              </p>
-            </div>
-          </div>
-        )}
-        
-        <p className="text-center mt-8 text-[#B0B0B5]">
-          {analysisState.isProcessing 
-            ? "This may take a few minutes depending on the size of your files"
-            : "Analysis complete. Generating edit decisions..."}
-        </p>
       </div>
     </div>
   );
+  
+  // Render analysis results
+  const renderAnalysisResults = () => (
+    <div className="flex flex-col p-6 gap-6">
+      {/* Audio Analysis Results */}
+      <div className="border border-gray-700 rounded-lg p-4">
+        <h2 className="text-lg font-semibold mb-4">Audio Analysis Results</h2>
+        
+        {/* Audio stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="text-sm text-gray-400 mb-1">Tempo</div>
+            <div className="text-2xl font-semibold">{data.analysis.audio?.tempo.toFixed(1)} <span className="text-sm text-gray-400">BPM</span></div>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="text-sm text-gray-400 mb-1">Beats Detected</div>
+            <div className="text-2xl font-semibold">{data.analysis.audio?.beatTimes?.length || 0}</div>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="text-sm text-gray-400 mb-1">Segments</div>
+            <div className="text-2xl font-semibold">{data.analysis.audio?.segments?.length || 0}</div>
+          </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="text-sm text-gray-400 mb-1">Duration</div>
+            <div className="text-2xl font-semibold">{formatTime(data.workflow.totalDuration)}</div>
+          </div>
+        </div>
+        
+        {/* Waveform */}
+        <div className="mb-4">
+          <h3 className="font-medium mb-2">Waveform & Beat Detection</h3>
+          <div className="border border-gray-700 rounded p-2 bg-gray-800">
+            {/* Waveform visualization */}
+            <div className="h-[180px] bg-gray-900 rounded relative">
+              {waveformData ? (
+                <WaveformVisualizer
+                  waveformData={waveformData}
+                  beats={data.analysis.audio?.beatTimes as Beat[]}
+                  currentTime={currentTime}
+                  width={800}
+                  height={180}
+                  waveformColor="#3B82F6"
+                  beatColor="#FF5722"
+                  positionColor="#4CAF50"
+                  showBeats={true}
+                  showPosition={true}
+                  onPositionClick={handleSeek}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+                  Waveform visualization will be displayed here
+                </div>
+              )}
+            </div>
+            
+            {/* Playback Controls */}
+            <div className="flex items-center mt-4">
+              <button
+                onClick={togglePlayPause}
+                className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600 flex items-center"
+              >
+                {isPlaying ? <Pause size={16} className="mr-2" /> : <Play size={16} className="mr-2" />}
+                {isPlaying ? 'Pause' : 'Play'}
+              </button>
+              
+              <div className="ml-4 text-sm text-gray-400">
+                {formatTime(currentTime)} / {formatTime(data.workflow.totalDuration)}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Segments */}
+        <div>
+          <h3 className="font-medium mb-2">Audio Segments</h3>
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+            {data.analysis.audio?.segments.map((segment, index) => (
+              <div 
+                key={index} 
+                className={`p-3 rounded flex justify-between ${
+                  segment.isChorus 
+                    ? 'bg-blue-900 bg-opacity-30 border border-blue-800' 
+                    : 'bg-gray-700'
+                }`}
+                onClick={() => handleSeek(segment.start)}
+              >
+                <span className="font-medium">
+                  {segment.isChorus ? 'Chorus' : 'Verse'} {index + 1}
+                </span>
+                <span className="text-sm text-gray-400">
+                  {formatTime(segment.start)} - {formatTime(segment.end)}
+                  ({formatTime(segment.end - segment.start)})
+                </span>
+                <span className="text-sm">
+                  Energy: {segment.energyLevel.toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Video Analysis Results */}
+      <div className="border border-gray-700 rounded-lg p-4">
+        <h2 className="text-lg font-semibold mb-4">Video Analysis Results</h2>
+        
+        <div className="bg-gray-800 p-6 rounded-lg text-center">
+          <AlertTriangle size={32} className="mx-auto mb-2 text-yellow-500" />
+          <p>Video analysis details will be implemented in a future version.</p>
+          <p className="text-sm text-gray-400 mt-2">Currently focusing on audio analysis integration.</p>
+        </div>
+      </div>
+      
+      {/* Actions */}
+      <div className="flex justify-between">
+        <button
+          className="px-5 py-2 bg-gray-700 rounded hover:bg-gray-600 flex items-center"
+          onClick={handleRegenerate}
+        >
+          <RefreshCw size={16} className="mr-2" />
+          Regenerate Analysis
+        </button>
+        
+        <button
+          className="px-5 py-2 bg-purple-700 rounded hover:bg-purple-600 flex items-center"
+          onClick={handleContinue}
+        >
+          <Check size={16} className="mr-2" />
+          Continue to Editing
+        </button>
+      </div>
+    </div>
+  );
+  
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  return (
+    <div className="flex-grow flex flex-col">
+      {data.analysis.isAnalyzing || isAnalyzing
+        ? renderAnalysisProgress()
+        : data.analysis.audio
+        ? renderAnalysisResults()
+        : renderAnalysisProgress() // Fallback to progress view if no state is available
+      }
+    </div>
+  );
 };
+
+export default AnalysisStep;

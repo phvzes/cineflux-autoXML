@@ -1,297 +1,291 @@
-import { useState, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, FileUp, ChevronLeft } from 'lucide-react';
-import { useProject } from '@/context/ProjectContext';
+/**
+ * PreviewStep.tsx
+ * 
+ * This component represents the preview step in the workflow where
+ * users can see a full preview of the edited video.
+ */
 
-interface PreviewStepProps {
-  audioElement: HTMLAudioElement | null;
-}
+import React, { useState } from 'react';
+import { useWorkflow } from '../../context/WorkflowContext';
+import { EditDecision } from '../../types/workflow';
 
-export const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
-  const { state, dispatch } = useProject();
-  const { 
-    isPlaying, 
-    currentTime, 
-    duration, 
-    editDecisions, 
-    videoAnalyses 
-  } = state;
+// Import icons 
+import { 
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  Maximize2,
+  Edit,
+  FileUp,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+
+const PreviewStep: React.FC = () => {
+  // Get workflow context
+  const { currentStep, goToStep, data, setData } = useWorkflow();
   
-  const [currentEditIndex, setCurrentEditIndex] = useState(0);
+  // Local state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [volume, setVolume] = useState(75);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // Update current edit index based on playback time
-  useEffect(() => {
-    if (editDecisions.length > 0) {
-      for (let i = editDecisions.length - 1; i >= 0; i--) {
-        if (currentTime >= editDecisions[i].time) {
-          setCurrentEditIndex(i);
-          break;
-        }
+  // Find current edit based on time
+  const getCurrentEdit = () => {
+    if (!data.edit.decisions || data.edit.decisions.length === 0) return null;
+    
+    for (let i = data.edit.decisions.length - 1; i >= 0; i--) {
+      if (currentTime >= data.edit.decisions[i].time) {
+        return { ...data.edit.decisions[i], index: i };
       }
     }
-  }, [currentTime, editDecisions]);
+    return { ...data.edit.decisions[0], index: 0 };
+  };
+  
+  // Current edit
+  const currentEdit = getCurrentEdit();
+  
+  // Handle play/pause
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+  
+  // Handle seek
+  const handleSeek = (time: number) => {
+    setCurrentTime(time);
+  };
+  
+  // Go to next edit point
+  const handleNextEdit = () => {
+    if (!currentEdit || currentEdit.index >= (data.edit.decisions.length - 1)) return;
+    
+    const nextEdit = data.edit.decisions[currentEdit.index + 1];
+    setCurrentTime(nextEdit.time);
+  };
+  
+  // Go to previous edit point
+  const handlePrevEdit = () => {
+    if (!currentEdit || currentEdit.index <= 0) return;
+    
+    const prevEdit = data.edit.decisions[currentEdit.index - 1];
+    setCurrentTime(prevEdit.time);
+  };
+  
+  // Handle back to editing
+  const handleBackToEdit = () => {
+    goToStep('editing');
+  };
+  
+  // Handle export
+  const handleExport = () => {
+    goToStep('export');
+  };
   
   // Format time as MM:SS
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Toggle play/pause
-  const togglePlayback = () => {
-    dispatch({ type: 'SET_PLAYING', payload: !isPlaying });
-  };
-  
-  // Track the last time a skip was performed to prevent rapid skips
-  const [lastSkipTime, setLastSkipTime] = useState(0);
-  
-  // Skip to previous edit with debounce
-  const skipToPrevious = () => {
-    const now = Date.now();
-    // Prevent rapid skips (debounce)
-    if (now - lastSkipTime < 300) {
-      return;
-    }
-    
-    setLastSkipTime(now);
-    
-    if (currentEditIndex > 0) {
-      const prevIndex = currentEditIndex - 1;
-      const prevTime = editDecisions[prevIndex].time;
-      
-      // First update the state
-      dispatch({ type: 'SET_PLAYBACK_TIME', payload: prevTime });
-      
-      // Then update the audio element
-      if (audioElement) {
-        audioElement.currentTime = prevTime;
-      }
-    }
-  };
-  
-  // Skip to next edit with debounce
-  const skipToNext = () => {
-    const now = Date.now();
-    // Prevent rapid skips (debounce)
-    if (now - lastSkipTime < 300) {
-      return;
-    }
-    
-    setLastSkipTime(now);
-    
-    if (currentEditIndex < editDecisions.length - 1) {
-      const nextIndex = currentEditIndex + 1;
-      const nextTime = editDecisions[nextIndex].time;
-      
-      // First update the state
-      dispatch({ type: 'SET_PLAYBACK_TIME', payload: nextTime });
-      
-      // Then update the audio element
-      if (audioElement) {
-        audioElement.currentTime = nextTime;
-      }
-    }
-  };
-  
-  // Track the last time the timeline was clicked to prevent rapid updates
-  const [lastTimelineClickTime, setLastTimelineClickTime] = useState(0);
-  
-  // Handle timeline click with debounce
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const now = Date.now();
-    // Prevent rapid clicks (debounce)
-    if (now - lastTimelineClickTime < 300) {
-      return;
-    }
-    
-    setLastTimelineClickTime(now);
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickPosition = (e.clientX - rect.left) / rect.width;
-    const newTime = clickPosition * duration;
-    
-    // First pause playback if playing
-    if (isPlaying) {
-      dispatch({ type: 'SET_PLAYING', payload: false });
-    }
-    
-    // Update the state
-    dispatch({ type: 'SET_PLAYBACK_TIME', payload: newTime });
-    
-    // Then update the audio element
-    if (audioElement) {
-      audioElement.currentTime = newTime;
-      
-      // Resume playback after a short delay if it was playing
-      if (isPlaying) {
-        setTimeout(() => {
-          dispatch({ type: 'SET_PLAYING', payload: true });
-        }, 100);
-      }
-    }
-  };
-  
-  // Go back to editing
-  const goToEditing = () => {
-    dispatch({ type: 'SET_STEP', payload: 'editing' });
-  };
-  
-  // Show export modal
-  const showExport = () => {
-    // Dispatch an action to show the export modal in App.tsx
-    dispatch({ type: 'SHOW_EXPORT_MODAL', payload: true });
-  };
-  
-  // Get current edit decision
-  const currentEdit = editDecisions[currentEditIndex] || null;
-  
-  // Get video name for current edit
-  const getVideoName = (videoId: string) => {
-    if (videoAnalyses[videoId]) {
-      return videoAnalyses[videoId].clip.name;
-    }
-    return 'Unknown Video';
-  };
+  // Simulate video files if none exist
+  const videoFiles = data.project.videoFiles.length > 0 
+    ? data.project.videoFiles 
+    : [
+        { name: 'video1.mp4', size: 1000000, duration: 30, type: 'video/mp4', url: '' },
+        { name: 'video2.mp4', size: 2000000, duration: 45, type: 'video/mp4', url: '' },
+        { name: 'video3.mp4', size: 1500000, duration: 60, type: 'video/mp4', url: '' }
+      ];
   
   return (
-    <div className="flex flex-col h-full">
-      {/* Preview area */}
-      <div className="flex-grow flex flex-col p-6">
-        <div className="flex items-center mb-6">
-          <button 
-            className="flex items-center text-[#B0B0B5] hover:text-[#F5F5F7] mr-4"
-            onClick={goToEditing}
-          >
-            <ChevronLeft size={20} className="mr-1" />
-            Back to Editing
-          </button>
-          <h2 className="text-xl font-bold">Preview</h2>
+    <div className="flex-grow flex flex-col">
+      {/* Main Preview Area */}
+      <div className="flex-grow bg-black relative">
+        {/* Video preview */}
+        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xl">
+          Full video preview will be displayed here
         </div>
         
-        {/* Video preview area */}
-        <div className="flex-grow flex">
-          {/* Main preview */}
-          <div className="w-3/4 pr-4">
-            <div className="bg-[#1E1E24] rounded-lg overflow-hidden aspect-video flex items-center justify-center mb-4">
-              {currentEdit ? (
-                <div className="text-center">
-                  <p className="text-xl mb-2">
-                    {getVideoName(currentEdit.videoId)}
-                  </p>
-                  <p className="text-[#B0B0B5]">
-                    Scene {currentEdit.sceneIndex + 1} - {formatTime(currentEdit.start)} to {formatTime(currentEdit.start + currentEdit.duration)}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-[#B0B0B5]">No preview available</p>
-              )}
-            </div>
-            
-            {/* Timeline */}
+        {/* Playback controls overlay */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-4">
+          {/* Progress bar */}
+          <div 
+            className="w-full h-1 bg-gray-700 rounded-full mb-4 relative cursor-pointer"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const percentage = x / rect.width;
+              handleSeek(percentage * data.workflow.totalDuration);
+            }}
+          >
             <div 
-              className="relative h-12 bg-[#1E1E24] rounded-lg mb-4 cursor-pointer"
-              onClick={handleTimelineClick}
-            >
-              {/* Progress bar */}
-              <div 
-                className="absolute h-full bg-[#2A2A30] rounded-lg"
-                style={{ width: `${(currentTime / duration) * 100}%` }}
-              ></div>
-              
-              {/* Edit decision markers */}
-              {editDecisions.map((edit, index) => (
-                <div 
-                  key={index}
-                  className={`absolute h-full w-1 ${
-                    index === currentEditIndex ? 'bg-[#FF7A45]' : 'bg-[#B0B0B5]'
-                  }`}
-                  style={{ left: `${(edit.time / duration) * 100}%` }}
-                ></div>
-              ))}
-              
-              {/* Current time indicator */}
-              <div 
-                className="absolute h-full w-0.5 bg-white"
-                style={{ left: `${(currentTime / duration) * 100}%` }}
-              ></div>
-            </div>
+              className="absolute inset-y-0 left-0 bg-blue-500 rounded-full" 
+              style={{width: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
+            />
             
-            {/* Playback controls */}
-            <div className="flex items-center justify-center mb-4">
+            {/* Edit point markers */}
+            {data.edit.decisions.map((edit, i) => {
+              const position = (edit.time / data.workflow.totalDuration) * 100;
+              return (
+                <div 
+                  key={i} 
+                  className="absolute top-0 bottom-0 w-0.5 bg-yellow-500" 
+                  style={{ left: `${position}%` }}
+                />
+              );
+            })}
+            
+            {/* Scrubber handle */}
+            <div 
+              className="absolute -top-1.5 w-4 h-4 bg-white rounded-full transform -translate-x-1/2" 
+              style={{left: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
+            />
+          </div>
+          
+          {/* Controls */}
+          <div className="flex items-center">
+            <div className="flex items-center space-x-4">
               <button 
-                className="p-2 rounded-full hover:bg-[#2A2A30]"
-                onClick={skipToPrevious}
-                disabled={currentEditIndex === 0}
+                className="text-white hover:text-blue-400"
+                onClick={handlePrevEdit}
               >
-                <SkipBack size={24} className={currentEditIndex === 0 ? 'text-[#B0B0B5]' : ''} />
+                <SkipBack size={20} />
               </button>
-              
               <button 
-                className="p-3 mx-4 rounded-full bg-[#2A2A30] hover:bg-[#FF7A45]"
-                onClick={togglePlayback}
+                className="p-2 bg-white rounded-full text-black hover:bg-blue-400"
+                onClick={handlePlayPause}
               >
                 {isPlaying ? <Pause size={24} /> : <Play size={24} />}
               </button>
-              
               <button 
-                className="p-2 rounded-full hover:bg-[#2A2A30]"
-                onClick={skipToNext}
-                disabled={currentEditIndex === editDecisions.length - 1}
+                className="text-white hover:text-blue-400"
+                onClick={handleNextEdit}
               >
-                <SkipForward size={24} className={currentEditIndex === editDecisions.length - 1 ? 'text-[#B0B0B5]' : ''} />
+                <SkipForward size={20} />
               </button>
+              <div className="text-sm text-white ml-2">
+                {formatTime(currentTime)} / {formatTime(data.workflow.totalDuration)}
+              </div>
             </div>
             
-            {/* Time display */}
-            <div className="flex justify-between text-sm text-[#B0B0B5]">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
-          
-          {/* Sidebar */}
-          <div className="w-1/4 bg-[#1E1E24] p-4 rounded-lg flex flex-col">
-            <h3 className="font-bold mb-4">Edit Sequence</h3>
+            <div className="flex-grow"></div>
             
-            <div className="flex-grow overflow-y-auto mb-4">
-              {editDecisions.map((edit, index) => (
-                <div 
-                  key={index}
-                  className={`p-2 mb-2 rounded ${
-                    index === currentEditIndex ? 'bg-[#2A2A30] border-l-2 border-[#FF7A45]' : 'bg-transparent'
-                  }`}
-                  onClick={() => {
-                    dispatch({ type: 'SET_PLAYBACK_TIME', payload: edit.time });
-                    if (audioElement) {
-                      audioElement.currentTime = edit.time;
-                    }
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center">
+                <Volume2 size={16} className="text-white mr-2" />
+                <div className="w-20 h-1 bg-gray-700 rounded-full relative cursor-pointer"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = (x / rect.width) * 100;
+                    setVolume(Math.round(percentage));
                   }}
                 >
-                  <div className="flex items-center">
-                    <div className="w-6 h-6 flex items-center justify-center bg-[#2A2A30] rounded-full mr-2 text-xs">
-                      {index + 1}
-                    </div>
-                    <div className="text-sm truncate">
-                      {getVideoName(edit.videoId).split('.')[0]}
-                    </div>
-                  </div>
-                  <div className="text-xs text-[#B0B0B5] mt-1">
-                    {formatTime(edit.time)} - {edit.duration.toFixed(1)}s
-                  </div>
+                  <div 
+                    className="absolute inset-y-0 left-0 bg-white rounded-full" 
+                    style={{width: `${volume}%`}}
+                  />
                 </div>
-              ))}
+              </div>
+              <button 
+                className="text-white hover:text-blue-400"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+              >
+                <Maximize2 size={16} />
+              </button>
             </div>
-            
-            <button 
-              className="py-3 bg-[#FF7A45] hover:bg-[#FF6A35] rounded-lg flex items-center justify-center"
-              onClick={showExport}
-            >
-              <FileUp size={18} className="mr-2" />
-              Export to Premiere
+          </div>
+        </div>
+      </div>
+      
+      {/* Timeline Section */}
+      <div className="h-24 bg-gray-800 p-2">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-medium">Timeline</h3>
+          <div className="flex items-center">
+            <button className="p-1 hover:bg-gray-700 rounded">
+              <ChevronLeft size={16} />
+            </button>
+            <button className="p-1 hover:bg-gray-700 rounded">
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
+        
+        {/* Timeline with clips */}
+        <div className="relative h-16 bg-gray-900 rounded">
+          {/* Current position indicator */}
+          <div 
+            className="absolute top-0 bottom-0 w-0.5 bg-white z-10" 
+            style={{left: `${(currentTime / data.workflow.totalDuration) * 100}%`}}
+          />
+          
+          {/* Clips visualization */}
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center">
+            {data.edit.decisions.map((edit, i) => {
+              // Duration is until next edit or end
+              const nextTime = i < data.edit.decisions.length - 1 
+                ? data.edit.decisions[i+1].time 
+                : data.workflow.totalDuration;
+                
+              const duration = nextTime - edit.time;
+              const widthPercent = (duration / data.workflow.totalDuration) * 100;
+              
+              // Color based on clip type
+              const clipType = "performance"; // This would come from video analysis
+              const color = clipType === "performance" ? "bg-blue-700" : "bg-green-700";
+              
+              return (
+                <div 
+                  key={i} 
+                  className={`h-full ${color} relative cursor-pointer`} 
+                  style={{width: `${widthPercent}%`}}
+                  onClick={() => setCurrentTime(edit.time)}
+                >
+                  {/* Thumbnail or clip label */}
+                  <div className="absolute inset-0 flex items-center justify-center text-xs text-white">
+                    {i + 1}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Time markers */}
+          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 pt-1">
+            <span>00:00</span>
+            <span>00:30</span>
+            <span>01:00</span>
+            <span>01:30</span>
+            <span>02:00</span>
+            <span>02:30</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Bottom Action Bar */}
+      <div className="bg-gray-900 p-4 flex justify-between">
+        <button 
+          className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600 flex items-center"
+          onClick={handleBackToEdit}
+        >
+          <Edit size={16} className="mr-2" />
+          Back to Editor
+        </button>
+        
+        <button 
+          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 flex items-center"
+          onClick={handleExport}
+        >
+          <FileUp size={16} className="mr-2" />
+          Export
+        </button>
       </div>
     </div>
   );
 };
+
+export default PreviewStep;

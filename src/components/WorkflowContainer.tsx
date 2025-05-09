@@ -1,0 +1,170 @@
+/**
+ * WorkflowContainer.tsx
+ * 
+ * Container component that wraps the workflow steps and provides the layout structure.
+ * This component serves as the parent for all workflow step routes.
+ */
+
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { AppLayout } from './layout/AppLayout';
+import { WorkflowStepper } from './WorkflowStepper';
+import { ExportModal } from './export/ExportModal';
+import { AccessibleDialog } from './AccessibleDialog';
+import { useProject } from '../context/ProjectContext';
+import { useWorkflow } from '../context/WorkflowContext';
+import { colorPalette } from '../theme';
+import { ApplicationStep } from '../types/UITypes';
+
+const WorkflowContainer: React.FC = () => {
+  const { state: projectState, dispatch } = useProject();
+  const { state: workflowState, setStep } = useWorkflow();
+  const [showHelpDialog, setShowHelpDialog] = React.useState(false);
+  
+  // Handle new project
+  const handleNewProject = () => {
+    if (projectState.isAnalyzing) return;
+    
+    if (projectState.musicFile || projectState.videoFiles.length > 0) {
+      if (window.confirm('Are you sure you want to create a new project? All unsaved work will be lost.')) {
+        dispatch({ type: 'SET_STEP', payload: 'input' });
+        dispatch({ type: 'SET_MUSIC_FILE', payload: null });
+        dispatch({ type: 'SET_VIDEO_FILES', payload: [] });
+        dispatch({ type: 'SET_AUDIO_ANALYSIS', payload: null });
+        dispatch({ type: 'SET_VIDEO_ANALYSES', payload: {} });
+        dispatch({ type: 'SET_EDIT_DECISIONS', payload: [] });
+        dispatch({ type: 'SET_PLAYBACK_TIME', payload: 0 });
+      }
+    }
+  };
+  
+  // Handle open project
+  const handleOpenProject = () => {
+    // In a real app, this would open a file dialog
+    alert('Open project functionality would be implemented here');
+  };
+  
+  // Handle save project
+  const handleSaveProject = () => {
+    // In a real app, this would save the project
+    alert('Save project functionality would be implemented here');
+  };
+  
+  // Handle export
+  const handleExport = () => {
+    dispatch({ type: 'SHOW_EXPORT_MODAL', payload: true });
+  };
+
+  // Add workflow stepper to the layout
+  const renderWorkflowStepper = () => {
+    // Don't render the workflow stepper on the welcome page
+    if (projectState.currentStep === 'welcome') {
+      return null;
+    }
+    
+    return (
+      <div className="mb-8">
+        <WorkflowStepper
+          currentStep={workflowState.currentStep}
+          isProcessing={workflowState.isProcessing}
+          progressPercentage={workflowState.progressPercentage}
+          statusMessage={workflowState.statusMessage}
+          onStepClick={setStep}
+        />
+      </div>
+    );
+  };
+  
+  // Create a map of video files by ID for the export modal
+  const videoFilesById: Record<string, File> = {};
+  projectState.videoFiles.forEach(file => {
+    const analyses = projectState.videoAnalyses;
+    // Find the analysis for this file
+    for (const id in analyses) {
+      if (analyses[id].clip.name === file.name) {
+        videoFilesById[id] = file;
+        break;
+      }
+    }
+  });
+  
+  return (
+    <>
+      <AppLayout
+        onNewProject={handleNewProject}
+        onOpenProject={handleOpenProject}
+        onSaveProject={handleSaveProject}
+        onExport={handleExport}
+        onHelpClick={() => setShowHelpDialog(true)}
+        renderWorkflowStepper={renderWorkflowStepper}
+      >
+        {/* This is where the route components will be rendered */}
+        <Outlet />
+        
+        {/* Export Modal with accessibility improvements */}
+        {projectState.showExportModal && (
+          <ExportModal
+            isOpen={projectState.showExportModal}
+            onClose={() => dispatch({ type: 'SHOW_EXPORT_MODAL', payload: false })}
+            editDecisions={projectState.editDecisions}
+            videoFiles={videoFilesById}
+            audioFile={projectState.musicFile}
+            settings={projectState.settings}
+            duration={projectState.duration}
+          />
+        )}
+      </AppLayout>
+
+      {/* Help Dialog */}
+      {showHelpDialog && (
+        <AccessibleDialog
+          isOpen={showHelpDialog}
+          onClose={() => setShowHelpDialog(false)}
+          title="Help & Keyboard Shortcuts"
+          description="Learn how to use CineFlux-AutoXML efficiently"
+        >
+          <div>
+            <h3 className="text-lg font-medium mb-2" style={{ color: colorPalette.offWhite }}>
+              Keyboard Shortcuts
+            </h3>
+            <div
+              className="p-4 rounded-md mb-4"
+              style={{ backgroundColor: colorPalette.darkGrey }}
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <div style={{ color: colorPalette.lightGrey }}>Next Step</div>
+                <div style={{ color: colorPalette.offWhite }}>Alt + Right Arrow</div>
+                <div style={{ color: colorPalette.lightGrey }}>Previous Step</div>
+                <div style={{ color: colorPalette.offWhite }}>Alt + Left Arrow</div>
+                <div style={{ color: colorPalette.lightGrey }}>Open Settings</div>
+                <div style={{ color: colorPalette.offWhite }}>Alt + S</div>
+                <div style={{ color: colorPalette.lightGrey }}>Help</div>
+                <div style={{ color: colorPalette.offWhite }}>Alt + H</div>
+              </div>
+            </div>
+            
+            <h3 className="text-lg font-medium mb-2" style={{ color: colorPalette.offWhite }}>
+              Getting Started
+            </h3>
+            <p className="mb-4" style={{ color: colorPalette.lightGrey }}>
+              CineFlux-AutoXML helps you generate XML files for video editing software. Follow the step-by-step process to upload your media, analyze it, configure settings, and export the final XML.
+            </p>
+            
+            <button
+              className="w-full px-4 py-2 rounded-md"
+              style={{
+                backgroundColor: colorPalette.subtleOrange,
+                color: colorPalette.offWhite,
+              }}
+              onClick={() => setShowHelpDialog(false)}
+            >
+              Close
+            </button>
+          </div>
+        </AccessibleDialog>
+      )}
+    </>
+  );
+};
+
+export default WorkflowContainer;
