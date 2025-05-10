@@ -42,113 +42,120 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
   const [edl, setEdl] = useState<EditDecisionList | null>(null);
   const [videoSources, setVideoSources] = useState<Record<string, string>>({});
   
-  // Create a sample EDL for testing
+  // Use the EDL from the preview state or create a sample one
   useEffect(() => {
-    // Create an empty EDL
-    const sampleEdl = createEmptyEDL('Preview EDL', 30);
-    
-    // Add clips from the project's video files
-    const videoFiles = state.project.rawVideoFiles.length > 0 
-      ? state.project.rawVideoFiles 
-      : [
-          { name: 'video1.mp4', size: 1000000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
-          { name: 'video2.mp4', size: 2000000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
-          { name: 'video3.mp4', size: 1500000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }
-        ];
-    
-    // Create video sources map
-    const sources: Record<string, string> = {};
-    videoFiles.forEach((file, index) => {
-      sources[`video_${index + 1}`] = file.url;
-    });
-    
-    setVideoSources(sources);
-    
-    // Add some clips
-    sampleEdl.clips = [
-      {
-        id: 'clip_1',
-        sourceId: 'video_1',
-        trackType: TrackType.VIDEO,
-        trackNumber: 1,
-        timelineInPoint: 0,
-        timelineOutPoint: 5,
-        sourceInPoint: 10,
-        sourceOutPoint: 15,
-        enabled: true
-      },
-      {
-        id: 'clip_2',
-        sourceId: 'video_2',
-        trackType: TrackType.VIDEO,
-        trackNumber: 1,
-        timelineInPoint: 5,
-        timelineOutPoint: 10,
-        sourceInPoint: 5,
-        sourceOutPoint: 10,
-        enabled: true
-      },
-      {
-        id: 'clip_3',
-        sourceId: 'video_3',
-        trackType: TrackType.VIDEO,
-        trackNumber: 1,
-        timelineInPoint: 10,
-        timelineOutPoint: 15,
-        sourceInPoint: 0,
-        sourceOutPoint: 5,
-        enabled: true
-      }
-    ];
-    
-    // Add some transitions
-    sampleEdl.transitions = [
-      {
-        id: 'transition_1',
-        type: TransitionType.DISSOLVE,
-        duration: 1,
-        outgoingClipId: 'clip_1',
-        incomingClipId: 'clip_2',
-        centerPoint: 5
-      },
-      {
-        id: 'transition_2',
-        type: TransitionType.WIPE,
-        duration: 1,
-        outgoingClipId: 'clip_2',
-        incomingClipId: 'clip_3',
-        centerPoint: 10
-      }
-    ];
-    
-    // Add some cut points
-    sampleEdl.cutPoints = [
-      {
-        id: 'cut_1',
-        type: MarkerType.MARKER,
-        position: 2.5,
-        label: 'Beat 1'
-      },
-      {
-        id: 'cut_2',
-        type: MarkerType.MARKER,
-        position: 7.5,
-        label: 'Beat 2'
-      },
-      {
-        id: 'cut_3',
-        type: MarkerType.MARKER,
-        position: 12.5,
-        label: 'Beat 3'
-      }
-    ];
-    
-    // Set the total duration
-    sampleEdl.totalDuration = 15;
-    
-    // Set the EDL
-    setEdl(sampleEdl);
-  }, [state.project.rawVideoFiles]);
+    if (state.preview.edl) {
+      setEdl(state.preview.edl);
+    } else {
+      // Create an empty EDL
+      const sampleEdl = createEmptyEDL('Preview EDL', 30);
+      
+      // Add clips from the project's video files
+      const videoFiles = state.project.rawVideoFiles.length > 0 
+        ? state.project.rawVideoFiles 
+        : [
+            { name: 'video1.mp4', size: 1000000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+            { name: 'video2.mp4', size: 2000000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+            { name: 'video3.mp4', size: 1500000, type: 'video/mp4', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }
+          ];
+      
+      // Create video sources map
+      const sources: Record<string, string> = {};
+      videoFiles.forEach((file, index) => {
+        sources[`video_${index + 1}`] = file.url;
+      });
+      
+      setVideoSources(sources);
+      
+      // Add some clips
+      sampleEdl.clips = [
+        {
+          id: 'clip_1',
+          sourceId: 'video_1',
+          trackType: TrackType.VIDEO,
+          trackNumber: 1,
+          timelineInPoint: 0,
+          timelineOutPoint: 5,
+          sourceInPoint: 10,
+          sourceOutPoint: 15,
+          enabled: true
+        },
+        {
+          id: 'clip_2',
+          sourceId: 'video_2',
+          trackType: TrackType.VIDEO,
+          trackNumber: 1,
+          timelineInPoint: 5,
+          timelineOutPoint: 10,
+          sourceInPoint: 5,
+          sourceOutPoint: 10,
+          enabled: true
+        },
+        {
+          id: 'clip_3',
+          sourceId: 'video_3',
+          trackType: TrackType.VIDEO,
+          trackNumber: 1,
+          timelineInPoint: 10,
+          timelineOutPoint: 15,
+          sourceInPoint: 0,
+          sourceOutPoint: 5,
+          enabled: true
+        }
+      ];
+      
+      // Add some transitions
+      sampleEdl.transitions = [
+        {
+          id: 'transition_1',
+          type: TransitionType.DISSOLVE,
+          duration: 1,
+          outgoingClipId: 'clip_1',
+          incomingClipId: 'clip_2',
+          centerPoint: 5
+        },
+        {
+          id: 'transition_2',
+          type: TransitionType.WIPE,
+          duration: 1,
+          outgoingClipId: 'clip_2',
+          incomingClipId: 'clip_3',
+          centerPoint: 10
+        }
+      ];
+      
+      // Add some cut points
+      sampleEdl.cutPoints = [
+        {
+          id: 'cut_1',
+          type: MarkerType.MARKER,
+          position: 2.5,
+          label: 'Beat 1'
+        },
+        {
+          id: 'cut_2',
+          type: MarkerType.MARKER,
+          position: 7.5,
+          label: 'Beat 2'
+        },
+        {
+          id: 'cut_3',
+          type: MarkerType.MARKER,
+          position: 12.5,
+          label: 'Beat 3'
+        }
+      ];
+      
+      // Set the total duration
+      sampleEdl.totalDuration = 15;
+      
+      // Set the EDL
+      setEdl(sampleEdl);
+      
+      // Update the preview state in the context
+      actions.updatePreviewState({ edl: sampleEdl });
+    }
+  }, [state.project.rawVideoFiles, state.preview.edl, actions]);
   
   // Handle time update
   const handleTimeUpdate = (time: number) => {
@@ -167,12 +174,12 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
   
   // Handle back to editing
   const handleBackToEdit = () => {
-    navigation.goToStep('edit');
+    navigation.goToStep(WorkflowStep.EDIT);
   };
   
   // Handle export
   const handleExport = () => {
-    navigation.goToStep('export');
+    navigation.goToStep(WorkflowStep.EXPORT);
   };
   
   return (
@@ -191,9 +198,14 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
               height={450}
               showWaveform={true}
               showTransitions={true}
-              onTimeUpdate={handleTimeUpdate}
+              onTimeUpdate={(time) => {
+                handleTimeUpdate(time);
+                actions.updatePreviewState({ currentTime: time });
+              }}
               onEnded={handlePlaybackEnd}
               onMarkerClick={handleMarkerClick}
+              isPlaying={state.preview.isPlaying}
+              currentTime={state.preview.currentTime}
             />
           </div>
         ) : (

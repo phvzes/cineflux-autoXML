@@ -27,6 +27,7 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
     { id: WorkflowStep.INPUT, label: 'Input', icon: '📁' },
     { id: WorkflowStep.ANALYSIS, label: 'Analysis', icon: '📊' },
     { id: WorkflowStep.EDIT, label: 'Edit', icon: '✂️' },
+    { id: WorkflowStep.PREVIEW, label: 'Preview', icon: '👁️' },
     { id: WorkflowStep.EXPORT, label: 'Export', icon: '📤' }
   ];
   
@@ -39,6 +40,8 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
         return true; // Accessible if we have a music file (would be checked in component)
       case WorkflowStep.EDIT:
         return hasAnalysisResults; // Need analysis results
+      case WorkflowStep.PREVIEW:
+        return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
       case WorkflowStep.EXPORT:
         return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
       default:
@@ -72,6 +75,8 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
                 return hasAnalysisResults;
               case WorkflowStep.EDIT:
                 return hasEditDecisions;
+              case WorkflowStep.PREVIEW:
+                return hasEditDecisions; // Preview is completed if we have edit decisions
               case WorkflowStep.EXPORT:
                 return false; // Export is never "completed" in the stepper
               default:
