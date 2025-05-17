@@ -38,7 +38,7 @@ export class VideoService {
   constructor() {
     this.ffmpeg = createFFmpeg({
       log: false,
-      corePath: '/assets/ffmpeg-core/ffmpeg-core.js',
+      corePath: './assets/ffmpeg-core/ffmpeg-core.js',
     });
     
     // Initialize event listener collections

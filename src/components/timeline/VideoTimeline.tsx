@@ -6,10 +6,27 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useVideoService } from '../hooks/useVideoService';
-import { useAudioService } from '../hooks/useAudioService';
-import { Scene, VideoFrame, TimelineMarker, MarkerType } from '../types/video-types';
-import { Beat, AudioSegment } from '../types/audio-types'; // You may need to create or update this file
+import { useVideoService } from '../../hooks/useVideoService';
+import { useAudioService } from '../../hooks/useAudioService';
+import { Scene, VideoFrame } from '../../types/video-types';
+import { Beat, AudioSegment } from '../../types/audio-types';
+
+// Define additional types needed for the timeline
+interface TimelineMarker {
+  id: string;
+  time: number;
+  type: MarkerType;
+  label?: string;
+  data?: any;
+}
+
+enum MarkerType {
+  SCENE_BOUNDARY = 'scene-boundary',
+  KEYFRAME = 'keyframe',
+  TRANSITION = 'transition',
+  EDIT_POINT = 'edit-point',
+  CUSTOM = 'custom'
+}
 
 interface VideoTimelineProps {
   videoFile?: File;

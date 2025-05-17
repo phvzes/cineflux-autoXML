@@ -1,0 +1,166 @@
+/* WelcomePage.css */
+
+.welcome-container {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background-color: var(--clr-bg-primary);
+}
+
+.welcome-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.welcome-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--clr-text-primary);
+  margin-bottom: 1rem;
+}
+
+.welcome-subtitle {
+  font-size: 1.25rem;
+  color: var(--clr-text-secondary);
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.action-card {
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 20px rgba(0, 0, 0, 0.15);
+}
+
+.create-project-card {
+  background-color: var(--clr-accent);
+  color: var(--clr-text-primary);
+}
+
+.date-card {
+  background-color: var(--clr-bg-secondary);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--clr-text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.project-card {
+  background-color: var(--clr-ui-element);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.project-thumbnail {
+  height: 8rem;
+  background-size: cover;
+  background-position: center;
+}
+
+.project-thumbnail-placeholder {
+  height: 8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 122, 69, 0.1);
+}
+
+.project-details {
+  padding: 1rem;
+}
+
+.project-title {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: var(--clr-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-status {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.status-completed {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: var(--clr-success);
+}
+
+.status-in-progress {
+  background-color: rgba(255, 122, 69, 0.1);
+  color: var(--clr-accent);
+}
+
+.project-date {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--clr-text-secondary);
+}
+
+.feature-card {
+  background-color: var(--clr-ui-element);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.feature-icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background-color: rgba(255, 122, 69, 0.1);
+  margin-bottom: 1rem;
+}
+
+.feature-icon {
+  color: var(--clr-accent);
+}
+
+.feature-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--clr-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.feature-description {
+  color: var(--clr-text-secondary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .welcome-title {
+    font-size: 2rem;
+  }
+  
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+}

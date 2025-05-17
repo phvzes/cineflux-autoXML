@@ -1,0 +1,116 @@
+/**
+ * theme.css
+ * 
+ * Global CSS variables for the CineFlux-AutoXML application.
+ * This file defines the color palette, spacing, typography, and other design tokens.
+ */
+
+:root {
+  /* Color Palette - Updated to match the specified palette */
+  --clr-bg-primary: #121218;    /* Rich black - Primary background */
+  --clr-bg-secondary: #1E1E24;  /* Charcoal - Secondary background */
+  --clr-ui-element: #2A2A30;    /* Dark grey - UI elements */
+  
+  --clr-text-primary: #F5F5F7;  /* Off-white - Primary text */
+  --clr-text-secondary: #B0B0B5; /* Light grey - Secondary text */
+  
+  --clr-accent: #FF7A45;        /* Subtle orange - Interactive elements */
+  --clr-accent-hover: #FF6A35;  /* Darker orange for hover states */
+  --clr-accent-active: #FF5A25; /* Even darker orange for active states */
+  
+  --clr-success: #4CAF50;       /* Subtle green - Success */
+  --clr-success-hover: #43A047; /* Darker green for hover states */
+  --clr-success-active: #388E3C; /* Even darker green for active states */
+  
+  --clr-warning: #E53935;       /* Muted red - Warning/Error */
+  --clr-warning-hover: #D32F2F; /* Darker red for hover states */
+  --clr-warning-active: #C62828; /* Even darker red for active states */
+  
+  /* Opacity Variants */
+  --clr-accent-10: rgba(255, 122, 69, 0.1);
+  --clr-accent-20: rgba(255, 122, 69, 0.2);
+  --clr-accent-50: rgba(255, 122, 69, 0.5);
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+  
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-md: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+  
+  /* Z-index layers */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1100;
+  --z-index-fixed: 1200;
+  --z-index-modal-backdrop: 1300;
+  --z-index-modal: 1400;
+  --z-index-popover: 1500;
+  --z-index-tooltip: 1600;
+}
+
+/* Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-normal: 0ms;
+    --transition-slow: 0ms;
+  }
+  
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark Mode Specific Overrides (if needed in the future) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Already using dark mode by default */
+  }
+}
+
+/* High Contrast Mode Support */
+@media (forced-colors: active) {
+  :root {
+    --clr-accent: SelectedItem;
+    --clr-success: SelectedItem;
+    --clr-warning: Mark;
+  }
+}

@@ -52,6 +52,13 @@ const defaultState: AppState = {
     currentEdit: null,
     selectedEditIndex: null
   },
+  preview: {
+    edl: null,
+    isPlaying: false,
+    currentTime: 0,
+    volume: 75,
+    isFullscreen: false
+  },
   export: {
     settings: {
       format: 'premiere',
@@ -89,6 +96,8 @@ const canAccessRoute = (
       return true; // Accessible if we have a music file (would be checked in component)
     case WorkflowStep.EDIT:
       return hasAnalysisResults; // Need analysis results
+    case WorkflowStep.PREVIEW:
+      return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
     case WorkflowStep.EXPORT:
       return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
     default:
@@ -103,6 +112,8 @@ const getNextRoute = (currentStep: WorkflowStep): WorkflowStep => {
     case WorkflowStep.ANALYSIS:
       return WorkflowStep.EDIT;
     case WorkflowStep.EDIT:
+      return WorkflowStep.PREVIEW;
+    case WorkflowStep.PREVIEW:
       return WorkflowStep.EXPORT;
     case WorkflowStep.EXPORT:
     default:
@@ -118,8 +129,10 @@ const getPreviousRoute = (currentStep: WorkflowStep): WorkflowStep | null => {
       return WorkflowStep.INPUT;
     case WorkflowStep.EDIT:
       return WorkflowStep.ANALYSIS;
-    case WorkflowStep.EXPORT:
+    case WorkflowStep.PREVIEW:
       return WorkflowStep.EDIT;
+    case WorkflowStep.EXPORT:
+      return WorkflowStep.PREVIEW;
     default:
       return null;
   }
@@ -141,6 +154,8 @@ interface WorkflowContextType {
     addRawVideoFile: (file: File) => void; // New method for raw video files
     removeRawVideoFile: (index: number) => void; // New method for raw video files
     startAnalysis: () => Promise<void>;
+    updatePreviewState: (previewState: Partial<typeof defaultState.preview>) => void;
+    generatePreview: () => void;
   };
 }
 
@@ -158,7 +173,9 @@ const WorkflowContext = createContext<WorkflowContextType>({
     removeVideoFile: () => {},
     addRawVideoFile: () => {}, // New method for raw video files
     removeRawVideoFile: () => {}, // New method for raw video files
-    startAnalysis: async () => {}
+    startAnalysis: async () => {},
+    updatePreviewState: () => {},
+    generatePreview: () => {}
   }
 });
 
@@ -529,6 +546,61 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     }
   };
   
+  // Preview state update method
+  const updatePreviewState = (previewState: Partial<typeof defaultState.preview>) => {
+    setState(prev => ({
+      ...prev,
+      preview: {
+        ...prev.preview,
+        ...previewState
+      }
+    }));
+  };
+
+  // Generate preview from edit decisions
+  const generatePreview = () => {
+    if (!state.edit.decisions || state.edit.decisions.length === 0) {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          errors: {
+            ...prev.ui.errors,
+            preview: 'No edit decisions available to preview'
+          }
+        }
+      }));
+      return;
+    }
+
+    // Here we would normally generate an EDL from the edit decisions
+    // For now, we'll just set a flag indicating preview is ready
+    setState(prev => ({
+      ...prev,
+      preview: {
+        ...prev.preview,
+        edl: {
+          id: 'preview-edl',
+          name: 'Preview EDL',
+          clips: state.edit.decisions.map((decision, index) => ({
+            id: `clip-${index}`,
+            sourceId: decision.videoId || `video-${index}`,
+            timelineInPoint: decision.timelineInPoint || index * 5,
+            timelineOutPoint: decision.timelineOutPoint || (index + 1) * 5,
+            sourceInPoint: decision.sourceInPoint || 0,
+            sourceOutPoint: decision.sourceOutPoint || 5
+          })),
+          transitions: [],
+          cutPoints: [],
+          totalDuration: state.workflow.totalDuration
+        }
+      }
+    }));
+
+    // Navigate to the preview step
+    goToStep(WorkflowStep.PREVIEW);
+  };
+
   // Create a context value with state and methods
   const contextValue = {
     state,
@@ -544,7 +616,9 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       removeVideoFile,
       addRawVideoFile,
       removeRawVideoFile,
-      startAnalysis
+      startAnalysis,
+      updatePreviewState,
+      generatePreview
     }
   };
   

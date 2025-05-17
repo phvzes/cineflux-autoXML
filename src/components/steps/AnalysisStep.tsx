@@ -15,7 +15,7 @@ import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
 import { 
   Music, 
   Video, 
-  Waveform, 
+  AudioWaveform, // Using AudioWaveform instead of Waveform
   RefreshCw,
   Play,
   Pause,
@@ -225,7 +225,7 @@ const AnalysisStep: React.FC = () => {
   const renderAnalysisProgress = () => (
     <div className="flex flex-col items-center justify-center p-8">
       <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-6">
-        <Waveform size={36} className="text-purple-500 animate-pulse" />
+        <AudioWaveform size={36} className="text-purple-500 animate-pulse" />
       </div>
       
       <h2 className="text-xl font-bold mb-2">Analyzing Media</h2>
