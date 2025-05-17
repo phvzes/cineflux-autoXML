@@ -15,10 +15,9 @@ export const useAudioService = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
-  const [startedAt, setStartedAt] = useState<number>(0);
   
-  // Create a singleton instance of the audio service
-  const audioService = new AudioService();
+  // Use the AudioService instance
+  const audioService = AudioService.getInstance();
   
   /**
    * Analyze an audio file to detect beats, energy levels, etc.
@@ -34,10 +33,9 @@ export const useAudioService = () => {
     setIsProcessing(true);
     setProgress(0);
     setError(null);
-    setStartedAt(Date.now());
     
     try {
-      const result = await audioService.analyzeAudio(audioFile, {
+      const result = await AudioService.analyzeAudio(audioFile, {
         ...options,
         onProgress: (p) => setProgress(p)
       });
@@ -49,7 +47,7 @@ export const useAudioService = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [audioService]);
+  }, []);
   
   /**
    * Extract waveform data from an audio file
@@ -65,7 +63,7 @@ export const useAudioService = () => {
     setError(null);
     
     try {
-      const result = await audioService.extractWaveform(audioFile, options);
+      const result = await AudioService.extractWaveform(audioFile, options);
       return result;
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to extract waveform'));
@@ -73,7 +71,7 @@ export const useAudioService = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [audioService]);
+  }, []);
   
   /**
    * Detect beats in an audio file
@@ -91,7 +89,7 @@ export const useAudioService = () => {
     setError(null);
     
     try {
-      const result = await audioService.detectBeats(audioFile, {
+      const result = await AudioService.detectBeats(audioFile, {
         ...options,
         onProgress: (p) => setProgress(p)
       });
@@ -103,7 +101,7 @@ export const useAudioService = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [audioService]);
+  }, []);
   
   return {
     isProcessing,

@@ -5,7 +5,8 @@
  * This follows the same patterns established in AudioService.
  */
 
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 import * as cv from '@techstark/opencv-js';
 import { v4 as uuidv4 } from 'uuid';
 

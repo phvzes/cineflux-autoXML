@@ -23,8 +23,8 @@ export const useVideoService = () => {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
   
-  // Create a singleton instance of the video service
-  const videoService = new VideoService();
+  // Use the VideoService instance
+  const videoService = VideoService.getInstance();
   
   /**
    * Extract frames from a video file
