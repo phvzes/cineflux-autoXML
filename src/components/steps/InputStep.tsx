@@ -1,3 +1,4 @@
+
 /**
  * InputStep.tsx
  * 
@@ -38,6 +39,21 @@ const InputStep: React.FC = () => {
       const file = acceptedFiles[0];
       
       try {
+        /**
+         * INTEGRATION POINT: InputModule -> AudioService
+         * 
+         * Here the InputModule integrates with AudioService to process uploaded audio files.
+         * The flow is:
+         * 1. User drops an audio file in the UI
+         * 2. We get the AudioService singleton instance
+         * 3. We create a progress callback to update the UI during processing
+         * 4. AudioService.loadAudio() loads and decodes the audio file
+         * 5. AudioService.extractWaveform() analyzes the audio to create visualization data
+         * 6. Results are stored in the workflow state for downstream processing
+         * 
+         * This integration is critical as it initializes the audio analysis pipeline
+         * that will later be used by EditDecisionEngine to create edit points.
+         */
         // Use AudioService to load and analyze the audio file
         const audioService = AudioService.getInstance();
         
@@ -120,6 +136,22 @@ const InputStep: React.FC = () => {
   
   // Setup dropzone for videos
   const onVideoDrop = useCallback(async (acceptedFiles: File[]) => {
+    /**
+     * INTEGRATION POINT: InputModule -> VideoService
+     * 
+     * Here the InputModule integrates with VideoService to process uploaded video files.
+     * The flow is:
+     * 1. User drops video files in the UI
+     * 2. We get the VideoService singleton instance
+     * 3. For each video file, VideoService.loadVideoFile() processes it to:
+     *    - Extract metadata (duration, dimensions, fps)
+     *    - Generate a thumbnail
+     *    - Create a blob URL for preview
+     * 4. Results are stored in the workflow state for downstream processing
+     * 
+     * This integration is critical as it prepares video files that will later be
+     * analyzed by EditDecisionEngine to match with audio beats and create the edit.
+     */
     const videoService = VideoService.getInstance();
     
     // Process each video file

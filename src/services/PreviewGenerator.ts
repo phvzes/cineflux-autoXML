@@ -1,3 +1,4 @@
+
 // src/services/PreviewGenerator.ts
 
 /**
@@ -48,6 +49,26 @@ class PreviewGenerator {
     videoFiles: Record<string, File>,
     audioFile: File | null
   ): Promise<string> {
+    /**
+     * INTEGRATION POINT: PreviewGenerator -> EditDecisionEngine
+     * 
+     * This method represents a key integration point between PreviewGenerator and EditDecisionEngine.
+     * The flow is:
+     * 
+     * 1. EditDecisionEngine generates edit decisions based on audio and video analysis
+     * 2. These decisions are passed to PreviewGenerator.generatePreviewVideo()
+     * 3. PreviewGenerator uses the decisions to create a preview of the final edit
+     * 4. The preview allows users to see the results of the automated editing before export
+     * 
+     * This integration is critical for the user experience, as it provides visual feedback
+     * on how the EditDecisionEngine has matched video clips to audio elements.
+     * 
+     * In a real implementation, this would use a video processing library to:
+     * - Extract segments from each video file based on the edit decisions
+     * - Apply transitions between clips as specified in the decisions
+     * - Combine the segments with the audio track
+     * - Generate a preview video file or stream
+     */
     return PreviewGenerator.generatePreviewVideo(editDecisions, videoFiles, audioFile);
   }
   

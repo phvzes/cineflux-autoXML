@@ -1,3 +1,4 @@
+
 /**
  * EditDecisionEngine.ts
  * 
@@ -55,6 +56,23 @@ export class EditDecisionEngine {
       this.eventListeners.set(event, []);
     });
 
+    /**
+     * INTEGRATION POINT: EditDecisionEngine -> AudioService, VideoService
+     * 
+     * Here the EditDecisionEngine integrates with both AudioService and VideoService.
+     * This integration happens at the constructor level, where references to both services
+     * are stored for later use throughout the engine's lifecycle.
+     * 
+     * This design allows:
+     * 1. Dependency injection for easier testing (services can be mocked)
+     * 2. Singleton pattern enforcement for consistent state management
+     * 3. Clear separation of concerns between audio analysis, video analysis, and edit decision logic
+     * 
+     * The EditDecisionEngine will use these services to:
+     * - Get audio analysis data (beats, segments, energy levels) from AudioService
+     * - Get video analysis data (scenes, content, motion) from VideoService
+     * - Combine these analyses to generate intelligent edit decisions
+     */
     // Store service references
     this.audioService = audioService;
     this.videoService = videoService;
@@ -231,6 +249,21 @@ export class EditDecisionEngine {
     try {
       const instance = this.getInstance();
       
+      /**
+       * INTEGRATION POINT: EditDecisionEngine -> AudioService
+       * 
+       * This is a critical integration point where EditDecisionEngine uses AudioService
+       * to analyze the audio file. The flow is:
+       * 
+       * 1. EditDecisionEngine receives the raw audio file from the user
+       * 2. It calls AudioService.analyzeAudio() to process the file
+       * 3. AudioService performs beat detection, energy analysis, and segment detection
+       * 4. The analysis results are returned to EditDecisionEngine
+       * 5. EditDecisionEngine uses this data to determine where to place edit points
+       * 
+       * This integration enables the core functionality of matching video edits to 
+       * musical elements like beats, energy changes, and structural segments.
+       */
       // Step 1: Analyze audio using AudioService
       instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Analyzing audio...',
@@ -248,6 +281,21 @@ export class EditDecisionEngine {
         }
       );
 
+      /**
+       * INTEGRATION POINT: EditDecisionEngine -> VideoService
+       * 
+       * This is another critical integration point where EditDecisionEngine uses VideoService
+       * to analyze each video file. The flow is:
+       * 
+       * 1. EditDecisionEngine receives the raw video files from the user
+       * 2. For each file, it calls VideoService.analyzeVideo() to process the file
+       * 3. VideoService performs scene detection, content analysis, and motion analysis
+       * 4. The analysis results are collected in the videoAnalyses object
+       * 5. EditDecisionEngine uses this data to match appropriate video clips to edit points
+       * 
+       * This integration enables intelligent selection of video clips based on their
+       * content, motion, and scene boundaries to create a cohesive edit.
+       */
       // Step 2: Analyze videos using VideoService
       instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Analyzing videos...',
