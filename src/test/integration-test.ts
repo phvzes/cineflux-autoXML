@@ -7,8 +7,8 @@
 
 import { audioService } from '../services/AudioService';
 import { videoService } from '../services/VideoService';
-import EditDecisionEngine from '../services/EditDecisionEngine';
-import PreviewGenerator from '../services/PreviewGenerator';
+import { editDecisionEngine } from '../services/EditDecisionEngine';
+import { previewGenerator } from '../services/PreviewGenerator';
 import EditService from '../services/EditService';
 
 // Mock file creation utilities
@@ -53,26 +53,20 @@ async function runIntegrationTest() {
     
     // Step 4: Analyze video using VideoService
     console.log('\nStep 4: Analyzing video using VideoService');
-    const videoAnalysisResult = await videoService.analyzeVideo(videoResult, (progress, step) => {
-      console.log(`Video analysis progress: ${progress}% - ${step}`);
-    });
+    const videoAnalysisResult = await videoService.analyzeVideo(videoFile);
     console.log('✓ Video analysis completed successfully');
     console.log('Video analysis results:', videoAnalysisResult);
     
     // Step 5: Generate edit decisions using EditDecisionEngine
     console.log('\nStep 5: Generating edit decisions using EditDecisionEngine');
-    const editDecisionEngine = new EditDecisionEngine();
     const editDecisions = await editDecisionEngine.generateEditDecisions(
       audioResult,
-      [videoAnalysisResult],
+      { [videoAnalysisResult.videoId]: videoAnalysisResult },
       {
         style: 'rhythm',
         minClipDuration: 2,
         maxClipDuration: 5,
         transitionType: 'cut',
-      },
-      (progress, step) => {
-        console.log(`Edit decision generation progress: ${progress}% - ${step}`);
       }
     );
     console.log('✓ Edit decisions generated successfully');
@@ -80,14 +74,10 @@ async function runIntegrationTest() {
     
     // Step 6: Generate preview using PreviewGenerator
     console.log('\nStep 6: Generating preview using PreviewGenerator');
-    const previewGenerator = new PreviewGenerator();
     const previewResult = await previewGenerator.generatePreviewVideo(
       editDecisions,
-      [videoResult],
-      audioResult,
-      (progress, step) => {
-        console.log(`Preview generation progress: ${progress}% - ${step}`);
-      }
+      { [videoResult.id]: videoFile },
+      audioFile
     );
     console.log('✓ Preview generated successfully');
     console.log('Preview result:', previewResult);
@@ -96,8 +86,8 @@ async function runIntegrationTest() {
     console.log('\nStep 7: Generating export XML using EditService');
     const exportXML = await EditService.generateExportXML(
       editDecisions,
-      [videoResult],
-      audioResult,
+      { [videoResult.id]: videoFile },
+      audioFile,
       'premiere',
       (progress, step) => {
         console.log(`XML generation progress: ${progress}% - ${step}`);
