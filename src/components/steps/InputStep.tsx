@@ -10,6 +10,8 @@ import { useDropzone } from 'react-dropzone';
 import { Music, Video, FileUp, X, Info, Settings, Film } from 'lucide-react';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { ProjectSettings } from '../../types/workflow';
+import AudioService from '../../services/AudioService';
+import VideoService from '../../services/VideoService';
 
 const InputStep: React.FC = () => {
   // Get workflow context
@@ -34,20 +36,71 @@ const InputStep: React.FC = () => {
   const onAudioDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      setData(prev => ({
-        ...prev,
-        project: {
-          ...prev.project,
-          musicFile: {
-            file,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            duration: 0, // This would be set after analysis
-            url: URL.createObjectURL(file)
+      
+      try {
+        // Use AudioService to load and analyze the audio file
+        const audioService = AudioService.getInstance();
+        
+        // Create a progress callback
+        const progressCallback = (progress: number, step: string) => {
+          setData(prev => ({
+            ...prev,
+            ui: {
+              ...prev.ui,
+              audioProgress: {
+                percentage: progress,
+                currentStep: step
+              }
+            }
+          }));
+        };
+        
+        // Load the audio file
+        const audioBuffer = await audioService.loadAudio(file, progressCallback);
+        
+        // Extract waveform data for visualization
+        const waveform = await audioService.extractWaveform(audioBuffer);
+        
+        // Update the workflow state with the music file and its metadata
+        setData(prev => ({
+          ...prev,
+          project: {
+            ...prev.project,
+            musicFile: {
+              file,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              duration: audioBuffer.duration,
+              url: URL.createObjectURL(file),
+              waveform: waveform.data
+            }
+          },
+          ui: {
+            ...prev.ui,
+            audioProgress: null,
+            errors: {
+              ...prev.ui.errors,
+              audioUpload: null
+            }
           }
-        }
-      }));
+        }));
+      } catch (error) {
+        console.error('Error processing audio file:', error);
+        
+        // Update state with error
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            audioProgress: null,
+            errors: {
+              ...prev.ui.errors,
+              audioUpload: `Error processing audio file: ${error.message}`
+            }
+          }
+        }));
+      }
     }
   }, [setData]);
   
@@ -66,11 +119,45 @@ const InputStep: React.FC = () => {
   });
   
   // Setup dropzone for videos
-  const onVideoDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach(file => {
-      addVideoFile(file);
-    });
-  }, [addVideoFile]);
+  const onVideoDrop = useCallback(async (acceptedFiles: File[]) => {
+    const videoService = VideoService.getInstance();
+    
+    // Process each video file
+    for (const file of acceptedFiles) {
+      try {
+        // Use VideoService to load and process the video file
+        const videoFile = await videoService.loadVideoFile(file);
+        
+        // Add the processed video file to the workflow state
+        addVideoFile({
+          file,
+          name: videoFile.name,
+          size: videoFile.size,
+          type: videoFile.type,
+          duration: videoFile.duration,
+          width: videoFile.width,
+          height: videoFile.height,
+          fps: videoFile.fps,
+          url: videoFile.blobUrl,
+          thumbnail: videoFile.thumbnail
+        });
+      } catch (error) {
+        console.error('Error processing video file:', error);
+        
+        // Update state with error
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            errors: {
+              ...prev.ui.errors,
+              videoUpload: `Error processing video file ${file.name}: ${error.message}`
+            }
+          }
+        }));
+      }
+    }
+  }, [addVideoFile, setData]);
   
   const {
     getRootProps: getVideoRootProps,
@@ -85,26 +172,60 @@ const InputStep: React.FC = () => {
   });
   
   // Setup dropzone for raw video files
-  const onRawVideoDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach(file => {
-      // Validate video file format
-      const validVideoFormats = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
-      if (validVideoFormats.includes(file.type)) {
-        addRawVideoFile(file);
-      } else {
-        // Show error for invalid format
+  const onRawVideoDrop = useCallback(async (acceptedFiles: File[]) => {
+    const videoService = VideoService.getInstance();
+    
+    // Process each raw video file
+    for (const file of acceptedFiles) {
+      try {
+        // Validate video file format
+        const validVideoFormats = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+        if (!validVideoFormats.includes(file.type)) {
+          setData(prev => ({
+            ...prev,
+            ui: {
+              ...prev.ui,
+              errors: {
+                ...prev.ui.errors,
+                videoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
+              }
+            }
+          }));
+          continue;
+        }
+        
+        // Use VideoService to load and process the video file
+        const videoFile = await videoService.loadVideoFile(file);
+        
+        // Add the processed raw video file to the workflow state
+        addRawVideoFile({
+          file,
+          name: videoFile.name,
+          size: videoFile.size,
+          type: videoFile.type,
+          duration: videoFile.duration,
+          width: videoFile.width,
+          height: videoFile.height,
+          fps: videoFile.fps,
+          url: videoFile.blobUrl,
+          thumbnail: videoFile.thumbnail
+        });
+      } catch (error) {
+        console.error('Error processing raw video file:', error);
+        
+        // Update state with error
         setData(prev => ({
           ...prev,
           ui: {
             ...prev.ui,
             errors: {
               ...prev.ui.errors,
-              videoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
+              videoUpload: `Error processing raw video file ${file.name}: ${error.message}`
             }
           }
         }));
       }
-    });
+    }
   }, [addRawVideoFile, setData]);
   
   const {
@@ -227,13 +348,46 @@ const InputStep: React.FC = () => {
                 </div>
               </div>
               
-              {/* Audio waveform preview would go here */}
+              {/* Audio waveform preview */}
               <div className="h-16 bg-gray-800 rounded overflow-hidden relative">
-                {/* This is a placeholder for the waveform preview */}
-                <div className="w-full h-full flex items-center justify-center text-gray-500">
-                  Waveform preview
-                </div>
+                {state.project.musicFile.waveform ? (
+                  <div className="w-full h-full">
+                    {/* Render waveform visualization */}
+                    <svg width="100%" height="100%" viewBox={`0 0 ${state.project.musicFile.waveform.length} 100`} preserveAspectRatio="none">
+                      <path
+                        d={`M 0,50 ${state.project.musicFile.waveform.map((value, index) => `L ${index},${50 - value * 40}`).join(' ')}`}
+                        stroke="rgba(139, 92, 246, 0.8)"
+                        strokeWidth="1.5"
+                        fill="none"
+                      />
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    Waveform preview
+                  </div>
+                )}
               </div>
+            </div>
+          )}
+          
+          {/* Display audio processing progress if applicable */}
+          {state.ui.audioProgress && (
+            <div className="mt-2">
+              <div className="text-sm text-gray-400">{state.ui.audioProgress.currentStep}</div>
+              <div className="w-full bg-gray-700 rounded-full h-2.5 mt-1">
+                <div 
+                  className="bg-purple-600 h-2.5 rounded-full" 
+                  style={{ width: `${state.ui.audioProgress.percentage}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+          
+          {/* Display error message if there's an error with audio upload */}
+          {state.ui.errors.audioUpload && (
+            <div className="mt-2 text-red-400 text-sm">
+              {state.ui.errors.audioUpload}
             </div>
           )}
         </div>

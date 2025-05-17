@@ -15,8 +15,8 @@ import {
 } from '../types/workflow';
 
 // Import services
-// We'll need to create or import the AudioService
-import { AudioService } from '../services/AudioService';
+import AudioService from '../services/AudioService';
+import VideoService from '../services/VideoService';
 
 // Default state for the application
 const defaultState: AppState = {
@@ -66,7 +66,12 @@ const defaultState: AppState = {
     exportError: null
   },
   ui: {
-    errors: {},
+    errors: {
+      audioUpload: null,
+      videoUpload: null
+    },
+    audioProgress: null,
+    videoProgress: null,
     modals: {
       showSettings: false,
       showHelp: false
@@ -136,11 +141,12 @@ interface WorkflowContextType {
   actions: {
     updateProjectSettings: (settings: Partial<ProjectSettings>) => void;
     setMusicFile: (file: File | null) => Promise<void>;
-    addVideoFile: (file: File) => void;
+    addVideoFile: (file: File) => Promise<void>;
     removeVideoFile: (index: number) => void;
-    addRawVideoFile: (file: File) => void; // New method for raw video files
-    removeRawVideoFile: (index: number) => void; // New method for raw video files
+    addRawVideoFile: (file: File) => Promise<void>;
+    removeRawVideoFile: (index: number) => void;
     startAnalysis: () => Promise<void>;
+    setData: (updater: (prevState: AppState) => AppState) => void;
   };
 }
 
@@ -154,11 +160,12 @@ const WorkflowContext = createContext<WorkflowContextType>({
   actions: {
     updateProjectSettings: () => {},
     setMusicFile: async () => {},
-    addVideoFile: () => {},
+    addVideoFile: async () => {},
     removeVideoFile: () => {},
-    addRawVideoFile: () => {}, // New method for raw video files
-    removeRawVideoFile: () => {}, // New method for raw video files
-    startAnalysis: async () => {}
+    addRawVideoFile: async () => {},
+    removeRawVideoFile: () => {},
+    startAnalysis: async () => {},
+    setData: () => {}
   }
 });
 
@@ -166,13 +173,15 @@ const WorkflowContext = createContext<WorkflowContextType>({
 interface WorkflowProviderProps {
   children: ReactNode;
   initialState?: Partial<AppState>;
-  audioService: AudioService;
+  audioService?: AudioService;
+  videoService?: VideoService;
 }
 
 export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ 
   children, 
   initialState,
-  audioService
+  audioService = AudioService.getInstance(),
+  videoService = VideoService.getInstance()
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -287,17 +296,51 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     }
     
     try {
-      const audioFile = await audioService.loadAudioFile(file);
+      // Create a progress callback
+      const progressCallback = (progress: number, step: string) => {
+        setState(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            audioProgress: {
+              percentage: progress,
+              currentStep: step
+            }
+          }
+        }));
+      };
+      
+      // Load the audio file
+      const audioBuffer = await audioService.loadAudio(file, progressCallback);
+      
+      // Extract waveform data for visualization
+      const waveform = await audioService.extractWaveform(audioBuffer);
       
       setState(prev => ({
         ...prev,
         project: {
           ...prev.project,
-          musicFile: audioFile
+          musicFile: {
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            duration: audioBuffer.duration,
+            url: URL.createObjectURL(file),
+            waveform: waveform.data
+          }
         },
         workflow: {
           ...prev.workflow,
-          totalDuration: audioFile.duration
+          totalDuration: audioBuffer.duration
+        },
+        ui: {
+          ...prev.ui,
+          audioProgress: null,
+          errors: {
+            ...prev.ui.errors,
+            audioLoad: null
+          }
         }
       }));
     } catch (error) {
@@ -305,6 +348,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
         ...prev,
         ui: {
           ...prev.ui,
+          audioProgress: null,
           errors: {
             ...prev.ui.errors,
             audioLoad: error instanceof Error ? error.message : 'Failed to load audio file'
@@ -314,21 +358,61 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     }
   };
   
-  const addVideoFile = (file: File) => {
-    setState(prev => ({
-      ...prev,
-      project: {
-        ...prev.project,
-        videoFiles: [...prev.project.videoFiles, {
-          file,
-          name: file.name,
-          size: file.size,
-          duration: 0, // This would be calculated
-          type: file.type,
-          url: URL.createObjectURL(file)
-        }]
-      }
-    }));
+  const addVideoFile = async (file: File) => {
+    try {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          videoProgress: {
+            percentage: 0,
+            currentStep: 'Processing video file...'
+          }
+        }
+      }));
+      
+      // Use VideoService to load and process the video file
+      const videoFile = await videoService.loadVideoFile(file);
+      
+      setState(prev => ({
+        ...prev,
+        project: {
+          ...prev.project,
+          videoFiles: [...prev.project.videoFiles, {
+            file,
+            name: videoFile.name,
+            size: videoFile.size,
+            duration: videoFile.duration,
+            width: videoFile.width,
+            height: videoFile.height,
+            fps: videoFile.fps,
+            type: videoFile.type,
+            url: videoFile.blobUrl,
+            thumbnail: videoFile.thumbnail
+          }]
+        },
+        ui: {
+          ...prev.ui,
+          videoProgress: null,
+          errors: {
+            ...prev.ui.errors,
+            videoUpload: null
+          }
+        }
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          videoProgress: null,
+          errors: {
+            ...prev.ui.errors,
+            videoUpload: error instanceof Error ? error.message : 'Failed to process video file'
+          }
+        }
+      }));
+    }
   };
   
   const removeVideoFile = (index: number) => {
@@ -352,44 +436,78 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     });
   };
 
-  // New method for adding raw video files
-  const addRawVideoFile = (file: File) => {
-    // Validate file type
-    const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
-    if (!validVideoTypes.includes(file.type)) {
+  // Method for adding raw video files
+  const addRawVideoFile = async (file: File) => {
+    try {
+      // Validate file type
+      const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+      if (!validVideoTypes.includes(file.type)) {
+        setState(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            errors: {
+              ...prev.ui.errors,
+              videoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
+            }
+          }
+        }));
+        return;
+      }
+      
       setState(prev => ({
         ...prev,
         ui: {
           ...prev.ui,
-          errors: {
-            ...prev.ui.errors,
-            videoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
+          videoProgress: {
+            percentage: 0,
+            currentStep: 'Processing raw video file...'
           }
         }
       }));
-      return;
-    }
-
-    setState(prev => ({
-      ...prev,
-      project: {
-        ...prev.project,
-        rawVideoFiles: [...prev.project.rawVideoFiles, {
-          file,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: URL.createObjectURL(file)
-        }]
-      },
-      ui: {
-        ...prev.ui,
-        errors: {
-          ...prev.ui.errors,
-          videoUpload: "" // Use empty string instead of null
+      
+      // Use VideoService to load and process the video file
+      const videoFile = await videoService.loadVideoFile(file);
+      
+      setState(prev => ({
+        ...prev,
+        project: {
+          ...prev.project,
+          rawVideoFiles: [...prev.project.rawVideoFiles, {
+            file,
+            name: videoFile.name,
+            size: videoFile.size,
+            duration: videoFile.duration,
+            width: videoFile.width,
+            height: videoFile.height,
+            fps: videoFile.fps,
+            type: videoFile.type,
+            url: videoFile.blobUrl,
+            thumbnail: videoFile.thumbnail
+          }]
+        },
+        ui: {
+          ...prev.ui,
+          videoProgress: null,
+          errors: {
+            ...prev.ui.errors,
+            videoUpload: null
+          }
         }
-      }
-    }));
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        ui: {
+          ...prev.ui,
+          videoProgress: null,
+          errors: {
+            ...prev.ui.errors,
+            videoUpload: error instanceof Error ? error.message : 'Failed to process raw video file'
+          }
+        }
+      }));
+    }
   };
 
   // New method for removing raw video files
@@ -429,15 +547,15 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       return;
     }
 
-    // Check if we have raw video files
-    if (state.project.rawVideoFiles.length === 0) {
+    // Check if we have video files
+    if (state.project.videoFiles.length === 0 && state.project.rawVideoFiles.length === 0) {
       setState(prev => ({
         ...prev,
         ui: {
           ...prev.ui,
           errors: {
             ...prev.ui.errors,
-            analysis: 'No raw video files selected'
+            analysis: 'No video files selected'
           }
         }
       }));
@@ -461,21 +579,26 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     }));
     
     try {
-      // Update progress state (this would normally happen throughout analysis)
-      setState(prev => ({
-        ...prev,
-        workflow: {
-          ...prev.workflow,
-          analysisProgress: {
-            percentage: 20,
-            currentStep: 'Beat detection in progress...',
-            isComplete: false
+      // Create a progress callback for audio analysis
+      const audioProgressCallback = (progress: number, step: string) => {
+        setState(prev => ({
+          ...prev,
+          workflow: {
+            ...prev.workflow,
+            analysisProgress: {
+              percentage: Math.floor(progress * 0.5), // Audio is 50% of total progress
+              currentStep: `Audio analysis: ${step}`,
+              isComplete: false
+            }
           }
-        }
-      }));
+        }));
+      };
       
       // Perform audio analysis
-      const audioAnalysis = await audioService.analyzeAudio(state.project.musicFile.file);
+      const audioAnalysis = await audioService.analyzeAudio(
+        state.project.musicFile.file,
+        audioProgressCallback
+      );
       
       // Update progress
       setState(prev => ({
@@ -483,12 +606,59 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
         workflow: {
           ...prev.workflow,
           analysisProgress: {
-            percentage: 80,
-            currentStep: 'Finalizing analysis...',
+            percentage: 50,
+            currentStep: 'Audio analysis complete. Starting video analysis...',
             isComplete: false
           }
         }
       }));
+      
+      // Analyze video files
+      const videoAnalysisResults = [];
+      
+      // Process regular video files
+      for (let i = 0; i < state.project.videoFiles.length; i++) {
+        const videoFile = state.project.videoFiles[i];
+        
+        // Update progress
+        setState(prev => ({
+          ...prev,
+          workflow: {
+            ...prev.workflow,
+            analysisProgress: {
+              percentage: 50 + Math.floor((i / (state.project.videoFiles.length + state.project.rawVideoFiles.length)) * 50),
+              currentStep: `Analyzing video ${i + 1} of ${state.project.videoFiles.length + state.project.rawVideoFiles.length}...`,
+              isComplete: false
+            }
+          }
+        }));
+        
+        // Analyze the video
+        const videoAnalysis = await videoService.analyzeVideo(videoFile.file);
+        videoAnalysisResults.push(videoAnalysis);
+      }
+      
+      // Process raw video files
+      for (let i = 0; i < state.project.rawVideoFiles.length; i++) {
+        const videoFile = state.project.rawVideoFiles[i];
+        
+        // Update progress
+        setState(prev => ({
+          ...prev,
+          workflow: {
+            ...prev.workflow,
+            analysisProgress: {
+              percentage: 50 + Math.floor(((state.project.videoFiles.length + i) / (state.project.videoFiles.length + state.project.rawVideoFiles.length)) * 50),
+              currentStep: `Analyzing raw video ${i + 1} of ${state.project.rawVideoFiles.length}...`,
+              isComplete: false
+            }
+          }
+        }));
+        
+        // Analyze the video
+        const videoAnalysis = await videoService.analyzeVideo(videoFile.file);
+        videoAnalysisResults.push(videoAnalysis);
+      }
       
       // Save analysis results
       setState(prev => ({
@@ -496,6 +666,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
         analysis: {
           ...prev.analysis,
           audio: audioAnalysis,
+          video: videoAnalysisResults,
           isAnalyzing: false
         },
         workflow: {
@@ -512,6 +683,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       goToNextStep();
       
     } catch (error) {
+      console.error('Analysis error:', error);
+      
       setState(prev => ({
         ...prev,
         analysis: {
@@ -529,6 +702,11 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     }
   };
   
+  // Create a setData method for direct state updates
+  const setData = (updater: (prevState: AppState) => AppState) => {
+    setState(updater);
+  };
+
   // Create a context value with state and methods
   const contextValue = {
     state,
@@ -544,7 +722,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       removeVideoFile,
       addRawVideoFile,
       removeRawVideoFile,
-      startAnalysis
+      startAnalysis,
+      setData
     }
   };
   
