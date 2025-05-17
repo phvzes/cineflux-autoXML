@@ -1,64 +1,47 @@
+
+import EventEmitter from 'events';
+import { processFileInChunks, shouldUseChunkedProcessing, ChunkProgress } from '../utils/fileChunker';
+
+export enum VideoServiceEvents {
+  ANALYSIS_START = 'analysis_start',
+  PROGRESS = 'progress',
+  CHUNK_PROGRESS = 'chunk_progress',
+  ANALYSIS_COMPLETE = 'analysis_complete',
+  ERROR = 'error'
+}
+
+export interface VideoAnalysis {
+  duration: number;
+  frameRate: number;
+  resolution: { width: number; height: number };
+  scenes: { startTime: number; endTime: number; keyFrameUrl: string }[];
+  contentAnalysis: { time: number; content: string }[];
+}
+
+export interface VideoProcessingProgress {
+  stage?: string;
+  progress: number; // 0-1
+  message: string;
+}
+
+export interface VideoChunkProgress extends ChunkProgress {
+  stage: string;
+}
+
 /**
- * VideoService.ts
- * 
- * Service for video file processing, frame extraction, and analysis.
- * This follows the same patterns established in AudioService.
- * Implements the singleton pattern for consistent state management.
+ * Service for processing video files
+ * Implements the Singleton pattern
  */
-
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
-import * as cv from '@techstark/opencv-js';
-import { v4 as uuidv4 } from 'uuid';
-
-// Types
-import {
-  VideoFile,
-  VideoMetadata,
-  VideoAnalysis,
-  VideoFrame,
-  Scene,
-  ContentData,
-  ClipType,
-  MotionData,
-  VideoServiceEvents,
-  FrameExtractionOptions,
-  SceneDetectionOptions,
-} from '../types/video-types';
-
-/**
- * VideoService handles all video file processing, analysis, and manipulation.
- * Implemented as a singleton to ensure consistent state across the application.
- */
-export class VideoService {
-  // Singleton instance
+export class VideoService extends EventEmitter {
   private static instance: VideoService;
+  private processingCache: Map<string, VideoAnalysis> = new Map();
   
-  private ffmpeg: any;
-  private isFFmpegLoaded: boolean = false;
-  private eventListeners: Map<VideoServiceEvents, Function[]> = new Map();
-  private videoCache: Map<string, VideoFile> = new Map();
-  private analysisCache: Map<string, VideoAnalysis> = new Map();
-  private frameCache: Map<string, VideoFrame[]> = new Map();
-  
-  /**
-   * Private constructor to prevent direct instantiation.
-   * Use VideoService.getInstance() instead.
-   */
   private constructor() {
-    this.ffmpeg = createFFmpeg({
-      log: false,
-      corePath: '/assets/ffmpeg-core/ffmpeg-core.js',
-    });
-    
-    // Initialize event listener collections
-    Object.values(VideoServiceEvents).forEach(event => {
-      this.eventListeners.set(event, []);
-    });
+    super();
   }
   
   /**
-   * Gets the singleton instance of VideoService
-   * @returns The singleton VideoService instance
+   * Get the singleton instance
    */
   public static getInstance(): VideoService {
     if (!VideoService.instance) {
@@ -68,901 +51,244 @@ export class VideoService {
   }
   
   /**
-   * Ensures FFmpeg is loaded before proceeding
+   * Analyze a video file
    */
-  private async ensureFFmpegLoaded(): Promise<void> {
-    if (!this.isFFmpegLoaded) {
-      try {
-        await this.ffmpeg.load();
-        this.isFFmpegLoaded = true;
-      } catch (error) {
-        console.error('Failed to load FFmpeg:', error);
-        throw new Error('Failed to load video processing library');
-      }
-    }
-  }
-  
-  /**
-   * Loads a video file and creates a blob URL for preview
-   * @param file The video File object to load
-   * @returns Promise resolving to a VideoFile object
-   */
-  async loadVideoFile(file: File): Promise<VideoFile> {
+  public async analyzeVideo(videoFile: File): Promise<VideoAnalysis> {
     try {
-      // Check cache first
-      const fileId = file.name + file.size + file.lastModified;
-      if (this.videoCache.has(fileId)) {
-        return this.videoCache.get(fileId)!;
+      // Check if we have cached results for this file
+      const cacheKey = `${videoFile.name}-${videoFile.size}-${videoFile.lastModified}`;
+      if (this.processingCache.has(cacheKey)) {
+        const cachedResult = this.processingCache.get(cacheKey)!;
+        this.emitEvent(VideoServiceEvents.ANALYSIS_COMPLETE, cachedResult);
+        return cachedResult;
       }
       
-      // Create blob URL for preview
-      const blobUrl = URL.createObjectURL(file);
+      this.emitEvent(VideoServiceEvents.ANALYSIS_START);
       
-      // Extract metadata
-      const metadata = await this.extractMetadata(file);
+      // Determine if we should use chunked processing
+      const useChunkedProcessing = shouldUseChunkedProcessing(videoFile);
       
-      // Generate thumbnail
-      const thumbnail = await this.generateThumbnail(file);
+      let videoAnalysis: VideoAnalysis;
       
-      const videoFile: VideoFile = {
-        id: uuidv4(),
-        file,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        blobUrl,
-        duration: metadata.duration,
-        width: metadata.width,
-        height: metadata.height,
-        fps: metadata.fps,
-        thumbnail,
-        metadata
-      };
+      if (useChunkedProcessing) {
+        videoAnalysis = await this.processLargeVideo(videoFile);
+      } else {
+        videoAnalysis = await this.processStandardVideo(videoFile);
+      }
       
-      // Cache the video file
-      this.videoCache.set(fileId, videoFile);
+      // Cache the results
+      this.processingCache.set(cacheKey, videoAnalysis);
       
-      return videoFile;
+      this.emitEvent(VideoServiceEvents.ANALYSIS_COMPLETE, videoAnalysis);
+      return videoAnalysis;
     } catch (error) {
-      console.error('Error loading video file:', error);
-      throw new Error(`Failed to load video file: ${error.message}`);
+      this.emitEvent(VideoServiceEvents.ERROR, error);
+      throw error;
     }
   }
   
   /**
-   * Static wrapper for loadVideoFile
-   * @param file The video File object to load
-   * @returns Promise resolving to a VideoFile object
+   * Process a standard-sized video file
    */
-  static async loadVideoFile(file: File): Promise<VideoFile> {
-    return VideoService.getInstance().loadVideoFile(file);
+  private async processStandardVideo(videoFile: File): Promise<VideoAnalysis> {
+    // Simulate video processing with progress updates
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Loading video file...',
+      progress: 0.1,
+      stage: 'loading'
+    });
+    
+    // Simulate frame extraction
+    await this.simulateProcessingDelay(1000);
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Extracting frames...',
+      progress: 0.3,
+      stage: 'frames'
+    });
+    
+    // Simulate scene detection
+    await this.simulateProcessingDelay(1500);
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Detecting scenes...',
+      progress: 0.6,
+      stage: 'scenes'
+    });
+    
+    // Simulate content analysis
+    await this.simulateProcessingDelay(1200);
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Analyzing content...',
+      progress: 0.8,
+      stage: 'content'
+    });
+    
+    // Simulate motion analysis
+    await this.simulateProcessingDelay(800);
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Analyzing motion...',
+      progress: 0.9,
+      stage: 'motion'
+    });
+    
+    // Complete the analysis
+    await this.simulateProcessingDelay(500);
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Finalizing analysis...',
+      progress: 1.0,
+      stage: 'complete'
+    });
+    
+    // Return mock analysis results
+    return this.createMockVideoAnalysis(videoFile);
   }
   
   /**
-   * Extracts metadata from a video file
-   * @param file The video File object
-   * @returns Promise resolving to VideoMetadata
+   * Process a large video file in chunks
    */
-  async extractMetadata(file: File): Promise<VideoMetadata> {
-    await this.ensureFFmpegLoaded();
+  private async processLargeVideo(videoFile: File): Promise<VideoAnalysis> {
+    // Initial progress update
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Preparing to process large video file...',
+      progress: 0.05,
+      stage: 'loading'
+    });
     
-    try {
-      // Write file to FFmpeg virtual file system
-      this.ffmpeg.FS('writeFile', file.name, await fetchFile(file));
-      
-      // Run FFprobe to get video information
-      await this.ffmpeg.run(
-        '-i', file.name,
-        '-v', 'error',
-        '-select_streams', 'v:0',
-        '-show_entries', 'stream=width,height,r_frame_rate,duration',
-        '-of', 'json',
-        'output.json'
-      );
-      
-      // Read the output
-      const data = this.ffmpeg.FS('readFile', 'output.json');
-      const json = JSON.parse(new TextDecoder().decode(data));
-      
-      // Process frame rate (often returned as a fraction like "24000/1001")
-      let fps = 30; // default
-      if (json.streams[0].r_frame_rate) {
-        const fractionMatch = json.streams[0].r_frame_rate.match(/(\d+)\/(\d+)/);
-        if (fractionMatch) {
-          fps = parseInt(fractionMatch[1], 10) / parseInt(fractionMatch[2], 10);
+    // Process the file in chunks
+    await processFileInChunks(
+      videoFile,
+      async (chunk, chunkIndex, chunksTotal) => {
+        // Determine which processing stage we're in based on chunk index
+        let stage = 'loading';
+        let baseProgress = 0;
+        
+        if (chunkIndex < chunksTotal * 0.2) {
+          stage = 'loading';
+          baseProgress = 0;
+        } else if (chunkIndex < chunksTotal * 0.4) {
+          stage = 'frames';
+          baseProgress = 0.2;
+        } else if (chunkIndex < chunksTotal * 0.7) {
+          stage = 'scenes';
+          baseProgress = 0.4;
+        } else if (chunkIndex < chunksTotal * 0.9) {
+          stage = 'content';
+          baseProgress = 0.7;
         } else {
-          fps = parseFloat(json.streams[0].r_frame_rate);
-        }
-      }
-      
-      // Clean up
-      this.ffmpeg.FS('unlink', file.name);
-      this.ffmpeg.FS('unlink', 'output.json');
-      
-      return {
-        width: json.streams[0].width || 0,
-        height: json.streams[0].height || 0,
-        duration: parseFloat(json.streams[0].duration) || 0,
-        fps,
-        codec: json.streams[0].codec_name || '',
-        bitrate: parseInt(json.streams[0].bit_rate, 10) || 0
-      };
-    } catch (error) {
-      console.error('Error extracting video metadata:', error);
-      
-      // Return default values if metadata extraction fails
-      return {
-        width: 0,
-        height: 0,
-        duration: 0,
-        fps: 30,
-        codec: '',
-        bitrate: 0
-      };
-    }
-  }
-  
-  /**
-   * Static wrapper for extractMetadata
-   * @param file The video File object
-   * @returns Promise resolving to VideoMetadata
-   */
-  static async extractMetadata(file: File): Promise<VideoMetadata> {
-    return VideoService.getInstance().extractMetadata(file);
-  }
-  
-  /**
-   * Generates a thumbnail from a video file at a specific time
-   * @param file The video File object
-   * @param time Time in seconds (default: 1)
-   * @returns Promise resolving to a base64 thumbnail image
-   */
-  async generateThumbnail(file: File, time: number = 1): Promise<string> {
-    await this.ensureFFmpegLoaded();
-    
-    try {
-      // Write file to FFmpeg virtual file system
-      this.ffmpeg.FS('writeFile', file.name, await fetchFile(file));
-      
-      // Extract a frame at the specified time
-      await this.ffmpeg.run(
-        '-ss', time.toString(),
-        '-i', file.name,
-        '-frames:v', '1',
-        '-q:v', '2',
-        '-vf', 'scale=300:-1',
-        'thumbnail.jpg'
-      );
-      
-      // Read the output
-      const data = this.ffmpeg.FS('readFile', 'thumbnail.jpg');
-      
-      // Convert to base64
-      const base64 = btoa(
-        Array.from(new Uint8Array(data.buffer))
-          .map(b => String.fromCharCode(b))
-          .join('')
-      );
-      
-      // Clean up
-      this.ffmpeg.FS('unlink', file.name);
-      this.ffmpeg.FS('unlink', 'thumbnail.jpg');
-      
-      return `data:image/jpeg;base64,${base64}`;
-    } catch (error) {
-      console.error('Error generating thumbnail:', error);
-      // Return a placeholder image on error
-      return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADICAYAAABS39xVAAAABmJLR0QA/wD/AP+gvaeTAAADqUlEQVR4nO3UMQEAIAzAMMC/5+GiHCQKenXPzAKgcF4HAHyzsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIfgwXBrl5bFQUAAAAAElFTkSuQmCC';
-    }
-  }
-  
-  /**
-   * Static wrapper for generateThumbnail
-   * @param file The video File object
-   * @param time Time in seconds (default: 1)
-   * @returns Promise resolving to a base64 thumbnail image
-   */
-  static async generateThumbnail(file: File, time: number = 1): Promise<string> {
-    return VideoService.getInstance().generateThumbnail(file, time);
-  }
-  
-  /**
-   * Analyzes a video file for scenes, content, and motion
-   * @param file The video File object to analyze
-   * @returns Promise resolving to VideoAnalysis
-   */
-  async analyzeVideo(file: File): Promise<VideoAnalysis> {
-    try {
-      // Check cache first
-      const fileId = file.name + file.size + file.lastModified;
-      if (this.analysisCache.has(fileId)) {
-        return this.analysisCache.get(fileId)!;
-      }
-      
-      // Emit start event
-      this.emitEvent(VideoServiceEvents.ANALYSIS_START, { file });
-      
-      // Load the video file
-      const videoFile = await this.loadVideoFile(file);
-      
-      // Extract frames
-      this.emitEvent(VideoServiceEvents.PROGRESS, { 
-        message: 'Extracting frames...',
-        progress: 0.1 
-      });
-      
-      const frames = await this.extractFrames(file, {
-        fps: 1, // 1 frame per second for analysis
-        maxFrames: 300 // Limit the number of frames for performance
-      });
-      
-      // Detect scenes
-      this.emitEvent(VideoServiceEvents.PROGRESS, { 
-        message: 'Detecting scenes...',
-        progress: 0.4 
-      });
-      
-      const scenes = await this.detectScenes(frames);
-      
-      // Analyze content
-      this.emitEvent(VideoServiceEvents.PROGRESS, { 
-        message: 'Analyzing content...',
-        progress: 0.7 
-      });
-      
-      const contentAnalysis = await Promise.all(
-        scenes.map(scene => this.analyzeContent(frames[scene.startFrame]))
-      );
-      
-      // Analyze motion
-      this.emitEvent(VideoServiceEvents.PROGRESS, { 
-        message: 'Analyzing motion...',
-        progress: 0.9 
-      });
-      
-      const motionData = await this.analyzeMotion(frames);
-      
-      // Create the analysis result
-      const analysis: VideoAnalysis = {
-        videoId: videoFile.id,
-        duration: videoFile.duration,
-        frameCount: frames.length,
-        scenes,
-        contentAnalysis,
-        motionData,
-        clipType: await this.classifyClipType({ scenes, contentAnalysis, motionData })
-      };
-      
-      // Cache the analysis
-      this.analysisCache.set(fileId, analysis);
-      
-      // Emit complete event
-      this.emitEvent(VideoServiceEvents.ANALYSIS_COMPLETE, { analysis });
-      
-      return analysis;
-    } catch (error) {
-      console.error('Error analyzing video:', error);
-      
-      // Emit error event
-      this.emitEvent(VideoServiceEvents.ERROR, { 
-        message: `Failed to analyze video: ${error.message}`,
-        error 
-      });
-      
-      throw new Error(`Failed to analyze video: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Static wrapper for analyzeVideo
-   * @param file The video File object to analyze
-   * @returns Promise resolving to VideoAnalysis
-   */
-  static async analyzeVideo(file: File): Promise<VideoAnalysis> {
-    return VideoService.getInstance().analyzeVideo(file);
-  }
-  
-  /**
-   * Extracts frames from a video file for analysis
-   * @param file The video File object
-   * @param options Frame extraction options
-   * @returns Promise resolving to an array of VideoFrame objects
-   */
-  async extractFrames(
-    file: File, 
-    options: FrameExtractionOptions = { fps: 1, maxFrames: 300 }
-  ): Promise<VideoFrame[]> {
-    await this.ensureFFmpegLoaded();
-    
-    try {
-      // Check cache first
-      const cacheKey = `${file.name}_${options.fps}_${options.maxFrames}`;
-      if (this.frameCache.has(cacheKey)) {
-        return this.frameCache.get(cacheKey)!;
-      }
-      
-      // Get video metadata
-      const metadata = await this.extractMetadata(file);
-      
-      // Calculate frameRate and total frames
-      const frameRate = options.fps || 1;
-      const totalFramesToExtract = Math.min(
-        Math.ceil(metadata.duration * frameRate),
-        options.maxFrames || 300
-      );
-      
-      // Write file to FFmpeg virtual file system
-      this.ffmpeg.FS('writeFile', file.name, await fetchFile(file));
-      
-      // Extract frames
-      await this.ffmpeg.run(
-        '-i', file.name,
-        '-vf', `fps=${frameRate}`,
-        '-frames:v', totalFramesToExtract.toString(),
-        '-q:v', '1',
-        'frame_%04d.jpg'
-      );
-      
-      // Read frames and convert to VideoFrame objects
-      const frames: VideoFrame[] = [];
-      
-      for (let i = 1; i <= totalFramesToExtract; i++) {
-        const frameFileName = `frame_${i.toString().padStart(4, '0')}.jpg`;
-        try {
-          const frameData = this.ffmpeg.FS('readFile', frameFileName);
-          
-          // Convert to ImageData using Canvas
-          const img = new Image();
-          const base64 = btoa(
-            Array.from(new Uint8Array(frameData.buffer))
-              .map(b => String.fromCharCode(b))
-              .join('')
-          );
-          
-          img.src = `data:image/jpeg;base64,${base64}`;
-          
-          // Wait for image to load
-          await new Promise<void>(resolve => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve(); // Continue even if image fails to load
-          });
-          
-          // Create canvas and get ImageData
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx!.drawImage(img, 0, 0);
-          const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
-          
-          // Add frame to result
-          frames.push({
-            index: i - 1,
-            time: (i - 1) / frameRate,
-            imageData,
-            width: img.width,
-            height: img.height,
-            thumbnail: `data:image/jpeg;base64,${base64}`
-          });
-          
-          // Clean up
-          this.ffmpeg.FS('unlink', frameFileName);
-        } catch (error) {
-          console.warn(`Failed to extract frame ${i}:`, error);
-        }
-      }
-      
-      // Clean up
-      this.ffmpeg.FS('unlink', file.name);
-      
-      // Cache the frames
-      this.frameCache.set(cacheKey, frames);
-      
-      return frames;
-    } catch (error) {
-      console.error('Error extracting frames:', error);
-      throw new Error(`Failed to extract frames: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Static wrapper for extractFrames
-   * @param file The video File object
-   * @param options Frame extraction options
-   * @returns Promise resolving to an array of VideoFrame objects
-   */
-  static async extractFrames(
-    file: File, 
-    options: FrameExtractionOptions = { fps: 1, maxFrames: 300 }
-  ): Promise<VideoFrame[]> {
-    return VideoService.getInstance().extractFrames(file, options);
-  }
-  
-  /**
-   * Detects scene boundaries in a video
-   * @param frames Array of VideoFrame objects
-   * @param options Scene detection options
-   * @returns Promise resolving to an array of Scene objects
-   */
-  async detectScenes(
-    frames: VideoFrame[],
-    options: SceneDetectionOptions = { threshold: 30 }
-  ): Promise<Scene[]> {
-    try {
-      const scenes: Scene[] = [];
-      
-      if (frames.length === 0) {
-        return scenes;
-      }
-      
-      // First frame is always a new scene
-      scenes.push({
-        id: uuidv4(),
-        startFrame: 0,
-        endFrame: 0,
-        startTime: frames[0].time,
-        endTime: frames[0].time,
-        duration: 0,
-        keyFrameIndex: 0
-      });
-      
-      // Calculate difference between consecutive frames
-      for (let i = 1; i < frames.length; i++) {
-        const prevFrame = frames[i - 1];
-        const currentFrame = frames[i];
-        
-        // Convert to OpenCV format
-        const prevMat = cv.matFromImageData(prevFrame.imageData);
-        const currentMat = cv.matFromImageData(currentFrame.imageData);
-        
-        // Convert to grayscale
-        const prevGray = new cv.Mat();
-        const currentGray = new cv.Mat();
-        cv.cvtColor(prevMat, prevGray, cv.COLOR_RGBA2GRAY);
-        cv.cvtColor(currentMat, currentGray, cv.COLOR_RGBA2GRAY);
-        
-        // Calculate absolute difference
-        const diff = new cv.Mat();
-        cv.absdiff(prevGray, currentGray, diff);
-        
-        // Calculate mean difference
-        const mean = cv.mean(diff);
-        const difference = mean[0]; // First channel
-        
-        // Free memory
-        prevMat.delete();
-        currentMat.delete();
-        prevGray.delete();
-        currentGray.delete();
-        diff.delete();
-        
-        // Check if difference exceeds threshold
-        if (difference > options.threshold) {
-          // End previous scene
-          const lastScene = scenes[scenes.length - 1];
-          lastScene.endFrame = i - 1;
-          lastScene.endTime = prevFrame.time;
-          lastScene.duration = lastScene.endTime - lastScene.startTime;
-          
-          // Start new scene
-          scenes.push({
-            id: uuidv4(),
-            startFrame: i,
-            endFrame: i,
-            startTime: currentFrame.time,
-            endTime: currentFrame.time,
-            duration: 0,
-            keyFrameIndex: i
-          });
-        }
-      }
-      
-      // End the last scene
-      const lastScene = scenes[scenes.length - 1];
-      const lastFrame = frames[frames.length - 1];
-      lastScene.endFrame = frames.length - 1;
-      lastScene.endTime = lastFrame.time;
-      lastScene.duration = lastScene.endTime - lastScene.startTime;
-      
-      return scenes;
-    } catch (error) {
-      console.error('Error detecting scenes:', error);
-      throw new Error(`Failed to detect scenes: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Static wrapper for detectScenes
-   * @param frames Array of VideoFrame objects
-   * @param options Scene detection options
-   * @returns Promise resolving to an array of Scene objects
-   */
-  static async detectScenes(
-    frames: VideoFrame[],
-    options: SceneDetectionOptions = { threshold: 30 }
-  ): Promise<Scene[]> {
-    return VideoService.getInstance().detectScenes(frames, options);
-  }
-  
-  /**
-   * Analyzes the content of a video frame
-   * @param frame The VideoFrame to analyze
-   * @returns Promise resolving to ContentData
-   */
-  async analyzeContent(frame: VideoFrame): Promise<ContentData> {
-    try {
-      // Convert to OpenCV format
-      const mat = cv.matFromImageData(frame.imageData);
-      
-      // Default content data
-      const contentData: ContentData = {
-        hasFaces: false,
-        faceCount: 0,
-        dominantColors: [],
-        brightness: 0,
-        contrast: 0,
-        hasText: false,
-        isOutdoor: false,
-        hasMotion: false
-      };
-      
-      // Simple brightness and contrast calculation
-      const rgbMat = new cv.Mat();
-      cv.cvtColor(mat, rgbMat, cv.COLOR_RGBA2RGB);
-      
-      const meanStdDev = cv.meanStdDev(rgbMat);
-      contentData.brightness = (meanStdDev.mean.data64F[0] + 
-                            meanStdDev.mean.data64F[1] + 
-                            meanStdDev.mean.data64F[2]) / 3;
-      contentData.contrast = (meanStdDev.stddev.data64F[0] + 
-                           meanStdDev.stddev.data64F[1] + 
-                           meanStdDev.stddev.data64F[2]) / 3;
-      
-      // Face detection (simplified, should use proper DNN in production)
-      try {
-        const faceCascade = new cv.CascadeClassifier();
-        faceCascade.load('haarcascade_frontalface_default.xml');
-        
-        const grayMat = new cv.Mat();
-        cv.cvtColor(mat, grayMat, cv.COLOR_RGBA2GRAY);
-        
-        const faces = new cv.RectVector();
-        faceCascade.detectMultiScale(grayMat, faces);
-        
-        contentData.hasFaces = faces.size() > 0;
-        contentData.faceCount = faces.size();
-        
-        // Free memory
-        grayMat.delete();
-        faces.delete();
-      } catch (error) {
-        console.warn('Face detection not available:', error);
-      }
-      
-      // Dominant color extraction
-      try {
-        const pixels = new cv.Mat();
-        cv.cvtColor(mat, pixels, cv.COLOR_RGBA2RGB);
-        
-        // Reshape to a single column of 3-channel pixels
-        pixels.convertTo(pixels, cv.CV_32F);
-        const samples = pixels.reshape(1, pixels.rows * pixels.cols);
-        
-        // K-means clustering
-        const K = 3; // Number of dominant colors
-        const labels = new cv.Mat();
-        const criteria = new cv.TermCriteria(
-          cv.TermCriteria_EPS + cv.TermCriteria_MAX_ITER,
-          10,
-          1.0
-        );
-        const attempts = 5;
-        const centers = new cv.Mat();
-        
-        cv.kmeans(
-          samples,
-          K,
-          labels,
-          criteria,
-          attempts,
-          cv.KMEANS_PP_CENTERS,
-          centers
-        );
-        
-        // Extract colors from centers
-        for (let i = 0; i < K; i++) {
-          contentData.dominantColors.push({
-            r: Math.round(centers.data32F[i * 3]),
-            g: Math.round(centers.data32F[i * 3 + 1]),
-            b: Math.round(centers.data32F[i * 3 + 2])
-          });
+          stage = 'motion';
+          baseProgress = 0.9;
         }
         
-        // Free memory
-        pixels.delete();
-        samples.delete();
-        labels.delete();
-        centers.delete();
-      } catch (error) {
-        console.warn('Color extraction not available:', error);
-      }
-      
-      // Free memory
-      mat.delete();
-      rgbMat.delete();
-      
-      return contentData;
-    } catch (error) {
-      console.error('Error analyzing content:', error);
-      return {
-        hasFaces: false,
-        faceCount: 0,
-        dominantColors: [],
-        brightness: 0,
-        contrast: 0,
-        hasText: false,
-        isOutdoor: false,
-        hasMotion: false
-      };
-    }
-  }
-  
-  /**
-   * Static wrapper for analyzeContent
-   * @param frame The VideoFrame to analyze
-   * @returns Promise resolving to ContentData
-   */
-  static async analyzeContent(frame: VideoFrame): Promise<ContentData> {
-    return VideoService.getInstance().analyzeContent(frame);
-  }
-  
-  /**
-   * Analyzes motion across video frames
-   * @param frames Array of VideoFrame objects
-   * @returns Promise resolving to MotionData
-   */
-  async analyzeMotion(frames: VideoFrame[]): Promise<MotionData> {
-    try {
-      // Default motion data
-      const motionData: MotionData = {
-        averageMotion: 0,
-        motionByFrame: [],
-        hasHighMotion: false,
-        hasCameraMovement: false
-      };
-      
-      if (frames.length < 2) {
-        return motionData;
-      }
-      
-      let totalMotion = 0;
-      
-      // Calculate motion between consecutive frames
-      for (let i = 1; i < frames.length; i++) {
-        const prevFrame = frames[i - 1];
-        const currentFrame = frames[i];
+        // Simulate processing this chunk
+        await this.simulateProcessingDelay(300);
         
-        // Convert to OpenCV format
-        const prevMat = cv.matFromImageData(prevFrame.imageData);
-        const currentMat = cv.matFromImageData(currentFrame.imageData);
+        // Return mock chunk result (in a real implementation, this would process the chunk)
+        return { chunkIndex, processed: true };
+      },
+      (progress) => {
+        // Determine which processing stage we're in based on progress
+        let stage = 'loading';
+        let message = 'Loading video file...';
+        let baseProgress = 0;
         
-        // Convert to grayscale
-        const prevGray = new cv.Mat();
-        const currentGray = new cv.Mat();
-        cv.cvtColor(prevMat, prevGray, cv.COLOR_RGBA2GRAY);
-        cv.cvtColor(currentMat, currentGray, cv.COLOR_RGBA2GRAY);
+        if (progress.percentage < 20) {
+          stage = 'loading';
+          message = 'Loading video file...';
+          baseProgress = 0;
+        } else if (progress.percentage < 40) {
+          stage = 'frames';
+          message = 'Extracting frames...';
+          baseProgress = 0.2;
+        } else if (progress.percentage < 70) {
+          stage = 'scenes';
+          message = 'Detecting scenes...';
+          baseProgress = 0.4;
+        } else if (progress.percentage < 90) {
+          stage = 'content';
+          message = 'Analyzing content...';
+          baseProgress = 0.7;
+        } else {
+          stage = 'motion';
+          message = 'Analyzing motion...';
+          baseProgress = 0.9;
+        }
         
-        // Calculate optical flow using Farneback method
-        const flow = new cv.Mat();
-        cv.calcOpticalFlowFarneback(
-          prevGray, currentGray,
-          flow, 0.5, 3, 15, 3, 5, 1.2, 0
-        );
+        // Calculate overall progress (combine base progress with chunk progress)
+        const stageWeight = stage === 'loading' ? 0.2 : 
+                           stage === 'frames' ? 0.2 : 
+                           stage === 'scenes' ? 0.3 : 
+                           stage === 'content' ? 0.2 : 0.1;
         
-        // Split flow into x and y components
-        const flowParts = new cv.MatVector();
-        cv.split(flow, flowParts);
+        const stageProgress = (progress.percentage / 100) * stageWeight;
+        const overallProgress = baseProgress + stageProgress;
         
-        // Calculate magnitude of flow vectors
-        const magnitude = new cv.Mat();
-        const flowX = flowParts.get(0);
-        const flowY = flowParts.get(1);
-        cv.magnitude(flowX, flowY, magnitude);
-        
-        // Calculate mean flow magnitude
-        const meanFlow = cv.mean(magnitude)[0];
-        totalMotion += meanFlow;
-        
-        // Add to frame motion data
-        motionData.motionByFrame.push({
-          frameIndex: i,
-          time: currentFrame.time,
-          motionAmount: meanFlow
+        // Emit both chunk progress and overall progress events
+        this.emitEvent(VideoServiceEvents.CHUNK_PROGRESS, {
+          ...progress,
+          stage
         });
         
-        // Free memory
-        prevMat.delete();
-        currentMat.delete();
-        prevGray.delete();
-        currentGray.delete();
-        flow.delete();
-        flowParts.delete();
-        flowX.delete();
-        flowY.delete();
-        magnitude.delete();
+        this.emitEvent(VideoServiceEvents.PROGRESS, {
+          message,
+          progress: overallProgress,
+          stage
+        });
       }
-      
-      // Calculate average motion
-      motionData.averageMotion = totalMotion / (frames.length - 1);
-      
-      // Determine high motion
-      motionData.hasHighMotion = motionData.averageMotion > 10;
-      
-      // Simplified camera movement detection
-      // In a real implementation, this would use more sophisticated algorithms
-      let consistentDirection = true;
-      let previousDirection = 0;
-      
-      for (let i = 1; i < motionData.motionByFrame.length; i++) {
-        const currentMotion = motionData.motionByFrame[i].motionAmount;
-        const prevMotion = motionData.motionByFrame[i - 1].motionAmount;
-        
-        const direction = Math.sign(currentMotion - prevMotion);
-        
-        if (i > 1 && direction !== 0 && direction !== previousDirection) {
-          consistentDirection = false;
-          break;
-        }
-        
-        if (direction !== 0) {
-          previousDirection = direction;
-        }
-      }
-      
-      motionData.hasCameraMovement = consistentDirection && motionData.averageMotion > 5;
-      
-      return motionData;
-    } catch (error) {
-      console.error('Error analyzing motion:', error);
-      return {
-        averageMotion: 0,
-        motionByFrame: [],
-        hasHighMotion: false,
-        hasCameraMovement: false
-      };
-    }
-  }
-  
-  /**
-   * Static wrapper for analyzeMotion
-   * @param frames Array of VideoFrame objects
-   * @returns Promise resolving to MotionData
-   */
-  static async analyzeMotion(frames: VideoFrame[]): Promise<MotionData> {
-    return VideoService.getInstance().analyzeMotion(frames);
-  }
-  
-  /**
-   * Classifies the type of video clip based on analysis
-   * @param analysis Video analysis data
-   * @returns Promise resolving to ClipType
-   */
-  async classifyClipType(analysis: Partial<VideoAnalysis>): Promise<ClipType> {
-    try {
-      // Simple classification logic
-      // In a real implementation, this would use more sophisticated ML algorithms
-      
-      const { contentAnalysis, motionData } = analysis;
-      
-      if (!contentAnalysis || !motionData) {
-        return ClipType.UNKNOWN;
-      }
-      
-      // Check for faces (likely performance clip)
-      const hasFaces = contentAnalysis.some(content => content.hasFaces);
-      
-      // Check for high motion
-      const hasHighMotion = motionData.hasHighMotion;
-      
-      // Simple classification rules
-      if (hasFaces && !hasHighMotion) {
-        return ClipType.PERFORMANCE;
-      } else if (hasFaces && hasHighMotion) {
-        return ClipType.ACTION;
-      } else if (!hasFaces && hasHighMotion) {
-        return ClipType.B_ROLL_DYNAMIC;
-      } else {
-        return ClipType.B_ROLL_STATIC;
-      }
-    } catch (error) {
-      console.error('Error classifying clip type:', error);
-      return ClipType.UNKNOWN;
-    }
-  }
-  
-  /**
-   * Static wrapper for classifyClipType
-   * @param analysis Video analysis data
-   * @returns Promise resolving to ClipType
-   */
-  static async classifyClipType(analysis: Partial<VideoAnalysis>): Promise<ClipType> {
-    return VideoService.getInstance().classifyClipType(analysis);
-  }
-  
-  /**
-   * Disposes of resources and clears caches
-   */
-  dispose(): void {
-    this.videoCache.clear();
-    this.analysisCache.clear();
-    this.frameCache.clear();
-    this.eventListeners.clear();
-  }
-  
-  /**
-   * Static wrapper for dispose
-   */
-  static dispose(): void {
-    VideoService.getInstance().dispose();
-  }
-  
-  /**
-   * Adds an event listener for VideoService events
-   * @param event The event to listen for
-   * @param callback Callback function to execute when event occurs
-   */
-  addEventListener(event: VideoServiceEvents, callback: Function): void {
-    const listeners = this.eventListeners.get(event) || [];
-    listeners.push(callback);
-    this.eventListeners.set(event, listeners);
-  }
-  
-  /**
-   * Static wrapper for addEventListener
-   * @param event The event to listen for
-   * @param callback Callback function to execute when event occurs
-   */
-  static addEventListener(event: VideoServiceEvents, callback: Function): void {
-    VideoService.getInstance().addEventListener(event, callback);
-  }
-  
-  /**
-   * Removes an event listener
-   * @param event The event the listener was registered for
-   * @param callback The callback function to remove
-   */
-  removeEventListener(event: VideoServiceEvents, callback: Function): void {
-    const listeners = this.eventListeners.get(event) || [];
-    const filteredListeners = listeners.filter(listener => listener !== callback);
-    this.eventListeners.set(event, filteredListeners);
-  }
-  
-  /**
-   * Static wrapper for removeEventListener
-   * @param event The event the listener was registered for
-   * @param callback The callback function to remove
-   */
-  static removeEventListener(event: VideoServiceEvents, callback: Function): void {
-    VideoService.getInstance().removeEventListener(event, callback);
-  }
-  
-  /**
-   * Emits an event to all registered listeners
-   * @param event The event to emit
-   * @param data Data to pass to listeners
-   */
-  private emitEvent(event: VideoServiceEvents, data: any): void {
-    const listeners = this.eventListeners.get(event) || [];
-    listeners.forEach(listener => {
-      try {
-        listener(data);
-      } catch (error) {
-        console.error(`Error in event listener for ${event}:`, error);
-      }
+    );
+    
+    // Final progress update
+    this.emitEvent(VideoServiceEvents.PROGRESS, { 
+      message: 'Finalizing analysis...',
+      progress: 1.0,
+      stage: 'complete'
     });
+    
+    // Return mock analysis results
+    return this.createMockVideoAnalysis(videoFile);
+  }
+  
+  /**
+   * Create mock video analysis results
+   */
+  private createMockVideoAnalysis(videoFile: File): VideoAnalysis {
+    return {
+      duration: 120, // 2 minutes
+      frameRate: 30,
+      resolution: { width: 1920, height: 1080 },
+      scenes: [
+        { startTime: 0, endTime: 15, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
+        { startTime: 15, endTime: 45, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
+        { startTime: 45, endTime: 75, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
+        { startTime: 75, endTime: 105, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
+        { startTime: 105, endTime: 120, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' }
+      ],
+      contentAnalysis: [
+        { time: 10, content: 'Opening scene' },
+        { time: 30, content: 'Character introduction' },
+        { time: 60, content: 'Main action sequence' },
+        { time: 90, content: 'Resolution' },
+        { time: 115, content: 'Closing scene' }
+      ]
+    };
+  }
+  
+  /**
+   * Simulate a processing delay
+   */
+  private simulateProcessingDelay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
+  /**
+   * Emit an event with data
+   */
+  private emitEvent(event: VideoServiceEvents, data?: any): void {
+    this.emit(event, data);
+  }
+  
+  /**
+   * Clear the processing cache
+   */
+  public clearCache(): void {
+    this.processingCache.clear();
   }
 }
-
-// Export both the class and the singleton instance
-export const videoService = VideoService.getInstance();
-export default videoService;
