@@ -1,4 +1,3 @@
-
 /**
  * InputStep.tsx
  * 
@@ -10,6 +9,9 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Music, Video, FileUp, X, Info, Settings, Film } from 'lucide-react';
 import { useWorkflow } from '../../context/WorkflowContext';
+import { useNotification } from '../../contexts/NotificationContext';
+import ProcessingProgress from '../common/ProcessingProgress';
+import { mapAudioProgressToProps, mapVideoProgressToProps } from '../../constants/processingStages';
 import { ProjectSettings } from '../../types/workflow';
 import AudioService from '../../services/AudioService';
 import VideoService from '../../services/VideoService';
@@ -28,10 +30,13 @@ const InputStep: React.FC = () => {
     } 
   } = useWorkflow();
   
+  const { showNotification } = useNotification();
+  
   // Local state for drag-and-drop highlighting
   const [isDraggingAudio, setIsDraggingAudio] = useState(false);
   const [isDraggingVideo, setIsDraggingVideo] = useState(false);
   const [isDraggingRawVideo, setIsDraggingRawVideo] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   // Setup dropzone for audio
   const onAudioDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -101,6 +106,8 @@ const InputStep: React.FC = () => {
             }
           }
         }));
+
+        showNotification('success', 'Audio processing completed successfully!');
       } catch (error) {
         console.error('Error processing audio file:', error);
         
@@ -116,9 +123,17 @@ const InputStep: React.FC = () => {
             }
           }
         }));
+
+        showNotification('error', `Error processing audio file: ${error.message}`, {
+          actionLabel: 'Retry',
+          onAction: () => {
+            setRetryCount(prev => prev + 1);
+            onAudioDrop([file]);
+          }
+        });
       }
     }
-  }, [setData]);
+  }, [setData, showNotification, retryCount]);
   
   const {
     getRootProps: getAudioRootProps,
@@ -157,6 +172,22 @@ const InputStep: React.FC = () => {
     // Process each video file
     for (const file of acceptedFiles) {
       try {
+        // Set up progress tracking
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            videoProgress: {
+              percentage: 0,
+              currentStep: 'Loading video...'
+            },
+            errors: {
+              ...prev.ui.errors,
+              videoUpload: null
+            }
+          }
+        }));
+
         // Use VideoService to load and process the video file
         const videoFile = await videoService.loadVideoFile(file);
         
@@ -173,6 +204,20 @@ const InputStep: React.FC = () => {
           url: videoFile.blobUrl,
           thumbnail: videoFile.thumbnail
         });
+
+        // Update progress to complete
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            videoProgress: {
+              percentage: 100,
+              currentStep: 'Complete'
+            }
+          }
+        }));
+
+        showNotification('success', `Video "${file.name}" processed successfully!`);
       } catch (error) {
         console.error('Error processing video file:', error);
         
@@ -181,15 +226,24 @@ const InputStep: React.FC = () => {
           ...prev,
           ui: {
             ...prev.ui,
+            videoProgress: null,
             errors: {
               ...prev.ui.errors,
               videoUpload: `Error processing video file ${file.name}: ${error.message}`
             }
           }
         }));
+
+        showNotification('error', `Error processing video file ${file.name}: ${error.message}`, {
+          actionLabel: 'Retry',
+          onAction: () => {
+            setRetryCount(prev => prev + 1);
+            onVideoDrop([file]);
+          }
+        });
       }
     }
-  }, [addVideoFile, setData]);
+  }, [addVideoFile, setData, showNotification, retryCount]);
   
   const {
     getRootProps: getVideoRootProps,
@@ -210,6 +264,22 @@ const InputStep: React.FC = () => {
     // Process each raw video file
     for (const file of acceptedFiles) {
       try {
+        // Set up progress tracking
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            rawVideoProgress: {
+              percentage: 0,
+              currentStep: 'Loading raw video...'
+            },
+            errors: {
+              ...prev.ui.errors,
+              rawVideoUpload: null
+            }
+          }
+        }));
+
         // Validate video file format
         const validVideoFormats = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
         if (!validVideoFormats.includes(file.type)) {
@@ -217,12 +287,15 @@ const InputStep: React.FC = () => {
             ...prev,
             ui: {
               ...prev.ui,
+              rawVideoProgress: null,
               errors: {
                 ...prev.ui.errors,
-                videoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
+                rawVideoUpload: `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`
               }
             }
           }));
+
+          showNotification('error', `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`);
           continue;
         }
         
@@ -242,6 +315,20 @@ const InputStep: React.FC = () => {
           url: videoFile.blobUrl,
           thumbnail: videoFile.thumbnail
         });
+
+        // Update progress to complete
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            rawVideoProgress: {
+              percentage: 100,
+              currentStep: 'Complete'
+            }
+          }
+        }));
+
+        showNotification('success', `Raw video "${file.name}" processed successfully!`);
       } catch (error) {
         console.error('Error processing raw video file:', error);
         
@@ -250,15 +337,24 @@ const InputStep: React.FC = () => {
           ...prev,
           ui: {
             ...prev.ui,
+            rawVideoProgress: null,
             errors: {
               ...prev.ui.errors,
-              videoUpload: `Error processing raw video file ${file.name}: ${error.message}`
+              rawVideoUpload: `Error processing raw video file ${file.name}: ${error.message}`
             }
           }
         }));
+
+        showNotification('error', `Error processing raw video file ${file.name}: ${error.message}`, {
+          actionLabel: 'Retry',
+          onAction: () => {
+            setRetryCount(prev => prev + 1);
+            onRawVideoDrop([file]);
+          }
+        });
       }
     }
-  }, [addRawVideoFile, setData]);
+  }, [addRawVideoFile, setData, showNotification, retryCount]);
   
   const {
     getRootProps: getRawVideoRootProps,
@@ -318,6 +414,26 @@ const InputStep: React.FC = () => {
     }
     const gb = mb / 1024;
     return `${gb.toFixed(2)} GB`;
+  };
+
+  // Handle retry for audio processing
+  const handleRetryAudio = () => {
+    if (state.project.musicFile?.file) {
+      setRetryCount(prev => prev + 1);
+      onAudioDrop([state.project.musicFile.file]);
+    }
+  };
+
+  // Handle retry for video processing
+  const handleRetryVideo = (file: File) => {
+    setRetryCount(prev => prev + 1);
+    onVideoDrop([file]);
+  };
+
+  // Handle retry for raw video processing
+  const handleRetryRawVideo = (file: File) => {
+    setRetryCount(prev => prev + 1);
+    onRawVideoDrop([file]);
   };
   
   return (
@@ -405,21 +521,29 @@ const InputStep: React.FC = () => {
           
           {/* Display audio processing progress if applicable */}
           {state.ui.audioProgress && (
-            <div className="mt-2">
-              <div className="text-sm text-gray-400">{state.ui.audioProgress.currentStep}</div>
-              <div className="w-full bg-gray-700 rounded-full h-2.5 mt-1">
-                <div 
-                  className="bg-purple-600 h-2.5 rounded-full" 
-                  style={{ width: `${state.ui.audioProgress.percentage}%` }}
-                ></div>
-              </div>
+            <div className="mt-4">
+              <ProcessingProgress
+                {...mapAudioProgressToProps(
+                  state.ui.audioProgress.percentage,
+                  state.ui.audioProgress.currentStep,
+                  state.ui.errors?.audioUpload || null,
+                  state.ui.audioProgress.percentage === 100
+                )}
+                onRetry={handleRetryAudio}
+              />
             </div>
           )}
           
           {/* Display error message if there's an error with audio upload */}
-          {state.ui.errors.audioUpload && (
-            <div className="mt-2 text-red-400 text-sm">
-              {state.ui.errors.audioUpload}
+          {state.ui.errors.audioUpload && !state.ui.audioProgress && (
+            <div className="mt-2 p-3 bg-[#4A2525] rounded-md">
+              <p className="text-[#F56565] text-sm">{state.ui.errors.audioUpload}</p>
+              <button
+                onClick={handleRetryAudio}
+                className="mt-2 text-sm bg-[#F56565] text-white py-1 px-3 rounded hover:bg-[#E53E3E] transition-colors"
+              >
+                Retry
+              </button>
             </div>
           )}
         </div>
@@ -485,6 +609,27 @@ const InputStep: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Display video processing progress if applicable */}
+          {state.ui.videoProgress && (
+            <div className="mt-4">
+              <ProcessingProgress
+                {...mapVideoProgressToProps(
+                  state.ui.videoProgress.percentage / 100, // Convert to 0-1 range
+                  state.ui.videoProgress.currentStep,
+                  state.ui.errors?.videoUpload || null,
+                  state.ui.videoProgress.percentage === 100
+                )}
+                onRetry={() => {
+                  // Find the last video file that was being processed
+                  if (state.project.videoFiles.length > 0) {
+                    const lastFile = state.project.videoFiles[state.project.videoFiles.length - 1].file;
+                    handleRetryVideo(lastFile);
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
         
         {/* Raw Video Files Selection */}
@@ -549,10 +694,62 @@ const InputStep: React.FC = () => {
             </div>
           </div>
           
+          {/* Display raw video processing progress if applicable */}
+          {state.ui.rawVideoProgress && (
+            <div className="mt-4">
+              <ProcessingProgress
+                {...mapVideoProgressToProps(
+                  state.ui.rawVideoProgress.percentage / 100, // Convert to 0-1 range
+                  state.ui.rawVideoProgress.currentStep,
+                  state.ui.errors?.rawVideoUpload || null,
+                  state.ui.rawVideoProgress.percentage === 100
+                )}
+                onRetry={() => {
+                  // Find the last raw video file that was being processed
+                  if (state.project.rawVideoFiles.length > 0) {
+                    const lastFile = state.project.rawVideoFiles[state.project.rawVideoFiles.length - 1].file;
+                    handleRetryRawVideo(lastFile);
+                  }
+                }}
+              />
+            </div>
+          )}
+          
           {/* Display error message if there's an error with video upload */}
-          {state.ui.errors.videoUpload && (
-            <div className="mt-2 text-red-400 text-sm">
-              {state.ui.errors.videoUpload}
+          {state.ui.errors.videoUpload && !state.ui.videoProgress && (
+            <div className="mt-2 p-3 bg-[#4A2525] rounded-md">
+              <p className="text-[#F56565] text-sm">{state.ui.errors.videoUpload}</p>
+              <button
+                onClick={() => {
+                  // Find the last video file that was being processed
+                  if (state.project.videoFiles.length > 0) {
+                    const lastFile = state.project.videoFiles[state.project.videoFiles.length - 1].file;
+                    handleRetryVideo(lastFile);
+                  }
+                }}
+                className="mt-2 text-sm bg-[#F56565] text-white py-1 px-3 rounded hover:bg-[#E53E3E] transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Display error message if there's an error with raw video upload */}
+          {state.ui.errors.rawVideoUpload && !state.ui.rawVideoProgress && (
+            <div className="mt-2 p-3 bg-[#4A2525] rounded-md">
+              <p className="text-[#F56565] text-sm">{state.ui.errors.rawVideoUpload}</p>
+              <button
+                onClick={() => {
+                  // Find the last raw video file that was being processed
+                  if (state.project.rawVideoFiles.length > 0) {
+                    const lastFile = state.project.rawVideoFiles[state.project.rawVideoFiles.length - 1].file;
+                    handleRetryRawVideo(lastFile);
+                  }
+                }}
+                className="mt-2 text-sm bg-[#F56565] text-white py-1 px-3 rounded hover:bg-[#E53E3E] transition-colors"
+              >
+                Retry
+              </button>
             </div>
           )}
         </div>
