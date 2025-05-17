@@ -1,3 +1,4 @@
+
 /**
  * InputStep.tsx
  * 
@@ -10,6 +11,8 @@ import { useDropzone } from 'react-dropzone';
 import { Music, Video, FileUp, X, Info, Settings, Film } from 'lucide-react';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { ProjectSettings } from '../../types/workflow';
+import AudioService from '../../services/AudioService';
+import videoService from '../../services/VideoService';
 
 const InputStep: React.FC = () => {
   // Get workflow context
@@ -34,20 +37,40 @@ const InputStep: React.FC = () => {
   const onAudioDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      setData(prev => ({
-        ...prev,
-        project: {
-          ...prev.project,
-          musicFile: {
-            file,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            duration: 0, // This would be set after analysis
-            url: URL.createObjectURL(file)
+      
+      try {
+        // Pre-process the audio file to get duration
+        const audioBuffer = await AudioService.loadAudio(file, (progress, step) => {
+          console.log(`Audio loading: ${progress}% - ${step}`);
+        });
+        
+        setData(prev => ({
+          ...prev,
+          project: {
+            ...prev.project,
+            musicFile: {
+              file,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              duration: audioBuffer.duration,
+              url: URL.createObjectURL(file)
+            }
           }
-        }
-      }));
+        }));
+      } catch (error) {
+        console.error('Error loading audio file:', error);
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            errors: {
+              ...prev.ui.errors,
+              audioUpload: `Failed to load audio file: ${error instanceof Error ? error.message : String(error)}`
+            }
+          }
+        }));
+      }
     }
   }, [setData]);
   
@@ -66,11 +89,27 @@ const InputStep: React.FC = () => {
   });
   
   // Setup dropzone for videos
-  const onVideoDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach(file => {
-      addVideoFile(file);
-    });
-  }, [addVideoFile]);
+  const onVideoDrop = useCallback(async (acceptedFiles: File[]) => {
+    for (const file of acceptedFiles) {
+      try {
+        // Pre-process the video file to get metadata
+        const videoFile = await videoService.loadVideoFile(file);
+        addVideoFile(file);
+      } catch (error) {
+        console.error('Error loading video file:', error);
+        setData(prev => ({
+          ...prev,
+          ui: {
+            ...prev.ui,
+            errors: {
+              ...prev.ui.errors,
+              videoUpload: `Failed to load video file: ${error instanceof Error ? error.message : String(error)}`
+            }
+          }
+        }));
+      }
+    }
+  }, [addVideoFile, setData]);
   
   const {
     getRootProps: getVideoRootProps,
@@ -85,12 +124,28 @@ const InputStep: React.FC = () => {
   });
   
   // Setup dropzone for raw video files
-  const onRawVideoDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach(file => {
+  const onRawVideoDrop = useCallback(async (acceptedFiles: File[]) => {
+    for (const file of acceptedFiles) {
       // Validate video file format
       const validVideoFormats = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
       if (validVideoFormats.includes(file.type)) {
-        addRawVideoFile(file);
+        try {
+          // Pre-process the video file to get metadata
+          const videoFile = await videoService.loadVideoFile(file);
+          addRawVideoFile(file);
+        } catch (error) {
+          console.error('Error loading raw video file:', error);
+          setData(prev => ({
+            ...prev,
+            ui: {
+              ...prev.ui,
+              errors: {
+                ...prev.ui.errors,
+                videoUpload: `Failed to load raw video file: ${error instanceof Error ? error.message : String(error)}`
+              }
+            }
+          }));
+        }
       } else {
         // Show error for invalid format
         setData(prev => ({
@@ -104,7 +159,7 @@ const InputStep: React.FC = () => {
           }
         }));
       }
-    });
+    }
   }, [addRawVideoFile, setData]);
   
   const {
