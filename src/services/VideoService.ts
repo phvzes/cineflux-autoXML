@@ -3,6 +3,7 @@
  * 
  * Service for video file processing, frame extraction, and analysis.
  * This follows the same patterns established in AudioService.
+ * Implements the singleton pattern for consistent state management.
  */
 
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
@@ -26,8 +27,12 @@ import {
 
 /**
  * VideoService handles all video file processing, analysis, and manipulation.
+ * Implemented as a singleton to ensure consistent state across the application.
  */
 export class VideoService {
+  // Singleton instance
+  private static instance: VideoService;
+  
   private ffmpeg: any;
   private isFFmpegLoaded: boolean = false;
   private eventListeners: Map<VideoServiceEvents, Function[]> = new Map();
@@ -35,7 +40,11 @@ export class VideoService {
   private analysisCache: Map<string, VideoAnalysis> = new Map();
   private frameCache: Map<string, VideoFrame[]> = new Map();
   
-  constructor() {
+  /**
+   * Private constructor to prevent direct instantiation.
+   * Use VideoService.getInstance() instead.
+   */
+  private constructor() {
     this.ffmpeg = createFFmpeg({
       log: false,
       corePath: '/assets/ffmpeg-core/ffmpeg-core.js',
@@ -45,6 +54,17 @@ export class VideoService {
     Object.values(VideoServiceEvents).forEach(event => {
       this.eventListeners.set(event, []);
     });
+  }
+  
+  /**
+   * Gets the singleton instance of VideoService
+   * @returns The singleton VideoService instance
+   */
+  public static getInstance(): VideoService {
+    if (!VideoService.instance) {
+      VideoService.instance = new VideoService();
+    }
+    return VideoService.instance;
   }
   
   /**
@@ -107,6 +127,15 @@ export class VideoService {
       console.error('Error loading video file:', error);
       throw new Error(`Failed to load video file: ${error.message}`);
     }
+  }
+  
+  /**
+   * Static wrapper for loadVideoFile
+   * @param file The video File object to load
+   * @returns Promise resolving to a VideoFile object
+   */
+  static async loadVideoFile(file: File): Promise<VideoFile> {
+    return VideoService.getInstance().loadVideoFile(file);
   }
   
   /**
@@ -174,6 +203,15 @@ export class VideoService {
   }
   
   /**
+   * Static wrapper for extractMetadata
+   * @param file The video File object
+   * @returns Promise resolving to VideoMetadata
+   */
+  static async extractMetadata(file: File): Promise<VideoMetadata> {
+    return VideoService.getInstance().extractMetadata(file);
+  }
+  
+  /**
    * Generates a thumbnail from a video file at a specific time
    * @param file The video File object
    * @param time Time in seconds (default: 1)
@@ -216,6 +254,16 @@ export class VideoService {
       // Return a placeholder image on error
       return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADICAYAAABS39xVAAAABmJLR0QA/wD/AP+gvaeTAAADqUlEQVR4nO3UMQEAIAzAMMC/5+GiHCQKenXPzAKgcF4HAHyzsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIFBaQKSwgU1hAprCATGEBmcICMoUFZAoLyBQWkCksIFNYQKawgExhAZnCAjKFBWQKC8gUFpApLCBTWECmsIBMYQGZwgIyhQVkCgvIfgwXBrl5bFQUAAAAAElFTkSuQmCC';
     }
+  }
+  
+  /**
+   * Static wrapper for generateThumbnail
+   * @param file The video File object
+   * @param time Time in seconds (default: 1)
+   * @returns Promise resolving to a base64 thumbnail image
+   */
+  static async generateThumbnail(file: File, time: number = 1): Promise<string> {
+    return VideoService.getInstance().generateThumbnail(file, time);
   }
   
   /**
@@ -303,6 +351,15 @@ export class VideoService {
       
       throw new Error(`Failed to analyze video: ${error.message}`);
     }
+  }
+  
+  /**
+   * Static wrapper for analyzeVideo
+   * @param file The video File object to analyze
+   * @returns Promise resolving to VideoAnalysis
+   */
+  static async analyzeVideo(file: File): Promise<VideoAnalysis> {
+    return VideoService.getInstance().analyzeVideo(file);
   }
   
   /**
@@ -409,6 +466,19 @@ export class VideoService {
   }
   
   /**
+   * Static wrapper for extractFrames
+   * @param file The video File object
+   * @param options Frame extraction options
+   * @returns Promise resolving to an array of VideoFrame objects
+   */
+  static async extractFrames(
+    file: File, 
+    options: FrameExtractionOptions = { fps: 1, maxFrames: 300 }
+  ): Promise<VideoFrame[]> {
+    return VideoService.getInstance().extractFrames(file, options);
+  }
+  
+  /**
    * Detects scene boundaries in a video
    * @param frames Array of VideoFrame objects
    * @param options Scene detection options
@@ -499,6 +569,19 @@ export class VideoService {
       console.error('Error detecting scenes:', error);
       throw new Error(`Failed to detect scenes: ${error.message}`);
     }
+  }
+  
+  /**
+   * Static wrapper for detectScenes
+   * @param frames Array of VideoFrame objects
+   * @param options Scene detection options
+   * @returns Promise resolving to an array of Scene objects
+   */
+  static async detectScenes(
+    frames: VideoFrame[],
+    options: SceneDetectionOptions = { threshold: 30 }
+  ): Promise<Scene[]> {
+    return VideoService.getInstance().detectScenes(frames, options);
   }
   
   /**
@@ -625,6 +708,15 @@ export class VideoService {
   }
   
   /**
+   * Static wrapper for analyzeContent
+   * @param frame The VideoFrame to analyze
+   * @returns Promise resolving to ContentData
+   */
+  static async analyzeContent(frame: VideoFrame): Promise<ContentData> {
+    return VideoService.getInstance().analyzeContent(frame);
+  }
+  
+  /**
    * Analyzes motion across video frames
    * @param frames Array of VideoFrame objects
    * @returns Promise resolving to MotionData
@@ -742,6 +834,15 @@ export class VideoService {
   }
   
   /**
+   * Static wrapper for analyzeMotion
+   * @param frames Array of VideoFrame objects
+   * @returns Promise resolving to MotionData
+   */
+  static async analyzeMotion(frames: VideoFrame[]): Promise<MotionData> {
+    return VideoService.getInstance().analyzeMotion(frames);
+  }
+  
+  /**
    * Classifies the type of video clip based on analysis
    * @param analysis Video analysis data
    * @returns Promise resolving to ClipType
@@ -780,6 +881,15 @@ export class VideoService {
   }
   
   /**
+   * Static wrapper for classifyClipType
+   * @param analysis Video analysis data
+   * @returns Promise resolving to ClipType
+   */
+  static async classifyClipType(analysis: Partial<VideoAnalysis>): Promise<ClipType> {
+    return VideoService.getInstance().classifyClipType(analysis);
+  }
+  
+  /**
    * Disposes of resources and clears caches
    */
   dispose(): void {
@@ -787,6 +897,13 @@ export class VideoService {
     this.analysisCache.clear();
     this.frameCache.clear();
     this.eventListeners.clear();
+  }
+  
+  /**
+   * Static wrapper for dispose
+   */
+  static dispose(): void {
+    VideoService.getInstance().dispose();
   }
   
   /**
@@ -801,6 +918,15 @@ export class VideoService {
   }
   
   /**
+   * Static wrapper for addEventListener
+   * @param event The event to listen for
+   * @param callback Callback function to execute when event occurs
+   */
+  static addEventListener(event: VideoServiceEvents, callback: Function): void {
+    VideoService.getInstance().addEventListener(event, callback);
+  }
+  
+  /**
    * Removes an event listener
    * @param event The event the listener was registered for
    * @param callback The callback function to remove
@@ -809,6 +935,15 @@ export class VideoService {
     const listeners = this.eventListeners.get(event) || [];
     const filteredListeners = listeners.filter(listener => listener !== callback);
     this.eventListeners.set(event, filteredListeners);
+  }
+  
+  /**
+   * Static wrapper for removeEventListener
+   * @param event The event the listener was registered for
+   * @param callback The callback function to remove
+   */
+  static removeEventListener(event: VideoServiceEvents, callback: Function): void {
+    VideoService.getInstance().removeEventListener(event, callback);
   }
   
   /**
@@ -828,6 +963,6 @@ export class VideoService {
   }
 }
 
-// Export singleton instance
-const videoService = new VideoService();
+// Export both the class and the singleton instance
+export const videoService = VideoService.getInstance();
 export default videoService;
