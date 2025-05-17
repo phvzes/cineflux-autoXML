@@ -4,9 +4,60 @@
  * Service for generating preview frames and videos
  */
 class PreviewGenerator {
+  // Singleton instance
+  private static instance: PreviewGenerator;
+
   // Cache for preview frames
   private static frameCache: Record<string, string> = {};
   
+  /**
+   * Private constructor to prevent direct instantiation
+   */
+  private constructor() {}
+
+  /**
+   * Get the singleton instance of PreviewGenerator
+   * @returns The PreviewGenerator instance
+   */
+  public static getInstance(): PreviewGenerator {
+    if (!PreviewGenerator.instance) {
+      PreviewGenerator.instance = new PreviewGenerator();
+    }
+    return PreviewGenerator.instance;
+  }
+
+  /**
+   * Generate a preview frame for a specific edit decision
+   * @param videoFile The video file
+   * @param timeInSeconds The time to extract the frame from
+   * @returns Promise resolving to a data URL of the frame
+   */
+  async generatePreviewFrame(videoFile: File, timeInSeconds: number): Promise<string> {
+    return PreviewGenerator.generatePreviewFrame(videoFile, timeInSeconds);
+  }
+  
+  /**
+   * Generate a preview video for a sequence of edit decisions
+   * @param editDecisions The edit decisions to preview
+   * @param videoFiles The video files
+   * @param audioFile The audio file
+   * @returns Promise resolving to a data URL of the preview video
+   */
+  async generatePreviewVideo(
+    editDecisions: any[],
+    videoFiles: Record<string, File>,
+    audioFile: File | null
+  ): Promise<string> {
+    return PreviewGenerator.generatePreviewVideo(editDecisions, videoFiles, audioFile);
+  }
+  
+  /**
+   * Clear the preview cache
+   */
+  clearCache(): void {
+    PreviewGenerator.clearCache();
+  }
+
   /**
    * Generate a preview frame for a specific edit decision
    * @param videoFile The video file
@@ -67,4 +118,8 @@ class PreviewGenerator {
   }
 }
 
+// Export the class
 export default PreviewGenerator;
+
+// Export the singleton instance
+export const previewGenerator = PreviewGenerator.getInstance();
