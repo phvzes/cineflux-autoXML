@@ -1,3 +1,4 @@
+
 // src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -6,7 +7,10 @@ import App from './App';
 import { ProjectProvider } from './context/ProjectContext';
 import { WorkflowProvider } from './context/WorkflowContext';
 import { AnalysisProvider } from './context/AnalysisContext';
-import { configureWasmLoading } from './utils/wasmLoader';
+import { configureWasmLoading } from './utils/wasm/wasmLoader';
+import { perfMonitor } from './utils/performance/perfMonitor';
+import { initBrowserCompat, getBrowserCompatInfo } from './utils/compat';
+import { prefetchCriticalResources, PrefetchPriority } from './utils/performance/prefetch';
 import './index.css';
 
 // Log application version and environment
@@ -35,12 +39,53 @@ const configureFeatureFlags = () => {
 };
 
 // Initialize application
-const initializeApp = () => {
-  // Configure WebAssembly loading
-  configureWasmLoading();
+const initializeApp = async () => {
+  // Start performance monitoring for critical workflow
+  perfMonitor.mark('app-init-start');
+  
+  // Register app initialization as a critical workflow step
+  perfMonitor.registerCriticalWorkflowStep('app-initialization');
+  
+  // Check browser compatibility
+  const compatInfo = getBrowserCompatInfo();
+  if (import.meta.env.DEV) {
+    console.log('Browser compatibility:', compatInfo);
+  }
+  
+  // Initialize browser compatibility warnings
+  initBrowserCompat();
   
   // Configure feature flags
   configureFeatureFlags();
+  
+  // Configure WebAssembly loading - this now preloads critical modules
+  await configureWasmLoading();
+  
+  // Prefetch critical resources with priority
+  await prefetchCriticalResources({
+    wasmModules: [
+      { path: 'ffmpeg-core.wasm', priority: PrefetchPriority.CRITICAL },
+      { path: 'opencv.wasm', priority: PrefetchPriority.CRITICAL }
+    ],
+    scripts: [
+      // Add critical scripts with priorities
+      { url: '/assets/critical-vendor.js', priority: PrefetchPriority.HIGH }
+    ],
+    stylesheets: [
+      // Add critical stylesheets with priorities
+      { url: '/assets/critical-styles.css', priority: PrefetchPriority.HIGH }
+    ],
+    images: [
+      // Add critical UI images with priorities
+      { url: '/assets/logo.svg', priority: PrefetchPriority.MEDIUM }
+    ]
+  }).catch(error => {
+    console.warn('Failed to prefetch some resources:', error);
+  });
+  
+  // Mark performance for time to initialize
+  perfMonitor.mark('app-init-end');
+  perfMonitor.measure('app-initialization', 'app-init-start', 'app-init-end');
   
   // Render the application
   ReactDOM.createRoot(document.getElementById('root')!).render(

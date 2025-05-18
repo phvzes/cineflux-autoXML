@@ -1,3 +1,4 @@
+
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -29,6 +30,7 @@ export default defineConfig(({ command, mode }) => {
             // Set CORS headers for WASM support
             res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
             res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; frame-ancestors 'none';");
             
             // Set correct MIME types for JavaScript modules
             const url = req.url?.split('?')[0];
@@ -42,6 +44,10 @@ export default defineConfig(({ command, mode }) => {
               res.setHeader('Content-Type', 'image/svg+xml');
             } else if (url?.endsWith('.html')) {
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            } else if (url?.endsWith('.wasm')) {
+              res.setHeader('Content-Type', 'application/wasm');
+              // Set caching headers for WebAssembly files
+              res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
             }
             
             next();
@@ -59,17 +65,26 @@ export default defineConfig(({ command, mode }) => {
       // Disable source maps in production for smaller bundles
       sourcemap: !isProduction,
       // Target modern browsers for better performance
-      target: 'esnext',
-      // Minification settings
+      target: isProduction ? ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'] : 'esnext',
+      // Minification settings - use esbuild for faster builds, terser for more aggressive minification
       minify: isProduction ? 'terser' : false,
       terserOptions: {
         compress: {
           drop_console: isProduction,
           drop_debugger: isProduction,
-        }
+          pure_funcs: isProduction ? ['console.log', 'console.info', 'console.debug'] : [],
+          passes: 2, // Multiple passes for more aggressive optimization
+          ecma: 2020, // Use modern ECMAScript features
+        },
+        mangle: {
+          safari10: false, // No need to support Safari 10
+        },
+        format: {
+          comments: false, // Remove comments
+        },
       },
       // Set chunk size warning limit (in kB)
-      chunkSizeWarningLimit: 300,
+      chunkSizeWarningLimit: 500,
       // Empty the outDir before building
       emptyOutDir: true,
       // Output directory
@@ -111,21 +126,39 @@ export default defineConfig(({ command, mode }) => {
               return 'audio-vendor';
             }
             
-            // Other node_modules go to a separate vendor chunk
+            // Create a chunk for routing and state management
+            if (id.includes('node_modules/react-router') || 
+                id.includes('node_modules/zustand')) {
+              return 'router-state-vendor';
+            }
+            
+            // Split by module size for better loading performance
             if (id.includes('node_modules')) {
+              // Group smaller modules together to avoid excessive chunking
               return 'vendor';
             }
+            
+            // Split application code by feature area
+            if (id.includes('/src/features/')) {
+              const feature = id.split('/src/features/')[1].split('/')[0];
+              return `feature-${feature}`;
+            }
+            
+            // Split components into their own chunk
+            if (id.includes('/src/components/')) {
+              return 'components';
+            }
           },
-          // Configure chunk and asset naming
-          entryFileNames: isProduction 
-            ? 'assets/[name].[hash].js' 
-            : 'assets/[name].js',
-          chunkFileNames: isProduction 
-            ? 'assets/[name].[hash].js' 
-            : 'assets/[name].js',
-          assetFileNames: isProduction 
-            ? 'assets/[name].[hash].[ext]' 
-            : 'assets/[name].[ext]',
+          // Configure chunk and asset naming with content hashing for optimal caching
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: (assetInfo) => {
+            // Special handling for WebAssembly files
+            if (assetInfo.name && assetInfo.name.endsWith('.wasm')) {
+              return 'assets/wasm/[name].[hash].[ext]';
+            }
+            return 'assets/[name].[hash].[ext]';
+          },
         }
       },
       // Optimize WebAssembly loading
@@ -143,6 +176,7 @@ export default defineConfig(({ command, mode }) => {
         'Content-Type': 'application/javascript',
         'Cross-Origin-Embedder-Policy': 'require-corp',
         'Cross-Origin-Opener-Policy': 'same-origin',
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; frame-ancestors 'none';",
       },
     },
     // Define environment variables
@@ -168,13 +202,21 @@ export default defineConfig(({ command, mode }) => {
         '@techstark/opencv-js',
         'essentia.js',
         'meyda'
-      ]
+      ],
+      // Enable esbuild's optimization for dependencies
+      esbuildOptions: {
+        target: 'es2020',
+        supported: {
+          'top-level-await': true,
+        },
+      },
     },
     // Configure preview server
     preview: {
       headers: {
         'Cross-Origin-Embedder-Policy': 'require-corp',
         'Cross-Origin-Opener-Policy': 'same-origin',
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; frame-ancestors 'none';",
       },
     },
   };

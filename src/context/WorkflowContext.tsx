@@ -13,6 +13,7 @@ import {
   ProjectSettings,
   VideoFile
 } from '../types/workflow';
+import { ModalType, ApplicationStep } from '../types/ApplicationState';
 
 // Import services
 import { audioService as AudioService } from '../services/AudioService';
