@@ -15,8 +15,8 @@ import {
 } from '../types/workflow';
 
 // Import services
-import AudioService from '../services/AudioService';
-import VideoService from '../services/VideoService';
+import { audioService as AudioService } from '../services/AudioService';
+import { VideoService } from '../services/VideoService';
 
 // Default state for the application
 const defaultState: AppState = {

@@ -13,8 +13,8 @@ import { useNotification } from '../../contexts/NotificationContext';
 import ProcessingProgress from '../common/ProcessingProgress';
 import { mapAudioProgressToProps, mapVideoProgressToProps } from '../../constants/processingStages';
 import { ProjectSettings } from '../../types/workflow';
-import AudioService from '../../services/AudioService';
-import VideoService from '../../services/VideoService';
+import { audioService as AudioService } from '../../services/AudioService';
+import { VideoService } from '../../services/VideoService';
 
 const InputStep: React.FC = () => {
   // Get workflow context
