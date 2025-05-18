@@ -7,8 +7,17 @@ import {
   Tempo, 
   Waveform, 
   EnergyAnalysis, 
-  EnergySample 
+  EnergySample,
+  Section,
+  SectionAnalysis
 } from '../types/AudioAnalysis';
+import {
+  AudioProcessingOptions,
+  BeatDetectionOptions,
+  EnergyAnalysisOptions,
+  WaveformOptions,
+  AudioProcessingProgressCallback
+} from '../types/media-processing';
 
 /**
  * Error class for audio processing errors
@@ -51,7 +60,7 @@ export class AudioService {
    */
   async loadAudio(
     source: File | string,
-    progressCallback?: (progress: number, step: string) => void
+    progressCallback?: AudioProcessingProgressCallback
   ): Promise<AudioBuffer> {
     return AudioService.loadAudio(source, progressCallback);
   }
@@ -59,12 +68,14 @@ export class AudioService {
   /**
    * Analyze an audio file to detect beats, segments, and energy levels
    * @param audioFile The audio file to analyze
+   * @param options Optional parameters for audio analysis
    * @param progressCallback Callback function to report progress
    * @returns Promise resolving to the analysis results
    */
   async analyzeAudio(
     audioFile: File,
-    progressCallback?: (progress: number, step: string) => void
+    options?: AudioProcessingOptions,
+    progressCallback?: AudioProcessingProgressCallback
   ): Promise<AudioAnalysis> {
     return AudioService.analyzeAudio(audioFile, progressCallback || ((progress, step) => {}));
   }
@@ -72,11 +83,13 @@ export class AudioService {
   /**
    * Extract waveform data from an audio buffer
    * @param audioBuffer The audio buffer to analyze
+   * @param options Optional parameters for waveform extraction
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to waveform data
    */
   async extractWaveform(
     audioBuffer: AudioBuffer,
+    options?: WaveformOptions,
     progressCallback?: (progress: number) => void
   ): Promise<Waveform> {
     return AudioService.extractWaveform(audioBuffer, progressCallback);
@@ -85,12 +98,14 @@ export class AudioService {
   /**
    * Detect beats in an audio file
    * @param audioFile The audio file to analyze
+   * @param options Optional parameters for beat detection
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to beat analysis data
    */
   async detectBeats(
     audioFile: File,
-    progressCallback?: (progress: number, step?: string) => void
+    options?: BeatDetectionOptions,
+    progressCallback?: AudioProcessingProgressCallback
   ): Promise<BeatAnalysis> {
     // First load the audio file to get the AudioBuffer
     const audioBuffer = await this.loadAudio(audioFile, 
@@ -106,12 +121,14 @@ export class AudioService {
   /**
    * Analyze energy levels in an audio file
    * @param audioFile The audio file to analyze
+   * @param options Optional parameters for energy analysis
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to energy analysis data
    */
   async analyzeEnergy(
     audioFile: File,
-    progressCallback?: (progress: number, step?: string) => void
+    options?: EnergyAnalysisOptions,
+    progressCallback?: AudioProcessingProgressCallback
   ): Promise<EnergyAnalysis> {
     // First load the audio file to get the AudioBuffer
     const audioBuffer = await this.loadAudio(audioFile, 
@@ -132,7 +149,7 @@ export class AudioService {
    */
   async generateWaveform(
     audioFile: File,
-    options?: { width?: number; height?: number }
+    options?: WaveformOptions
   ): Promise<number[]> {
     const width = options?.width || 800;
     const height = options?.height || 200;
@@ -160,7 +177,7 @@ export class AudioService {
     energyAnalysis: EnergyAnalysis,
     beatAnalysis: BeatAnalysis,
     duration: number
-  ): Promise<any> {
+  ): Promise<SectionAnalysis> {
     return AudioService.detectSections(energyAnalysis, beatAnalysis, duration);
   }
 
@@ -192,7 +209,7 @@ export class AudioService {
    */
   static async loadAudio(
     source: File | string,
-    progressCallback?: (progress: number, step: string) => void
+    progressCallback?: AudioProcessingProgressCallback
   ): Promise<AudioBuffer> {
     try {
       // Report initial progress
@@ -298,11 +315,13 @@ export class AudioService {
    * Analyze an audio file to detect beats, segments, and energy levels
    * @param audioFile The audio file to analyze
    * @param progressCallback Callback function to report progress
+   * @param options Optional parameters for audio analysis
    * @returns Promise resolving to the analysis results
    */
   static async analyzeAudio(
     audioFile: File,
-    progressCallback: (progress: number, step: string) => void
+    progressCallback: AudioProcessingProgressCallback,
+    options?: AudioProcessingOptions
   ): Promise<AudioAnalysis> {
     try {
       // Load the audio file
@@ -372,11 +391,13 @@ export class AudioService {
    * Extract waveform data from an audio buffer
    * @param audioBuffer The audio buffer to analyze
    * @param progressCallback Optional callback for progress updates
+   * @param options Optional parameters for waveform extraction
    * @returns Promise resolving to waveform data
    */
   static async extractWaveform(
     audioBuffer: AudioBuffer,
-    progressCallback?: (progress: number) => void
+    progressCallback?: (progress: number) => void,
+    options?: WaveformOptions
   ): Promise<Waveform> {
     // Get the number of channels and sample rate
     const channels = audioBuffer.numberOfChannels;
@@ -449,11 +470,13 @@ export class AudioService {
    * Detect beats in an audio buffer
    * @param audioBuffer The audio buffer to analyze
    * @param progressCallback Optional callback for progress updates
+   * @param options Optional parameters for beat detection
    * @returns Promise resolving to beat analysis data
    */
   static async detectBeats(
     audioBuffer: AudioBuffer,
-    progressCallback?: (progress: number) => void
+    progressCallback?: (progress: number) => void,
+    options?: BeatDetectionOptions
   ): Promise<BeatAnalysis> {
     // Get the audio data from the first channel
     const channelData = audioBuffer.getChannelData(0);
@@ -538,11 +561,13 @@ export class AudioService {
    * Analyze energy levels in an audio buffer
    * @param audioBuffer The audio buffer to analyze
    * @param progressCallback Optional callback for progress updates
+   * @param options Optional parameters for energy analysis
    * @returns Promise resolving to energy analysis data
    */
   static async analyzeEnergy(
     audioBuffer: AudioBuffer,
-    progressCallback?: (progress: number) => void
+    progressCallback?: (progress: number) => void,
+    options?: EnergyAnalysisOptions
   ): Promise<EnergyAnalysis> {
     // Get the audio data from all channels
     const channels = audioBuffer.numberOfChannels;
@@ -758,7 +783,7 @@ export class AudioService {
     energyAnalysis: EnergyAnalysis,
     beatAnalysis: BeatAnalysis,
     duration: number
-  ): Promise<any> {
+  ): Promise<SectionAnalysis> {
     // This is a simplified section detection algorithm
     // In a real app, you would use more sophisticated algorithms
     

@@ -1,3 +1,4 @@
+
 /**
  * WorkflowContext.tsx
  * 
@@ -17,6 +18,7 @@ import {
 // Import services
 import { audioService as AudioService } from '../services/AudioService';
 import { VideoService } from '../services/VideoService';
+import { AudioProcessingProgressCallback } from '../types/media-processing.d';
 
 // Default state for the application
 const defaultState: AppState = {
@@ -45,12 +47,21 @@ const defaultState: AppState = {
   analysis: {
     audio: null,
     video: null,
-    isAnalyzing: false
+    isAnalyzing: false,
+    progress: 0,
+    currentStep: '',
+    audioAnalysis: null,
+    videoAnalyses: []
   },
   edit: {
     decisions: [],
     currentEdit: null,
-    selectedEditIndex: null
+    selectedEditIndex: null,
+    editDecisionList: null,
+    isEditing: false,
+    currentTime: 0,
+    isPlaying: false,
+    zoomLevel: 1
   },
   export: {
     settings: {
@@ -133,6 +144,8 @@ const getPreviousRoute = (currentStep: WorkflowStep): WorkflowStep | null => {
 // Create the context with a default value
 interface WorkflowContextType {
   state: AppState;
+  currentStep: WorkflowStep; // Added missing property
+  data: AppState; // Added missing property
   navigation: {
     goToNextStep: () => void;
     goToPreviousStep: () => void;
@@ -152,6 +165,8 @@ interface WorkflowContextType {
 
 const WorkflowContext = createContext<WorkflowContextType>({
   state: defaultState,
+  currentStep: WorkflowStep.INPUT, // Added missing property
+  data: defaultState, // Added missing property
   navigation: {
     goToNextStep: () => {},
     goToPreviousStep: () => {},
@@ -173,14 +188,14 @@ const WorkflowContext = createContext<WorkflowContextType>({
 interface WorkflowProviderProps {
   children: ReactNode;
   initialState?: Partial<AppState>;
-  audioService?: AudioService;
+  audioService?: typeof AudioService;
   videoService?: VideoService;
 }
 
 export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ 
   children, 
   initialState,
-  audioService = AudioService.getInstance(),
+  audioService = AudioService,
   videoService = VideoService.getInstance()
 }) => {
   const navigate = useNavigate();
@@ -297,14 +312,14 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     
     try {
       // Create a progress callback
-      const progressCallback = (progress: number, step: string) => {
+      const progressCallback: AudioProcessingProgressCallback = (progress: number, step?: string) => {
         setState(prev => ({
           ...prev,
           ui: {
             ...prev.ui,
             audioProgress: {
               percentage: progress,
-              currentStep: step
+              currentStep: step || 'Processing...'
             }
           }
         }));
@@ -580,14 +595,14 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     
     try {
       // Create a progress callback for audio analysis
-      const audioProgressCallback = (progress: number, step: string) => {
+      const audioProgressCallback: AudioProcessingProgressCallback = (progress: number, step?: string) => {
         setState(prev => ({
           ...prev,
           workflow: {
             ...prev.workflow,
             analysisProgress: {
               percentage: Math.floor(progress * 0.5), // Audio is 50% of total progress
-              currentStep: `Audio analysis: ${step}`,
+              currentStep: `Audio analysis: ${step || 'Processing...'}`,
               isComplete: false
             }
           }
@@ -597,6 +612,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       // Perform audio analysis
       const audioAnalysis = await audioService.analyzeAudio(
         state.project.musicFile.file,
+        undefined,
         audioProgressCallback
       );
       
@@ -614,7 +630,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       }));
       
       // Analyze video files
-      const videoAnalysisResults = [];
+      const videoAnalysisResults: any[] = [];
       
       // Process regular video files
       for (let i = 0; i < state.project.videoFiles.length; i++) {
@@ -710,6 +726,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   // Create a context value with state and methods
   const contextValue = {
     state,
+    currentStep: state.workflow.currentStep, // Added missing property
+    data: state, // Added missing property
     navigation: {
       goToNextStep,
       goToPreviousStep,

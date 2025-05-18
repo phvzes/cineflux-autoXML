@@ -1,6 +1,6 @@
 // src/components/edit-decision/EditDecisionVisualizer.tsx
 import React, { useEffect, useRef } from 'react';
-import { EditDecisionResult } from '../../engine/EditDecisionEngine';
+import { EditDecisionResult } from '../../engine';
 
 interface EditDecisionVisualizerProps {
   /** The edit decision result to visualize */

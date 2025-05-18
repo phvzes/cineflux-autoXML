@@ -1,6 +1,6 @@
 // src/components/edit-decision/EditDecisionControls.tsx
 import React, { useState } from 'react';
-import { EditDecisionEngineConfig } from '../../engine/EditDecisionEngine';
+import { EditDecisionEngineConfig } from '../../engine';
 
 interface EditDecisionControlsProps {
   /** Current configuration */

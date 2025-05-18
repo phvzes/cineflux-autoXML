@@ -6,31 +6,43 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { EventEmitter } from 'events';
 import { 
   VideoAnalysis, 
   Scene, 
-  ClipType, 
-  TimelineMarker, 
-  MarkerType 
+  ClipType
 } from '../types/video-types';
+import { TimelineMarker, MarkerType } from '../types/timeline-types';
 import { 
   Beat, 
   AudioSegment, 
-  AudioAnalysis 
-} from '../types/audio-types'; // You may need to create or update this file
+  AudioAnalysis,
+  EnergySample
+} from '../types/audio-types';
 import { 
-  EditDecision, 
-  EditPoint, 
-  TransitionType, 
-  EditStyle, 
-  ProjectSettings, 
-  VideoClipAssignment,
-  EditDecisionEngineEvents
-} from '../types/edit-types'; // You may need to create this file
+  EditDecision,
+  EditDecisionList,
+  EditDecisionStats,
+  EditDecisionEngineOptions,
+  EditDecisionEngineEvents,
+  EditDecisionEngineResult,
+  TransitionType,
+  Transition
+} from '../types/edit-types';
+import {
+  EditPoint,
+  EditPointType,
+  EditStyle,
+  ProjectSettings,
+  VideoClipAssignment
+} from '../types/edit-types-extended';
+import { AppError, ErrorCode } from '../types/errors';
+import { isArrayOf, isEditDecision, isScene, isVideoAnalysis } from '../utils/type-guards';
+import { asyncHandler, AsyncResult } from '../utils/async-utils';
 
 // Import the services
-import AudioService from './AudioService';
-import VideoService from './VideoService';
+import { AudioService } from './AudioService';
+import { VideoService } from './VideoService';
 
 /**
  * EditDecisionEngine generates automatic edits based on audio and video analysis

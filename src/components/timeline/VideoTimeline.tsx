@@ -8,8 +8,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useVideoService } from '../../hooks/useVideoService';
 import { useAudioService } from '../../hooks/useAudioService';
-import { Scene, VideoFrame, TimelineMarker, MarkerType } from '../../types/video-types';
-import { Beat, AudioSegment } from '../../types/audio-types'; // You may need to create or update this file
+import { Scene, VideoFrame } from '../../types/video-types';
+import { TimelineMarker, MarkerType } from '../../types/timeline-types';
+import { Beat, AudioSegment } from '../../types/audio-types';
 
 interface VideoTimelineProps {
   videoFile?: File;

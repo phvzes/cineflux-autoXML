@@ -4,7 +4,7 @@ import {
   EditDecisionEngine, 
   EditDecisionEngineConfig, 
   EditDecisionResult 
-} from '../engine/EditDecisionEngine';
+} from '../engine';
 import { 
   EditDecisionVisualizer, 
   EditPreview, 

@@ -2,8 +2,6 @@
 import { 
   AudioAnalysis, 
   Beat, 
-  BeatAnalysis, 
-  EnergyAnalysis, 
   EnergySample 
 } from '../types/AudioAnalysis';
 import { 
@@ -12,7 +10,6 @@ import {
   SceneType 
 } from '../types/VideoAnalysis';
 import {
-  EditDecisionList,
   createEmptyEDL,
   MatchedClip,
   Transition,
@@ -21,50 +18,13 @@ import {
   TimelineCutPoint,
   MarkerType
 } from '../types/EditDecision';
-
-/**
- * Configuration options for the EditDecisionEngine
- */
-export interface EditDecisionEngineConfig {
-  /** Percentage of beats to use for cuts (0-100) */
-  beatCutPercentage?: number;
-  /** Minimum scene duration in seconds */
-  minSceneDuration?: number;
-  /** Maximum scene duration in seconds */
-  maxSceneDuration?: number;
-  /** Whether to prioritize scene boundaries over exact beat timing */
-  prioritizeSceneBoundaries?: boolean;
-  /** Energy threshold for determining transition types (0-1) */
-  energyThreshold?: {
-    low: number;
-    medium: number;
-    high: number;
-  };
-  /** Framerate for the output sequence */
-  framerate?: number;
-}
-
-/**
- * Result of the edit decision generation process
- */
-export interface EditDecisionResult {
-  /** The generated Edit Decision List */
-  edl: EditDecisionList;
-  /** Timeline of cuts with beat and scene information */
-  timeline: {
-    time: number;
-    type: 'beat' | 'scene' | 'cut';
-    sourceId?: string;
-    energy?: number;
-  }[];
-  /** Statistics about the generated edit */
-  stats: {
-    totalCuts: number;
-    averageSceneDuration: number;
-    transitionTypes: Record<TransitionType, number>;
-    beatAlignmentScore: number;
-  };
-}
+import {
+  EditDecisionEngineConfig,
+  EditDecisionResult,
+  TimelinePoint,
+  CutPoint,
+  VideoMetadata
+} from '../types/EditDecisionEngineTypes';
 
 /**
  * Engine for generating intelligent edit decisions by connecting audio and video analysis
@@ -74,7 +34,7 @@ export class EditDecisionEngine {
   private beatMap: Beat[] = [];
   private scenes: Map<string, Scene[]> = new Map();
   private energyProfile: EnergySample[] = [];
-  private videoMetadata: Map<string, any> = new Map();
+  private videoMetadata: Map<string, VideoMetadata> = new Map();
   private framerate: number = 30;
 
   /**
@@ -146,12 +106,12 @@ export class EditDecisionEngine {
    * Generate a cut timeline based on audio beats and video scenes
    * @returns Array of cut points with timestamps
    */
-  generateCutTimeline(): { time: number; type: string; sourceId?: string }[] {
+  generateCutTimeline(): TimelinePoint[] {
     if (this.beatMap.length === 0 || this.scenes.size === 0) {
       throw new Error('Audio beats and video scenes must be set before generating cuts');
     }
     
-    const timeline: { time: number; type: string; sourceId?: string }[] = [];
+    const timeline: TimelinePoint[] = [];
     
     // Add all beats to the timeline
     this.beatMap.forEach(beat => {
@@ -268,13 +228,14 @@ export class EditDecisionEngine {
     this.scenes.forEach((scenes, videoId) => {
       for (const scene of scenes) {
         // Check if scene duration is appropriate
-        if (scene.duration / 1000 < duration * 0.8) continue; // Scene is too short
+        const sceneDuration = scene.duration / 1000;
+        if (sceneDuration < duration * 0.8) continue; // Scene is too short
         
         // Calculate a score for this scene
         let score = 1.0;
         
         // Prefer scenes that are not much longer than needed
-        const durationRatio = scene.duration / 1000 / duration;
+        const durationRatio = sceneDuration / duration;
         if (durationRatio > 1.5) {
           score *= 0.8; // Penalize scenes that are much longer
         }
@@ -284,8 +245,8 @@ export class EditDecisionEngine {
         
         // Prefer certain scene types based on energy
         const energyAtTime = this.getEnergyAtTime(startTime);
-        if (energyAtTime > 0.7 && scene.sceneTypes.includes(SceneType.ACTION)) {
-          score *= 1.5; // Boost action scenes for high energy
+        if (energyAtTime > 0.7 && scene.sceneTypes.includes(SceneType.URBAN)) {
+          score *= 1.5; // Boost urban scenes for high energy
         } else if (energyAtTime < 0.3 && scene.sceneTypes.includes(SceneType.INTERIOR)) {
           score *= 1.3; // Boost interior scenes for low energy
         }
@@ -309,14 +270,14 @@ export class EditDecisionEngine {
   selectTransitionType(energy: number): TransitionType {
     const { energyThreshold } = this.config;
     
-    if (energy >= energyThreshold!.high) {
+    if (energy >= (energyThreshold?.high || 0.8)) {
       // High energy transitions
       const highEnergyTransitions = [
         TransitionType.CUT,
         TransitionType.WIPE
       ];
       return highEnergyTransitions[Math.floor(Math.random() * highEnergyTransitions.length)];
-    } else if (energy >= energyThreshold!.medium) {
+    } else if (energy >= (energyThreshold?.medium || 0.6)) {
       // Medium energy transitions
       const mediumEnergyTransitions = [
         TransitionType.CUT,
@@ -350,7 +311,7 @@ export class EditDecisionEngine {
     const rawTimeline = this.generateCutTimeline();
     
     // Filter beats based on beatCutPercentage
-    const beatsToUse = Math.ceil(this.beatMap.length * (this.config.beatCutPercentage! / 100));
+    const beatsToUse = Math.ceil(this.beatMap.length * ((this.config.beatCutPercentage || 50) / 100));
     const selectedBeats = this.beatMap
       .sort((a, b) => b.confidence - a.confidence) // Sort by confidence
       .slice(0, beatsToUse); // Take the top beats
@@ -367,30 +328,25 @@ export class EditDecisionEngine {
     });
     
     // Generate cuts by aligning beats with scene boundaries
-    const cuts: { 
-      time: number; 
-      type: 'cut'; 
-      sourceId?: string; 
-      sceneStart?: number;
-      energy: number;
-    }[] = [];
+    const cuts: CutPoint[] = [];
     
-    let currentTime = 0;
     let lastCutTime = 0;
     
     // Process each potential cut point
     for (let i = 0; i < filteredTimeline.length; i++) {
       const point = filteredTimeline[i];
+      const minSceneDuration = this.config.minSceneDuration || 1.0;
+      const maxSceneDuration = this.config.maxSceneDuration || 5.0;
       
       // Skip points that are too close to the last cut
-      if (point.time - lastCutTime < this.config.minSceneDuration!) {
+      if (point.time - lastCutTime < minSceneDuration) {
         continue;
       }
       
       // Skip points that are beyond the maximum scene duration
-      if (point.time - lastCutTime > this.config.maxSceneDuration!) {
+      if (point.time - lastCutTime > maxSceneDuration) {
         // Force a cut at the maximum duration
-        const forcedCutTime = lastCutTime + this.config.maxSceneDuration!;
+        const forcedCutTime = lastCutTime + maxSceneDuration;
         
         // Find the best video and scene for this cut
         const bestScene = this.selectBestScene(lastCutTime, forcedCutTime);
@@ -474,7 +430,7 @@ export class EditDecisionEngine {
       const cut = cuts[i];
       const nextCut = cuts[i + 1];
       
-      if (!cut.sourceId || !cut.sceneStart) continue;
+      if (!cut.sourceId || cut.sceneStart === undefined) continue;
       
       // Calculate clip duration
       const clipDuration = nextCut ? nextCut.time - cut.time : 5.0; // Default to 5 seconds for the last clip
@@ -640,9 +596,9 @@ export class EditDecisionEngine {
     `;
     
     // Add clip visualization
-    edl.clips.forEach((clip, index) => {
-      const width = ((clip.timelineOutPoint - clip.timelineInPoint) / duration) * timelineWidth;
-      const position = (clip.timelineInPoint / duration) * timelineWidth;
+    edl.clips.forEach((clip: MatchedClip, index: number) => {
+      const width = ((clip.timelineOutPoint as number) - (clip.timelineInPoint as number)) / duration * timelineWidth;
+      const position = (clip.timelineInPoint as number) / duration * timelineWidth;
       
       html += `
         <div class="clip" style="left: ${position}px; width: ${width}px">

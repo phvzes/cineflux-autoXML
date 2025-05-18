@@ -13,11 +13,12 @@ import { useWorkflow } from '../../context/WorkflowContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import ProcessingProgress from '../common/ProcessingProgress';
 import { mapAudioProgressToProps, mapVideoProgressToProps } from '../../constants/processingStages';
-import { ProjectSettings } from '../../types/workflow';
+import { ProjectSettings, WorkflowStep } from '../../types/workflow';
 import { audioService } from '../../services/AudioService';
 import { videoService } from '../../services/VideoService';
 import { ExtendedFile } from '../../types/ExtendedFile';
 import { perfMonitor } from '../../utils/perfMonitor';
+import { AudioProcessingProgressCallback } from '../../types/media-processing.d';
 
 const InputStep: React.FC = () => {
   // Get workflow context
@@ -85,14 +86,14 @@ const InputStep: React.FC = () => {
         // Use the exported singleton instance
         
         // Create a progress callback
-        const progressCallback = (progress: number, step: string) => {
+        const progressCallback: AudioProcessingProgressCallback = (progress: number, step?: string) => {
           setData(prev => ({
             ...prev,
             ui: {
               ...prev.ui,
               audioProgress: {
                 percentage: progress,
-                currentStep: step
+                currentStep: step || 'Processing...'
               }
             }
           }));
@@ -233,23 +234,13 @@ const InputStep: React.FC = () => {
         }));
 
         // Use VideoService to load and process the video file
-        const videoFile = await perfMonitor.trackTime(
+        await perfMonitor.trackTime(
           `video-load-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`,
           () => videoService.loadVideoFile(file as ExtendedFile)
         );
         
         // Add the processed video file to the workflow state
-        addVideoFile({
-          name: videoFile.name,
-          size: videoFile.size,
-          type: videoFile.type,
-          duration: videoFile.duration,
-          width: videoFile.resolution.width,
-          height: videoFile.resolution.height,
-          fps: videoFile.frameRate,
-          url: videoFile.url || '',
-          thumbnail: videoFile.url || ''
-        } as any);
+        await addVideoFile(file);
 
         // Update progress to complete
         setData(prev => ({
@@ -386,23 +377,13 @@ const InputStep: React.FC = () => {
         }
         
         // Use VideoService to load and process the video file
-        const videoFile = await perfMonitor.trackTime(
+        await perfMonitor.trackTime(
           `raw-video-load-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`,
           () => videoService.loadVideoFile(file as ExtendedFile)
         );
         
         // Add the processed raw video file to the workflow state
-        addRawVideoFile({
-          name: videoFile.name,
-          size: videoFile.size,
-          type: videoFile.type,
-          duration: videoFile.duration,
-          width: videoFile.resolution.width,
-          height: videoFile.resolution.height,
-          fps: videoFile.frameRate,
-          url: videoFile.url || '',
-          thumbnail: videoFile.url || ''
-        } as any);
+        await addRawVideoFile(file);
 
         // Update progress to complete
         setData(prev => ({
@@ -508,7 +489,8 @@ const InputStep: React.FC = () => {
         ...prev.workflow,
         analysisProgress: {
           percentage: 0,
-          currentStep: "Starting analysis..."
+          currentStep: "Starting analysis...",
+          isComplete: false
         }
       },
       analysis: {
@@ -523,7 +505,7 @@ const InputStep: React.FC = () => {
     });
     
     // Navigate to analysis step
-    goToStep('analysis' as any);
+    goToStep(WorkflowStep.ANALYSIS);
     
     // Mark end of transition
     perfMonitor.mark('analyze-transition-complete');

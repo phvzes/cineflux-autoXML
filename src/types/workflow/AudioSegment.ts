@@ -26,6 +26,14 @@ export interface AudioSegment {
   confidence?: number;
   /** Additional metadata for the segment */
   metadata?: Record<string, any>;
+  /** Whether this segment is a chorus */
+  isChorus?: boolean;
+  /** Start time in seconds */
+  start?: number;
+  /** End time in seconds */
+  end?: number;
+  /** Energy level of the segment */
+  energyLevel?: number;
 }
 
 export default AudioSegment;

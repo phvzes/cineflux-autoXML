@@ -7,12 +7,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { EditDecision, TransitionType } from '../../types/workflow';
+import { EditDecision, TransitionType, Transition } from '../../types/workflow';
 import useAudioService from '../../hooks/useAudioService';
 import { useVideoService } from '../../hooks/useVideoService';
 import VideoTimeline from '../timeline/VideoTimeline';
-import { TimelineMarker, MarkerType } from '../../types/video-types';
+import { TimelineMarker, MarkerType } from '../../types/timeline-types';
 import AccessibleDialog from '../AccessibleDialog';
+
+/**
+ * Props for the EditingStep component
+ */
+interface EditingStepProps {
+  /**
+   * Reference to the audio element for playback control
+   */
+  audioElement: HTMLAudioElement | null;
+}
 
 // Import icons 
 import { 
@@ -26,7 +36,7 @@ import {
   Save
 } from 'lucide-react';
 
-const EditingStep: React.FC = () => {
+const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   // Get workflow context
   const { currentStep, goToStep, data, setData } = useWorkflow();
   

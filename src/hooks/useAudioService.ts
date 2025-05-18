@@ -7,6 +7,16 @@
 
 import { useCallback, useMemo } from 'react';
 import { audioService, AudioService } from '../services/AudioService';
+import { 
+  AudioAnalysis, 
+  AudioProcessingOptions, 
+  BeatAnalysis, 
+  BeatDetectionOptions, 
+  EnergyAnalysis, 
+  EnergyAnalysisOptions, 
+  WaveformData, 
+  WaveformGenerationOptions 
+} from '../types/audio-types';
 
 /**
  * Hook to access AudioService functionality
@@ -19,22 +29,22 @@ export const useAudioService = () => {
 
   // Wrap methods in useCallback to prevent unnecessary re-renders
   const analyzeAudio = useCallback(
-    (file: File, options?: any) => service.analyzeAudio(file, options),
+    (file: File, options?: AudioProcessingOptions) => service.analyzeAudio(file, options),
     [service]
   );
 
   const detectBeats = useCallback(
-    (file: File, options?: any) => service.detectBeats(file, options),
+    (file: File, options?: BeatDetectionOptions) => service.detectBeats(file, options),
     [service]
   );
 
   const analyzeEnergy = useCallback(
-    (file: File, options?: any) => service.analyzeEnergy(file, options),
+    (file: File, options?: EnergyAnalysisOptions) => service.analyzeEnergy(file, options),
     [service]
   );
 
   const generateWaveform = useCallback(
-    (file: File, options?: any) => service.generateWaveform(file, options),
+    (file: File, options?: WaveformGenerationOptions) => service.generateWaveform(file, options),
     [service]
   );
 

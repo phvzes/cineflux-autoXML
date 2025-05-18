@@ -15,6 +15,16 @@ import { useProject } from '@/context/ProjectContext';
 import { colorPalette } from '@/theme';
 import './WelcomePage.css';
 
+/**
+ * Props for the WelcomePage component
+ */
+interface WelcomePageProps {
+  /**
+   * Callback function when the "Get Started" button is clicked
+   */
+  onGetStarted: () => void;
+}
+
 // Mock data for recent projects
 const MOCK_RECENT_PROJECTS = [
   {
@@ -151,7 +161,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   );
 };
 
-export const WelcomePage: React.FC = () => {
+export const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted }) => {
   const { dispatch } = useProject();
   const [recentProjects, setRecentProjects] = useState(MOCK_RECENT_PROJECTS);
   const [currentDate, setCurrentDate] = useState(new Date());

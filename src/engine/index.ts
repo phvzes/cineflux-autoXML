@@ -6,5 +6,10 @@ export {
 
 export type { 
   EditDecisionEngineConfig, 
-  EditDecisionResult 
-} from './EditDecisionEngine';
+  EditDecisionResult,
+  TimelinePoint,
+  CutPoint,
+  VideoMetadata,
+  TimelineMarker,
+  EditDecisionStats
+} from '../types/EditDecisionEngineTypes';

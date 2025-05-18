@@ -1,6 +1,13 @@
 
 import EventEmitter from 'events';
 import { processFileInChunks, shouldUseChunkedProcessing, ChunkProgress } from '../utils/fileChunker';
+import { 
+  VideoProcessingOptions, 
+  FrameExtractionOptions, 
+  VideoProcessingProgressCallback,
+  VideoProcessingWasmModule
+} from '../types/media-processing';
+import { VideoFile } from '../types/VideoFile';
 
 export enum VideoServiceEvents {
   ANALYSIS_START = 'analysis_start',
@@ -28,17 +35,7 @@ export interface VideoChunkProgress extends ChunkProgress {
   stage: string;
 }
 
-export interface VideoFile {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  duration: number;
-  resolution: { width: number; height: number };
-  frameRate: number;
-  path?: string;
-  url?: string;
-}
+// VideoFile interface is now imported from '../types/VideoFile'
 
 export interface ThumbnailOptions {
   width?: number;
@@ -125,7 +122,7 @@ export class VideoService extends EventEmitter {
    * @param options Optional parameters for analysis
    * @returns Promise resolving to video analysis data
    */
-  public async analyzeVideo(videoFile: File, options?: any): Promise<VideoAnalysis> {
+  public async analyzeVideo(videoFile: File, options?: VideoProcessingOptions): Promise<VideoAnalysis> {
     try {
       // Check if we have cached results for this file
       const cacheKey = `${videoFile.name}-${videoFile.size}-${videoFile.lastModified}`;
@@ -165,11 +162,7 @@ export class VideoService extends EventEmitter {
    * @param options Optional parameters for frame extraction
    * @returns Promise resolving to an array of frame data
    */
-  public async extractFrames(file: File, options?: { 
-    interval?: number; // Interval in seconds
-    maxFrames?: number; // Maximum number of frames to extract
-    quality?: number; // JPEG quality (0-1)
-  }): Promise<{ time: number; dataUrl: string }[]> {
+  public async extractFrames(file: File, options?: FrameExtractionOptions): Promise<{ time: number; dataUrl: string }[]> {
     return new Promise(async (resolve, reject) => {
       try {
         // Default options

@@ -9,6 +9,7 @@
 /* ---------- Media analysis ---------- */
 export * from './AudioAnalysis';
 export * from './VideoAnalysis';
+export * from './media-processing';
 
 /* ---------- Editing & decisions ----- */
 export * from './EditDecision';
@@ -21,6 +22,7 @@ export * from './ApplicationState';
 
 /* ---------- File handling ----------- */
 export * from './FileTypes';
+export * from './VideoFile';
 
 /* ---------- UI / View layer --------- */
 export * from './UITypes';

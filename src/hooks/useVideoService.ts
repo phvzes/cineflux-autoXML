@@ -5,7 +5,15 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { videoService, VideoService, ThumbnailOptions, VideoFile } from '../services/VideoService';
+import { videoService, VideoService, ThumbnailOptions } from '../services/VideoService';
+import { VideoFile } from '../types/VideoFile';
+import { 
+  VideoAnalysis, 
+  VideoProcessingOptions, 
+  FrameExtractionOptions, 
+  VideoFrame, 
+  SceneDetectionOptions 
+} from '../types/video-types';
 
 /**
  * Hook to access VideoService functionality
@@ -18,12 +26,12 @@ export const useVideoService = () => {
 
   // Wrap methods in useCallback to prevent unnecessary re-renders
   const analyzeVideo = useCallback(
-    (file: File, options?: any) => service.analyzeVideo(file, options),
+    (file: File, options?: VideoProcessingOptions) => service.analyzeVideo(file, options),
     [service]
   );
 
   const extractFrames = useCallback(
-    (file: File, options?: any) => service.extractFrames(file, options),
+    (file: File, options?: FrameExtractionOptions) => service.extractFrames(file, options),
     [service]
   );
 

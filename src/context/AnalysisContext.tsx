@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { AudioAnalysis } from '../types/AudioAnalysis';
 import { VideoAnalysisResult } from '../types/VideoAnalysis';
-import { EditDecisionResult } from '../engine/EditDecisionEngine';
+import { EditDecisionResult } from '../engine';
 
 // Define the state interface
 interface AnalysisState {

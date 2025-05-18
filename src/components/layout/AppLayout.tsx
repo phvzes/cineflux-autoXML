@@ -8,6 +8,8 @@ interface AppLayoutProps {
   onOpenProject: () => void;
   onSaveProject: () => void;
   onExport: () => void;
+  onHelpClick: () => void;
+  renderWorkflowStepper: () => ReactNode;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({

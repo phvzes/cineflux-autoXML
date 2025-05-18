@@ -9,6 +9,16 @@ import React, { useState } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
 import { EditDecision } from '../../types/workflow';
 
+/**
+ * Props for the PreviewStep component
+ */
+interface PreviewStepProps {
+  /**
+   * Reference to the audio element for playback control
+   */
+  audioElement: HTMLAudioElement | null;
+}
+
 // Import icons 
 import { 
   Play,
@@ -23,7 +33,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const PreviewStep: React.FC = () => {
+const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
   // Get workflow context
   const { currentStep, goToStep, data, setData } = useWorkflow();
   
