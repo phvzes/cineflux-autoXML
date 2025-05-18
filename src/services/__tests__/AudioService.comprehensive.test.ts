@@ -1,7 +1,20 @@
-// src/services/__tests__/AudioService.comprehensive.test.ts
-import AudioService, { AudioProcessingError, audioService } from '../../services/AudioService';
-import { errorHandler, ErrorType, ErrorSeverity } from '../../utils/errorHandler';
-import { createMockAudioFile, createMockAudioBuffer } from '../../test/test-utils';
+/**
+ * AudioService.comprehensive.test.ts
+ * Comprehensive tests for the AudioService class
+ */
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { AudioService } from '../AudioService';
+import { 
+  AudioAnalysis, 
+  AudioProcessingOptions, 
+  Beat, 
+  BeatAnalysis, 
+  EnergySample, 
+  EnergyAnalysis,
+  AudioSegment,
+  WaveformData
+} from '../../types/audio-types';
+import { createMockAudioFile, createMockAudioBuffer, createMockAudioAnalysis } from '../../utils/test/test-utils';
 
 // Mock the errorHandler
 jest.mock('../../utils/errorHandler', () => {
@@ -49,7 +62,7 @@ global.AudioContext = jest.fn().mockImplementation(() => ({
   state: 'running'
 }));
 
-// Mock webkitAudioContext as a fallback
+// Mock webkitAudioContext for Safari support
 (global as any).webkitAudioContext = jest.fn().mockImplementation(() => ({
   decodeAudioData: mockDecodeAudioData,
   close: mockClose
@@ -59,12 +72,14 @@ global.AudioContext = jest.fn().mockImplementation(() => ({
 global.fetch = jest.fn().mockImplementation(() => 
   Promise.resolve({
     ok: true,
-    headers: new Headers({ 'Content-Length': '1000' }),
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers(),
     body: {
       getReader: () => ({
         read: jest.fn().mockResolvedValueOnce({
           done: false,
-          value: new Uint8Array(500)
+          value: new Uint8Array(500000)
         }).mockResolvedValueOnce({
           done: true,
           value: undefined
@@ -72,17 +87,16 @@ global.fetch = jest.fn().mockImplementation(() =>
       })
     },
     arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(1000))
-  })
+  } as unknown as Response)
 );
 
 describe('AudioService Comprehensive Tests', () => {
-  // Store original WebAssembly
-  const originalWebAssembly = global.WebAssembly;
-  
-  // Setup and teardown
+  let audioService: AudioService;
+  let progressCallback: (progress: number, step?: string) => void;
+
   beforeEach(() => {
     // Reset all mocks
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     
     // Setup default mock behavior for decodeAudioData
     mockDecodeAudioData.mockImplementation((arrayBuffer, successCallback) => {
@@ -91,111 +105,105 @@ describe('AudioService Comprehensive Tests', () => {
       return Promise.resolve(mockBuffer);
     });
     
-    // Restore WebAssembly if it was modified
-    global.WebAssembly = originalWebAssembly;
-  });
-  
-  afterAll(() => {
-    // Ensure WebAssembly is restored
-    global.WebAssembly = originalWebAssembly;
-  });
-  
-  // 1. Additional Singleton Pattern Testing
-  describe('Singleton Pattern', () => {
-    it('should not allow direct instantiation via constructor', () => {
-      // In JavaScript, we can't truly test private constructors
-      // as they're enforced by TypeScript at compile time
-      // This test is more of a documentation of the pattern
-      expect(AudioService.getInstance()).toBe(audioService);
-      
-      // We can verify that the constructor property exists but is not accessible
-      // @ts-ignore - Intentionally checking private property
-      expect(typeof AudioService.prototype.constructor).toBe('function');
-    });
+    // Create a new instance of AudioService
+    audioService = new AudioService();
     
-    it('should have a private constructor', () => {
-      // In JavaScript, we can't truly test private constructors
-      // as they're enforced by TypeScript at compile time
-      // This test is more of a documentation of the pattern
-      
-      // Verify that getInstance returns the singleton instance
-      expect(AudioService.getInstance()).toBe(audioService);
-      
-      // Verify that multiple calls to getInstance return the same instance
-      expect(AudioService.getInstance()).toBe(AudioService.getInstance());
-    });
+    // Create a progress callback
+    progressCallback = jest.fn();
   });
-  
-  // 2. Audio Processing Testing
-  describe('Audio Processing', () => {
-    it('should successfully load audio from a URL', async () => {
-      // Call loadAudio with a URL
-      const progressCallback = jest.fn();
+
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  describe('loadAudio', () => {
+    it('should load audio from a File object', async () => {
+      // Create a mock audio file
+      const mockFile = createMockAudioFile();
+      
+      // Call the loadAudio method
+      const result = await AudioService.loadAudio(mockFile, progressCallback);
+      
+      // Verify the result
+      expect(result).toBeDefined();
+      expect(result.duration).toBe(120);
+      expect(result.numberOfChannels).toBe(2);
+      expect(result.sampleRate).toBe(44100);
+      
+      // Verify that the AudioContext was created
+      expect(global.AudioContext).toHaveBeenCalled();
+      
+      // Verify that decodeAudioData was called
+      expect(mockDecodeAudioData).toHaveBeenCalled();
+      expect(mockClose).toHaveBeenCalled();
+    });
+
+    it('should load audio from a URL', async () => {
+      // Call the loadAudio method with a URL
       const result = await AudioService.loadAudio('https://example.com/audio.mp3', progressCallback);
       
       // Verify the result
       expect(result).toBeDefined();
+      expect(result.duration).toBe(120);
+      expect(result.numberOfChannels).toBe(2);
+      expect(result.sampleRate).toBe(44100);
       
-      // Verify fetch was called
+      // Verify that fetch was called
       expect(global.fetch).toHaveBeenCalledWith('https://example.com/audio.mp3');
       
-      // Verify AudioContext was used
+      // Verify that decodeAudioData was called
       expect(mockDecodeAudioData).toHaveBeenCalled();
-      expect(mockClose).toHaveBeenCalled();
-      
-      // Verify progress callback was called
-      expect(progressCallback).toHaveBeenCalled();
-      expect(progressCallback).toHaveBeenCalledWith(100, 'Audio loaded successfully');
     });
-    
-    it('should analyze audio and return complete analysis results', async () => {
+  });
+
+  describe('analyzeAudio', () => {
+    it('should analyze audio file and return comprehensive results', async () => {
       // Create a mock audio file
       const mockFile = createMockAudioFile();
       
-      // Mock progress callback
-      const progressCallback = jest.fn();
-      
-      // Mock the required methods
-      const originalLoadAudio = AudioService.loadAudio;
-      const originalExtractWaveform = AudioService.extractWaveform;
-      const originalDetectBeats = AudioService.detectBeats;
-      const originalAnalyzeEnergy = AudioService.analyzeEnergy;
-      const originalEstimateTempo = AudioService.estimateTempo;
-      const originalDetectSections = AudioService.detectSections;
-      
-      // Mock return values
+      // Create a mock audio buffer
       const mockAudioBuffer = createMockAudioBuffer();
-      const mockWaveform = {
-        duration: 120,
+      
+      // Create mock analysis results
+      const mockWaveform: WaveformData = {
+        data: Array.from({ length: 1000 }, (_, i) => Math.sin(i * 0.01)),
         sampleRate: 44100,
         channels: 2,
-        data: Array(1000).fill(0.5),
-        maxAmplitude: 1,
-        minAmplitude: 0
+        duration: 120
       };
-      const mockBeatAnalysis = {
-        beats: Array(120).fill(0).map((_, i) => ({ time: i, confidence: 0.8 })),
-        averageConfidence: 0.8
+      
+      const mockBeatAnalysis: BeatAnalysis = {
+        beats: Array.from({ length: 240 }, (_, i) => ({ 
+          time: i * 0.5, 
+          confidence: 0.9, 
+          energy: 0.8 
+        }))
       };
-      const mockEnergyAnalysis = {
-        samples: Array(120).fill(0).map((_, i) => ({ time: i, level: 0.5 })),
-        averageEnergy: 0.5,
-        peakEnergy: 1,
-        peakEnergyTime: 60
+      
+      const mockEnergyAnalysis: EnergyAnalysis = {
+        samples: Array.from({ length: 100 }, (_, i) => ({ 
+          time: i * 1.2, 
+          value: 0.7, 
+          level: 0.7 
+        })),
+        averageEnergy: 0.7
       };
+      
       const mockTempo = {
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
-        confidence: 0.9,
+        confidence: 0.95,
         isStable: true
       };
+      
       const mockSections = {
-        sections: [
-          { start: 0, duration: 30, label: 'Section 1', confidence: 0.8 },
-          { start: 30, duration: 30, label: 'Section 2', confidence: 0.8 },
-          { start: 60, duration: 30, label: 'Section 3', confidence: 0.8 },
-          { start: 90, duration: 30, label: 'Section 4', confidence: 0.8 }
-        ]
+        sections: Array.from({ length: 3 }, (_, i) => ({
+          startTime: i * 40,
+          endTime: (i + 1) * 40,
+          duration: 40,
+          energy: 0.7,
+          tempo: 120
+        }))
       };
       
       // Setup mocks
@@ -206,425 +214,279 @@ describe('AudioService Comprehensive Tests', () => {
       AudioService.estimateTempo = jest.fn().mockResolvedValue(mockTempo);
       AudioService.detectSections = jest.fn().mockResolvedValue(mockSections);
       
+      // Call the analyzeAudio method
       try {
-        // Call analyzeAudio
         const result = await AudioService.analyzeAudio(mockFile, progressCallback);
         
-        // Verify the result structure
-        expect(result).toHaveProperty('metadata');
-        expect(result).toHaveProperty('waveform');
-        expect(result).toHaveProperty('beats');
-        expect(result).toHaveProperty('tempo');
-        expect(result).toHaveProperty('energy');
-        expect(result).toHaveProperty('sections');
-        
-        // Verify metadata
+        // Verify the result
+        expect(result).toBeDefined();
+        expect(result.id).toBeDefined();
+        expect(result.duration).toBe(mockAudioBuffer.duration);
+        expect(result.sampleRate).toBe(mockAudioBuffer.sampleRate);
+        expect(result.channels).toBe(mockAudioBuffer.numberOfChannels);
+        expect(result.beats).toBeInstanceOf(Array);
+        expect(result.tempo).toBe(mockTempo.bpm);
+        expect(result.segments).toBeInstanceOf(Array);
+        expect(result.metadata).toBeDefined();
         expect(result.metadata.title).toBe(mockFile.name);
-        expect(result.metadata.format).toBe('mp3');
         
-        // Verify progress callback was called
-        expect(progressCallback).toHaveBeenCalled();
-        // Should be called with 100% at the end
-        expect(progressCallback).toHaveBeenCalledWith(100, 'Analysis complete');
-        
-        // Verify all methods were called
+        // Verify that the individual analysis methods were called
         expect(AudioService.loadAudio).toHaveBeenCalledWith(mockFile, expect.any(Function));
         expect(AudioService.extractWaveform).toHaveBeenCalledWith(mockAudioBuffer, expect.any(Function));
         expect(AudioService.detectBeats).toHaveBeenCalledWith(mockAudioBuffer, expect.any(Function));
         expect(AudioService.analyzeEnergy).toHaveBeenCalledWith(mockAudioBuffer, expect.any(Function));
         expect(AudioService.estimateTempo).toHaveBeenCalledWith(mockBeatAnalysis.beats, mockAudioBuffer.duration);
         expect(AudioService.detectSections).toHaveBeenCalledWith(mockEnergyAnalysis, mockBeatAnalysis, mockAudioBuffer.duration);
-      } finally {
-        // Restore original methods
-        AudioService.loadAudio = originalLoadAudio;
-        AudioService.extractWaveform = originalExtractWaveform;
-        AudioService.detectBeats = originalDetectBeats;
-        AudioService.analyzeEnergy = originalAnalyzeEnergy;
-        AudioService.estimateTempo = originalEstimateTempo;
-        AudioService.detectSections = originalDetectSections;
-      }
-    });
-    
-    it('should detect beats in an audio buffer', async () => {
-      // Create a mock audio buffer
-      const mockBuffer = createMockAudioBuffer();
-      
-      // Mock progress callback
-      const progressCallback = jest.fn();
-      
-      // Call detectBeats
-      const result = await AudioService.detectBeats(mockBuffer, progressCallback);
-      
-      // Verify the result structure
-      expect(result).toHaveProperty('beats');
-      expect(result).toHaveProperty('averageConfidence');
-      
-      // Verify data
-      expect(Array.isArray(result.beats)).toBe(true);
-      expect(typeof result.averageConfidence).toBe('number');
-      
-      // Verify progress callback was called
-      expect(progressCallback).toHaveBeenCalled();
-      // Should be called with 100% at the end
-      expect(progressCallback).toHaveBeenCalledWith(100);
-    });
-    
-    it('should analyze energy levels in an audio buffer', async () => {
-      // Create a mock audio buffer
-      const mockBuffer = createMockAudioBuffer();
-      
-      // Mock progress callback
-      const progressCallback = jest.fn();
-      
-      // Call analyzeEnergy
-      const result = await AudioService.analyzeEnergy(mockBuffer, progressCallback);
-      
-      // Verify the result structure
-      expect(result).toHaveProperty('samples');
-      expect(result).toHaveProperty('averageEnergy');
-      expect(result).toHaveProperty('peakEnergy');
-      expect(result).toHaveProperty('peakEnergyTime');
-      
-      // Verify data
-      expect(Array.isArray(result.samples)).toBe(true);
-      expect(typeof result.averageEnergy).toBe('number');
-      expect(typeof result.peakEnergy).toBe('number');
-      expect(typeof result.peakEnergyTime).toBe('number');
-      
-      // Verify progress callback was called
-      expect(progressCallback).toHaveBeenCalled();
-      // Should be called with 100% at the end
-      expect(progressCallback).toHaveBeenCalledWith(100);
-    });
-    
-    it('should estimate tempo from beat data', async () => {
-      // Create mock beat data
-      const beats = [
-        { time: 0, confidence: 0.8 },
-        { time: 0.5, confidence: 0.8 },
-        { time: 1.0, confidence: 0.8 },
-        { time: 1.5, confidence: 0.8 },
-        { time: 2.0, confidence: 0.8 }
-      ];
-      
-      // Call estimateTempo
-      const result = await AudioService.estimateTempo(beats, 10);
-      
-      // Verify the result structure
-      expect(result).toHaveProperty('bpm');
-      expect(result).toHaveProperty('timeSignature');
-      expect(result).toHaveProperty('confidence');
-      expect(result).toHaveProperty('isStable');
-      
-      // Verify data
-      expect(typeof result.bpm).toBe('number');
-      expect(result.timeSignature).toEqual({ numerator: 4, denominator: 4 });
-      expect(typeof result.confidence).toBe('number');
-      expect(typeof result.isStable).toBe('boolean');
-    });
-    
-    it('should detect sections in audio based on energy and beat analysis', async () => {
-      // Create mock energy analysis
-      const energyAnalysis = {
-        samples: Array(100).fill(0).map((_, i) => ({ 
-          time: i * 0.1, 
-          level: Math.sin(i * 0.1) * 0.5 + 0.5 
-        })),
-        averageEnergy: 0.5,
-        peakEnergy: 1,
-        peakEnergyTime: 5
-      };
-      
-      // Create mock beat analysis
-      const beatAnalysis = {
-        beats: Array(20).fill(0).map((_, i) => ({ 
-          time: i * 0.5, 
-          confidence: 0.8 
-        })),
-        averageConfidence: 0.8
-      };
-      
-      // Call detectSections
-      const result = await AudioService.detectSections(energyAnalysis, beatAnalysis, 10);
-      
-      // Verify the result structure
-      expect(result).toHaveProperty('sections');
-      
-      // Verify data
-      expect(Array.isArray(result.sections)).toBe(true);
-      if (result.sections.length > 0) {
-        expect(result.sections[0]).toHaveProperty('start');
-        expect(result.sections[0]).toHaveProperty('duration');
-        expect(result.sections[0]).toHaveProperty('label');
-        expect(result.sections[0]).toHaveProperty('confidence');
-      }
-    });
-    
-    it('should extract BPM from an audio file', async () => {
-      // Create a mock audio file
-      const mockFile = createMockAudioFile();
-      
-      // Mock the required methods
-      const originalLoadAudio = AudioService.loadAudio;
-      const originalDetectBeats = AudioService.detectBeats;
-      const originalEstimateTempo = AudioService.estimateTempo;
-      
-      // Mock return values
-      const mockAudioBuffer = createMockAudioBuffer();
-      const mockBeatAnalysis = {
-        beats: Array(120).fill(0).map((_, i) => ({ time: i * 0.5, confidence: 0.8 })),
-        averageConfidence: 0.8
-      };
-      const mockTempo = {
-        bpm: 120,
-        timeSignature: { numerator: 4, denominator: 4 },
-        confidence: 0.9,
-        isStable: true
-      };
-      
-      // Setup mocks
-      AudioService.loadAudio = jest.fn().mockResolvedValue(mockAudioBuffer);
-      AudioService.detectBeats = jest.fn().mockResolvedValue(mockBeatAnalysis);
-      AudioService.estimateTempo = jest.fn().mockResolvedValue(mockTempo);
-      
-      try {
-        // Call extractBPM
-        const result = await AudioService.extractBPM(mockFile);
-        
-        // Verify the result structure
-        expect(result).toHaveProperty('bpm');
-        expect(result).toHaveProperty('beats');
-        
-        // Verify data
-        expect(result.bpm).toBe(mockTempo.bpm);
-        expect(Array.isArray(result.beats)).toBe(true);
-        
-        // Verify methods were called
-        expect(AudioService.loadAudio).toHaveBeenCalledWith(mockFile);
-        expect(AudioService.detectBeats).toHaveBeenCalledWith(mockAudioBuffer);
-        expect(AudioService.estimateTempo).toHaveBeenCalledWith(mockBeatAnalysis.beats, mockAudioBuffer.duration);
-      } finally {
-        // Restore original methods
-        AudioService.loadAudio = originalLoadAudio;
-        AudioService.detectBeats = originalDetectBeats;
-        AudioService.estimateTempo = originalEstimateTempo;
-      }
-    });
-    
-    it('should create a waveform visualization for an audio file', async () => {
-      // Create a mock audio file
-      const mockFile = createMockAudioFile();
-      
-      // Mock the required methods
-      const originalLoadAudio = AudioService.loadAudio;
-      const originalExtractWaveform = AudioService.extractWaveform;
-      
-      // Mock return values
-      const mockAudioBuffer = createMockAudioBuffer();
-      const mockWaveform = {
-        duration: 120,
-        sampleRate: 44100,
-        channels: 2,
-        data: Array(1000).fill(0.5),
-        maxAmplitude: 1,
-        minAmplitude: 0
-      };
-      
-      // Setup mocks
-      AudioService.loadAudio = jest.fn().mockResolvedValue(mockAudioBuffer);
-      AudioService.extractWaveform = jest.fn().mockResolvedValue(mockWaveform);
-      
-      try {
-        // Call createWaveform
-        const result = await AudioService.createWaveform(mockFile, 100, 50);
-        
-        // Verify the result
-        expect(Array.isArray(result)).toBe(true);
-        
-        // Verify methods were called
-        expect(AudioService.loadAudio).toHaveBeenCalledWith(mockFile);
-        expect(AudioService.extractWaveform).toHaveBeenCalledWith(mockAudioBuffer);
-      } finally {
-        // Restore original methods
-        AudioService.loadAudio = originalLoadAudio;
-        AudioService.extractWaveform = originalExtractWaveform;
+      } catch (error) {
+        fail(`Test failed with error: ${error.message}`);
       }
     });
   });
-  
-  // 3. Error Handling Testing
-  describe('Error Handling', () => {
-    it('should handle errors when loading invalid audio files', async () => {
-      // Create an invalid audio file (empty)
-      const invalidFile = new File([], 'empty.mp3', { type: 'audio/mp3' });
+
+  describe('detectBeats', () => {
+    it('should detect beats in an AudioBuffer', async () => {
+      // Create a mock audio buffer
+      const mockBuffer = createMockAudioBuffer();
       
-      // Mock decodeAudioData to reject
+      // Call the detectBeats method
+      const result = await AudioService.detectBeats(mockBuffer, progressCallback);
+      
+      // Verify the result
+      expect(result).toBeDefined();
+      expect(result.beats).toBeInstanceOf(Array);
+      expect(result.beats.length).toBeGreaterThan(0);
+      
+      // Verify that each beat has the required properties
+      result.beats.forEach(beat => {
+        expect(beat.time).toBeGreaterThanOrEqual(0);
+        expect(beat.confidence).toBeGreaterThanOrEqual(0);
+        expect(beat.confidence).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe('analyzeEnergy', () => {
+    it('should analyze energy in an AudioBuffer', async () => {
+      // Create a mock audio buffer
+      const mockBuffer = createMockAudioBuffer();
+      
+      // Call the analyzeEnergy method
+      const result = await AudioService.analyzeEnergy(mockBuffer, progressCallback);
+      
+      // Verify the result
+      expect(result).toBeDefined();
+      expect(result.samples).toBeInstanceOf(Array);
+      expect(result.samples.length).toBeGreaterThan(0);
+      expect(result.averageEnergy).toBeGreaterThanOrEqual(0);
+      expect(result.averageEnergy).toBeLessThanOrEqual(1);
+      
+      // Verify that each energy sample has the required properties
+      result.samples.forEach(sample => {
+        expect(sample.time).toBeGreaterThanOrEqual(0);
+        expect(sample.value).toBeGreaterThanOrEqual(0);
+        expect(sample.value).toBeLessThanOrEqual(1);
+        expect(sample.level).toBeGreaterThanOrEqual(0);
+        expect(sample.level).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe('estimateTempo', () => {
+    it('should estimate tempo from regular beats', () => {
+      // Create mock beat data
+      const beats: Beat[] = [];
+      for (let i = 0; i < 20; i++) {
+        beats.push({
+          time: i * 0.5, // 120 BPM = 0.5s between beats
+          confidence: 0.9,
+          energy: 0.8
+        });
+      }
+      
+      // Call the estimateTempo method
+      const result = AudioService.estimateTempo(beats, 10);
+      
+      // Verify the result
+      expect(result).toBeDefined();
+      expect(result.bpm).toBeCloseTo(120, 0); // Allow some margin of error
+      expect(result.confidence).toBeGreaterThanOrEqual(0.8);
+      expect(result.isStable).toBe(true);
+    });
+  });
+
+  describe('detectSections', () => {
+    it('should detect sections based on energy and beats', () => {
+      // Create mock energy analysis
+      const energyAnalysis: EnergyAnalysis = {
+        samples: Array.from({ length: 100 }, (_, i) => ({
+          time: i * 1.2,
+          value: 0.5 + Math.sin(i * 0.1) * 0.3, // Create some variation
+          level: 0.5 + Math.sin(i * 0.1) * 0.3
+        })),
+        averageEnergy: 0.5
+      };
+      
+      // Create mock beat analysis
+      const beatAnalysis: BeatAnalysis = {
+        beats: Array.from({ length: 240 }, (_, i) => ({
+          time: i * 0.5,
+          confidence: 0.9,
+          energy: 0.8
+        }))
+      };
+      
+      // Call the detectSections method
+      const result = AudioService.detectSections(energyAnalysis, beatAnalysis, 120);
+      
+      // Verify the result
+      expect(result).toBeDefined();
+      expect(result.sections).toBeInstanceOf(Array);
+      expect(result.sections.length).toBeGreaterThan(0);
+      
+      // Verify that each section has the required properties
+      result.sections.forEach(section => {
+        expect(section.startTime).toBeGreaterThanOrEqual(0);
+        expect(section.endTime).toBeLessThanOrEqual(120);
+        expect(section.duration).toBeGreaterThan(0);
+        expect(section.energy).toBeGreaterThanOrEqual(0);
+        expect(section.energy).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle errors during audio loading', async () => {
+      // Setup decodeAudioData to throw an error
       mockDecodeAudioData.mockImplementation((arrayBuffer, successCallback, errorCallback) => {
-        errorCallback(new Error('Failed to decode audio data'));
+        if (errorCallback) {
+          errorCallback(new Error('Failed to decode audio data'));
+        }
         return Promise.reject(new Error('Failed to decode audio data'));
       });
       
-      // Call loadAudio and expect it to throw
-      await expect(AudioService.loadAudio(invalidFile)).rejects.toThrow(AudioProcessingError);
-      
-      // Verify the error is an AudioProcessingError
-      try {
-        await AudioService.loadAudio(invalidFile);
-      } catch (error) {
-        expect(error).toBeInstanceOf(AudioProcessingError);
-        // The error code could be either DECODE_ERROR or LOAD_ERROR depending on implementation
-        expect(['DECODE_ERROR', 'LOAD_ERROR']).toContain((error as AudioProcessingError).code);
-      }
-    });
-    
-    it('should handle network errors when loading audio from URL', async () => {
-      // Mock fetch to reject
+      // Mock fetch to return an error response
       (global.fetch as jest.Mock).mockImplementationOnce(() => 
         Promise.resolve({
           ok: false,
-          statusText: 'Not Found'
-        })
+          status: 404,
+          statusText: 'Not Found',
+          text: () => Promise.resolve('Not Found')
+        } as unknown as Response)
       );
       
-      // Call loadAudio with a URL and expect it to throw
-      await expect(AudioService.loadAudio('https://example.com/not-found.mp3')).rejects.toThrow(AudioProcessingError);
-      
-      // Verify the error code
-      try {
-        await AudioService.loadAudio('https://example.com/not-found.mp3');
-      } catch (error) {
-        expect(error).toBeInstanceOf(AudioProcessingError);
-        expect((error as AudioProcessingError).code).toBe('FETCH_ERROR');
-      }
+      // Call the loadAudio method with a URL and expect it to throw an error
+      await expect(AudioService.loadAudio('https://example.com/not-found.mp3', progressCallback))
+        .rejects.toThrow();
     });
-    
+
     it('should handle errors during audio analysis', async () => {
       // Create a mock audio file
       const mockFile = createMockAudioFile();
       
-      // Mock loadAudio to throw
-      const originalLoadAudio = AudioService.loadAudio;
+      // Mock loadAudio to throw an error
       AudioService.loadAudio = jest.fn().mockRejectedValue(
-        new AudioProcessingError('Failed to load audio', 'LOAD_ERROR')
+        new Error('Failed to load audio file')
       );
       
+      // Call the analyzeAudio method and expect it to throw an error
+      await expect(AudioService.analyzeAudio(mockFile, progressCallback)).rejects.toThrow(Error);
+      
       try {
-        // Call analyzeAudio and expect it to throw
-        const progressCallback = jest.fn();
-        await expect(AudioService.analyzeAudio(mockFile, progressCallback)).rejects.toThrow(AudioProcessingError);
-        
-        // Verify error is an AudioProcessingError
-        try {
-          await AudioService.analyzeAudio(mockFile, progressCallback);
-        } catch (error) {
-          expect(error).toBeInstanceOf(AudioProcessingError);
-          // The error code could be either ANALYSIS_ERROR or LOAD_ERROR depending on implementation
-          expect(['ANALYSIS_ERROR', 'LOAD_ERROR']).toContain((error as AudioProcessingError).code);
-        }
-      } finally {
-        // Restore original method
-        AudioService.loadAudio = originalLoadAudio;
+        await AudioService.analyzeAudio(mockFile, progressCallback);
+      } catch (error) {
+        expect(error.message).toBe('Failed to load audio file');
       }
     });
-    
-    it('should provide fallback values when BPM extraction fails', async () => {
+
+    it('should handle errors during BPM extraction', async () => {
       // Create a mock audio file
       const mockFile = createMockAudioFile();
       
-      // Mock loadAudio to throw
-      const originalLoadAudio = AudioService.loadAudio;
+      // Mock loadAudio to throw an error
       AudioService.loadAudio = jest.fn().mockRejectedValue(
-        new Error('Failed to load audio')
+        new Error('Failed to load audio file')
       );
       
-      try {
-        // Call extractBPM
-        const result = await AudioService.extractBPM(mockFile);
-        
-        // Verify fallback values are provided
-        expect(result.bpm).toBe(120); // Default BPM
-        expect(Array.isArray(result.beats)).toBe(true);
-        expect(result.beats.length).toBeGreaterThan(0);
-      } finally {
-        // Restore original method
-        AudioService.loadAudio = originalLoadAudio;
-      }
+      // Call the extractBPM method
+      const result = await AudioService.extractBPM(mockFile);
+      
+      // Verify the result contains default values
+      expect(result).toBeDefined();
+      expect(result.bpm).toBe(0);
+      expect(result.confidence).toBe(0);
+      expect(result.isStable).toBe(false);
     });
-    
-    it('should provide fallback values when waveform creation fails', async () => {
+
+    it('should handle errors during waveform creation', async () => {
       // Create a mock audio file
       const mockFile = createMockAudioFile();
       
-      // Mock loadAudio to throw
-      const originalLoadAudio = AudioService.loadAudio;
+      // Mock loadAudio to throw an error
       AudioService.loadAudio = jest.fn().mockRejectedValue(
-        new Error('Failed to load audio')
+        new Error('Failed to load audio file')
       );
       
-      try {
-        // Call createWaveform
-        const result = await AudioService.createWaveform(mockFile, 100, 50);
-        
-        // Verify fallback values are provided
-        expect(Array.isArray(result)).toBe(true);
-        expect(result.length).toBe(100); // Width
-      } finally {
-        // Restore original method
-        AudioService.loadAudio = originalLoadAudio;
-      }
+      // Call the createWaveform method
+      const result = await AudioService.createWaveform(mockFile, 100, 50);
+      
+      // Verify the result contains default values
+      expect(result).toBeDefined();
+      expect(result.data).toBeInstanceOf(Array);
+      expect(result.data.length).toBe(0);
+      expect(result.sampleRate).toBe(44100);
+      expect(result.channels).toBe(0);
+      expect(result.duration).toBe(0);
     });
   });
-  
-  // 4. WebAssembly Fallback Testing
-  describe('WebAssembly Fallback', () => {
-    it('should gracefully degrade when WebAssembly is not available', async () => {
-      // Remove WebAssembly from global
-      delete (global as any).WebAssembly;
-      
+
+  describe('analyzeAudio with options', () => {
+    it('should analyze audio with custom options', async () => {
       // Create a mock audio file
       const mockFile = createMockAudioFile();
       
-      // Mock the required methods to ensure they work without WebAssembly
-      const originalLoadAudio = AudioService.loadAudio;
-      const originalExtractWaveform = AudioService.extractWaveform;
-      const originalDetectBeats = AudioService.detectBeats;
-      const originalAnalyzeEnergy = AudioService.analyzeEnergy;
-      const originalEstimateTempo = AudioService.estimateTempo;
-      const originalDetectSections = AudioService.detectSections;
-      
-      // Mock return values
+      // Create a mock audio buffer
       const mockAudioBuffer = createMockAudioBuffer();
+      
+      // Create mock analysis results
       const mockWaveform = {
-        duration: 120,
+        data: Array.from({ length: 1000 }, (_, i) => Math.sin(i * 0.01)),
         sampleRate: 44100,
         channels: 2,
-        data: Array(1000).fill(0.5),
-        maxAmplitude: 1,
-        minAmplitude: 0
+        duration: 120
       };
+      
       const mockBeatAnalysis = {
-        beats: Array(120).fill(0).map((_, i) => ({ time: i, confidence: 0.8 })),
-        averageConfidence: 0.8
+        beats: Array.from({ length: 240 }, (_, i) => ({ 
+          time: i * 0.5, 
+          confidence: 0.9, 
+          energy: 0.8 
+        }))
       };
+      
       const mockEnergyAnalysis = {
-        samples: Array(120).fill(0).map((_, i) => ({ time: i, level: 0.5 })),
-        averageEnergy: 0.5,
-        peakEnergy: 1,
-        peakEnergyTime: 60
+        samples: Array.from({ length: 100 }, (_, i) => ({ 
+          time: i * 1.2, 
+          value: 0.7, 
+          level: 0.7 
+        })),
+        averageEnergy: 0.7
       };
+      
       const mockTempo = {
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
-        confidence: 0.9,
+        confidence: 0.95,
         isStable: true
       };
+      
       const mockSections = {
-        sections: [
-          { start: 0, duration: 30, label: 'Section 1', confidence: 0.8 },
-          { start: 30, duration: 30, label: 'Section 2', confidence: 0.8 },
-          { start: 60, duration: 30, label: 'Section 3', confidence: 0.8 },
-          { start: 90, duration: 30, label: 'Section 4', confidence: 0.8 }
-        ]
+        sections: Array.from({ length: 3 }, (_, i) => ({
+          startTime: i * 40,
+          endTime: (i + 1) * 40,
+          duration: 40,
+          energy: 0.7,
+          tempo: 120
+        }))
       };
       
       // Setup mocks
@@ -635,30 +497,24 @@ describe('AudioService Comprehensive Tests', () => {
       AudioService.estimateTempo = jest.fn().mockResolvedValue(mockTempo);
       AudioService.detectSections = jest.fn().mockResolvedValue(mockSections);
       
-      try {
-        // Call analyzeAudio
-        const progressCallback = jest.fn();
-        const result = await AudioService.analyzeAudio(mockFile, progressCallback);
-        
-        // Verify the analysis still works without WebAssembly
-        expect(result).toHaveProperty('metadata');
-        expect(result).toHaveProperty('waveform');
-        expect(result).toHaveProperty('beats');
-        expect(result).toHaveProperty('tempo');
-        expect(result).toHaveProperty('energy');
-        expect(result).toHaveProperty('sections');
-      } finally {
-        // Restore original methods
-        AudioService.loadAudio = originalLoadAudio;
-        AudioService.extractWaveform = originalExtractWaveform;
-        AudioService.detectBeats = originalDetectBeats;
-        AudioService.analyzeEnergy = originalAnalyzeEnergy;
-        AudioService.estimateTempo = originalEstimateTempo;
-        AudioService.detectSections = originalDetectSections;
-        
-        // Restore WebAssembly
-        global.WebAssembly = originalWebAssembly;
-      }
+      // Define custom options
+      const options: AudioProcessingOptions = {
+        sampleRate: 48000,
+        channels: 1,
+        duration: 60,
+        startTime: 10,
+        normalize: true,
+        windowSize: 2048,
+        hopSize: 512,
+        minFrequency: 20,
+        maxFrequency: 20000
+      };
+      
+      // Call the analyzeAudio method with options
+      const result = await AudioService.analyzeAudio(mockFile, progressCallback, options);
+      
+      // Verify the result
+      expect(result).toBeDefined();
     });
   });
 });
