@@ -21,6 +21,18 @@ interface EditDecisionVisualizerProps {
   showEnergy?: boolean;
 }
 
+// Define interfaces for the clip and transition objects
+interface Clip {
+  timelineOutPoint: number;
+  [key: string]: any;
+}
+
+interface Transition {
+  centerPoint: number;
+  type: string;
+  [key: string]: any;
+}
+
 /**
  * Component for visualizing edit decisions with timeline, beats, and cuts
  */
@@ -38,7 +50,7 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
   
   // Calculate the total duration of the edit
   const totalDuration = editDecisionResult.edl.clips.length > 0
-    ? Math.max(...editDecisionResult.edl.clips.map(clip => clip.timelineOutPoint as number))
+    ? Math.max(...editDecisionResult.edl.clips.map((clip: Clip) => clip.timelineOutPoint as number))
     : 60; // Default to 60 seconds if no clips
   
   // Draw the visualization on the canvas
@@ -163,7 +175,7 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
       });
     
     // Draw transitions
-    editDecisionResult.edl.transitions.forEach(transition => {
+    editDecisionResult.edl.transitions.forEach((transition: Transition) => {
       const x = (transition.centerPoint as number / totalDuration) * width;
       
       // Draw transition marker

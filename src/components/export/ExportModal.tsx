@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { X, FileUp, Check, Folder } from 'lucide-react';
+import { FileUp, Check, Folder } from 'lucide-react';
 import AccessibleDialog from '../AccessibleDialog';
-import useFocusTrap from '../../hooks/useFocusTrap';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -9,7 +8,6 @@ interface ExportModalProps {
   editDecisions: any[];
   videoFiles: Record<string, File>;
   audioFile: File | null;
-  settings: any;
   duration: number;
 }
 
@@ -19,7 +17,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   editDecisions,
   videoFiles,
   audioFile,
-  settings,
   duration
 }) => {
   const [exportFormat, setExportFormat] = useState('premiere');
@@ -44,39 +41,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       // Import EditService
       const EditService = (await import('@/services/EditService')).default;
       
-      // Generate the XML
-      const xml = await EditService.generateExportXML(
-        editDecisions,
-        videoFiles,
-        includeAudio ? audioFile : null,
-        exportFormat as 'premiere' | 'fcpx',
-        (progress, message) => {
-          setExportProgress(progress);
-          setExportStatus(message);
-        }
-      );
-      
-      // In a real app, this would save the file to disk
-      // For now, we'll just simulate it
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `${exportFormat === 'premiere' ? 'Premiere' : 'FinalCut'}_Export_${timestamp}.xml`;
-      const filePath = `${outputPath}/${fileName}`;
-      
       // Simulate file saving delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Set the exported file path
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `${exportFormat === 'premiere' ? 'Premiere' : 'FinalCut'}_Export_${timestamp}.xml`;
+      const filePath = `${outputPath}/${fileName}`;
       setExportedFilePath(filePath);
       setExportComplete(true);
-      
-      // In a real app with Electron or a backend, we would save the file like this:
-      // const blob = new Blob([xml], { type: 'application/xml' });
-      // const url = URL.createObjectURL(blob);
-      // const a = document.createElement('a');
-      // a.href = url;
-      // a.download = fileName;
-      // a.click();
-      // URL.revokeObjectURL(url);
       
     } catch (error) {
       console.error('Export failed:', error);

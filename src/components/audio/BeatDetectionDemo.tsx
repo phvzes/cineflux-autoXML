@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AudioService, audioService } from '../../services/AudioService';
+import { audioService } from '../../services/AudioService';
 import WaveformVisualizer from './WaveformVisualizer';
 import AudioProcessingProgress from './AudioProcessingProgress';
-import { Beat, AudioAnalysis } from '../../types/AudioAnalysis';
+import { Beat } from '../../types/AudioAnalysis';
+import { AudioAnalysis, AudioProcessingOptions } from '../../types/audio-types';
 import { safeStringify } from '../../utils/safeStringify';
 
 interface BeatDetectionDemoProps {
@@ -27,6 +28,11 @@ interface BeatDetectionDemoProps {
   className?: string;
 }
 
+// Define a progress callback interface
+interface ProgressCallback {
+  (progress: number, step: string): void;
+}
+
 /**
  * Demo component for audio beat detection and visualization
  */
@@ -36,9 +42,6 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
   height = 200,
   className = '',
 }) => {
-  // State for audio file
-  const [audioFile, setAudioFile] = useState<File | null>(null);
-  
   // State for audio buffer
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   
@@ -107,7 +110,6 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      setAudioFile(file);
       processAudioFile(file);
       
       // Create object URL for playback
@@ -144,9 +146,6 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
       // Create a File object
       const file = new File([blob], 'audio.mp3', { type: blob.type });
       
-      // Set the audio file
-      setAudioFile(file);
-      
       // Process the audio file
       processAudioFile(file);
       
@@ -175,23 +174,42 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
       setError(null);
       setIsProcessingComplete(false);
       
-      // Analyze the audio file
-      const analysis = await audioService.analyzeAudio(file, (progress, step) => {
+      // Create a progress callback function
+      const progressCallback: ProgressCallback = (progress: number, step: string) => {
         setProgress(progress);
         setProcessingStep(step);
-      });
+      };
+      
+      // Create options object with the progress callback
+      const options: AudioProcessingOptions = {
+        sampleRate: 44100,
+        channels: 2,
+        normalize: true,
+        windowSize: 1024,
+        hopSize: 512,
+        onProgress: progressCallback
+      };
+      
+      // Analyze the audio file
+      const analysis = await audioService.analyzeAudio(file, options);
       
       // Set the analysis results
       setAnalysisResults(analysis);
       
       // Set the beats
-      setBeats(analysis.beats.beats);
+      if (analysis.beats && Array.isArray(analysis.beats)) {
+        setBeats(analysis.beats);
+      }
       
       // Set the BPM
-      setBpm(analysis.tempo.bpm);
+      if (analysis.tempo && typeof analysis.tempo === 'object') {
+        setBpm(analysis.tempo.bpm);
+      }
       
       // Set the waveform data
-      setWaveformData(analysis.waveform.data);
+      if (analysis.waveform && analysis.waveform.data) {
+        setWaveformData(analysis.waveform.data);
+      }
       
       // Load the audio buffer for visualization
       const buffer = await audioService.loadAudio(file);

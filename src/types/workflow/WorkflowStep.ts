@@ -11,7 +11,7 @@ export enum WorkflowStep {
   WELCOME = 'welcome',
   INPUT = 'input',
   ANALYSIS = 'analysis',
-  EDIT = 'edit',
+  EDITING = 'editing',
   PREVIEW = 'preview',
   EXPORT = 'export'
 }

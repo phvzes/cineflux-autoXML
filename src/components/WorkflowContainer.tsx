@@ -14,7 +14,6 @@ import { AccessibleDialog } from './AccessibleDialog';
 import { useProject } from '../context/ProjectContext';
 import { useWorkflow } from '../context/WorkflowContext';
 import { colorPalette } from '../theme';
-import { ApplicationStep } from '../types/UITypes';
 import { WorkflowStep } from '../types/workflow';
 import useKeyboardNavigation from '../hooks/useKeyboardNavigation';
 import ErrorBoundary from './ErrorBoundary';
@@ -49,7 +48,7 @@ const WorkflowContainer: React.FC = () => {
         if (!state.analysis.isAnalyzing) {
           const currentStepIndex = Object.values(WorkflowStep).indexOf(state.workflow.currentStep as WorkflowStep);
           if (currentStepIndex < Object.values(WorkflowStep).length - 1) {
-            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex + 1]);
+            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex + 1] as WorkflowStep);
           }
         }
       },
@@ -62,7 +61,7 @@ const WorkflowContainer: React.FC = () => {
         if (!state.analysis.isAnalyzing) {
           const currentStepIndex = Object.values(WorkflowStep).indexOf(state.workflow.currentStep as WorkflowStep);
           if (currentStepIndex > 0) {
-            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex - 1]);
+            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex - 1] as WorkflowStep);
           }
         }
       },
@@ -106,7 +105,7 @@ const WorkflowContainer: React.FC = () => {
     
     if (projectState.musicFile || projectState.videoFiles.length > 0) {
       if (window.confirm('Are you sure you want to create a new project? All unsaved work will be lost.')) {
-        dispatch({ type: 'SET_STEP', payload: 'input' });
+        dispatch({ type: 'SET_STEP', payload: WorkflowStep.INPUT });
         dispatch({ type: 'SET_MUSIC_FILE', payload: null });
         dispatch({ type: 'SET_VIDEO_FILES', payload: [] });
         dispatch({ type: 'SET_AUDIO_ANALYSIS', payload: null });
@@ -137,7 +136,7 @@ const WorkflowContainer: React.FC = () => {
   // Add workflow stepper to the layout
   const renderWorkflowStepper = () => {
     // Don't render the workflow stepper on the welcome page
-    if (projectState.currentStep === 'welcome') {
+    if (projectState.currentStep === WorkflowStep.WELCOME) {
       return null;
     }
     
@@ -148,7 +147,13 @@ const WorkflowContainer: React.FC = () => {
           isProcessing={workflowState.isProcessing}
           progressPercentage={workflowState.progressPercentage}
           statusMessage={workflowState.statusMessage}
-          onStepClick={(step) => navigation.goToStep(step as WorkflowStep)}
+          onStepClick={(step) => {
+            // Convert string step to WorkflowStep
+            const workflowStep = Object.values(WorkflowStep).find(s => s === step);
+            if (workflowStep) {
+              navigation.goToStep(workflowStep);
+            }
+          }}
         />
       </div>
     );
@@ -190,7 +195,6 @@ const WorkflowContainer: React.FC = () => {
             editDecisions={projectState.editDecisions}
             videoFiles={videoFilesById}
             audioFile={projectState.musicFile}
-            settings={projectState.settings}
             duration={projectState.duration}
           />
         )}
