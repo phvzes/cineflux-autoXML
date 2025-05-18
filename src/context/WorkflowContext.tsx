@@ -10,20 +10,58 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   AppState, 
-  WorkflowStep,
-  ProjectSettings,
-  VideoFile
+  ProjectSettings
 } from '../types/workflow';
+import WorkflowStep from '../types/workflow/WorkflowStep';
+import { WorkflowStep as AppWorkflowStep, ModalType, ApplicationStep } from '../types/ApplicationState';
 
 // Import services
 import { audioService as AudioService } from '../services/AudioService';
 import { VideoService } from '../services/VideoService';
 import { AudioProcessingProgressCallback } from '../types/media-processing.d';
 
+// Define interface for music file - used internally in this file
+interface MusicFile {
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+  duration: number;
+  url: string;
+  waveform: number[];
+}
+
+// Define interface for processed video file - used internally in this file
+interface ProcessedVideoFile {
+  file: File;
+  name: string;
+  size: number;
+  duration: number;
+  width: number;
+  height: number;
+  fps: number;
+  type: string;
+  url: string;
+  thumbnail: string;
+}
+
+// Interface for VideoFile returned from VideoService
+interface VideoFileResponse {
+  name: string;
+  size: number;
+  duration: number;
+  width: number;
+  height: number;
+  fps: number;
+  type: string;
+  blobUrl: string;
+  thumbnail: string;
+}
+
 // Default state for the application
 const defaultState: AppState = {
   workflow: {
-    currentStep: WorkflowStep.INPUT,
+    currentStep: AppWorkflowStep.INPUT,
     analysisProgress: {
       percentage: 0,
       currentStep: '',
@@ -42,7 +80,14 @@ const defaultState: AppState = {
     },
     musicFile: null,
     videoFiles: [],
-    rawVideoFiles: [] // Added for storing raw video files
+    rawVideoFiles: [], // Added for storing raw video files
+    currentStep: '',
+    isAnalyzing: false,
+    audioAnalysis: null,
+    videoAnalyses: {},
+    editDecisions: [],
+    showExportModal: false,
+    duration: 0
   },
   analysis: {
     audio: null,
@@ -74,19 +119,32 @@ const defaultState: AppState = {
     showExportModal: false,
     exportProgress: 0,
     exportComplete: false,
-    exportError: null
+    exportError: null,
+    isExporting: false,
+    progress: 0,
+    format: 'premiere'
   },
   ui: {
     errors: {
       audioUpload: null,
-      videoUpload: null
+      videoUpload: null,
+      audioLoad: null,
+      analysis: null,
+      navigation: null
     },
     audioProgress: null,
     videoProgress: null,
+    rawVideoProgress: null,
     modals: {
       showSettings: false,
       showHelp: false
-    }
+    },
+    currentStep: ApplicationStep.WELCOME,
+    darkMode: false,
+    activeModal: ModalType.NONE,
+    sidebarOpen: false,
+    fullscreen: false,
+    isLoading: false
   }
 };
 
@@ -104,6 +162,7 @@ const canAccessRoute = (
     case WorkflowStep.ANALYSIS:
       return true; // Accessible if we have a music file (would be checked in component)
     case WorkflowStep.EDIT:
+    case WorkflowStep.EDITING:
       return hasAnalysisResults; // Need analysis results
     case WorkflowStep.EXPORT:
       return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
@@ -119,6 +178,7 @@ const getNextRoute = (currentStep: WorkflowStep): WorkflowStep => {
     case WorkflowStep.ANALYSIS:
       return WorkflowStep.EDIT;
     case WorkflowStep.EDIT:
+    case WorkflowStep.EDITING:
       return WorkflowStep.EXPORT;
     case WorkflowStep.EXPORT:
     default:
@@ -133,6 +193,7 @@ const getPreviousRoute = (currentStep: WorkflowStep): WorkflowStep | null => {
     case WorkflowStep.ANALYSIS:
       return WorkflowStep.INPUT;
     case WorkflowStep.EDIT:
+    case WorkflowStep.EDITING:
       return WorkflowStep.ANALYSIS;
     case WorkflowStep.EXPORT:
       return WorkflowStep.EDIT;
@@ -226,7 +287,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
         ...prev,
         workflow: {
           ...prev.workflow,
-          currentStep: currentRouteStep
+          currentStep: currentRouteStep as AppWorkflowStep
         }
       }));
     }
@@ -234,13 +295,13 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   
   // Navigation methods
   const goToNextStep = () => {
-    const nextRoute = getNextRoute(state.workflow.currentStep);
+    const nextRoute = getNextRoute(state.workflow.currentStep as WorkflowStep);
     
     // Check if we can access the next route
     const hasAnalysisResults = Boolean(state.analysis.audio && state.analysis.video);
     const hasEditDecisions = state.edit.decisions.length > 0;
     
-    if (canAccessRoute(nextRoute, state.workflow.currentStep, hasAnalysisResults, hasEditDecisions)) {
+    if (canAccessRoute(nextRoute, state.workflow.currentStep as WorkflowStep, hasAnalysisResults, hasEditDecisions)) {
       navigate(`/${nextRoute}`);
     } else {
       // Handle case where next step is not accessible
@@ -258,7 +319,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   };
   
   const goToPreviousStep = () => {
-    const prevRoute = getPreviousRoute(state.workflow.currentStep);
+    const prevRoute = getPreviousRoute(state.workflow.currentStep as WorkflowStep);
     if (prevRoute) {
       navigate(`/${prevRoute}`);
     }
@@ -268,7 +329,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     const hasAnalysisResults = Boolean(state.analysis.audio && state.analysis.video);
     const hasEditDecisions = state.edit.decisions.length > 0;
     
-    if (canAccessRoute(step, state.workflow.currentStep, hasAnalysisResults, hasEditDecisions)) {
+    if (canAccessRoute(step, state.workflow.currentStep as WorkflowStep, hasAnalysisResults, hasEditDecisions)) {
       navigate(`/${step}`);
     } else {
       setState(prev => ({
@@ -395,14 +456,44 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
           ...prev.project,
           videoFiles: [...prev.project.videoFiles, {
             file,
-            name: videoFile.name,
-            size: videoFile.size,
-            duration: videoFile.duration,
-            width: videoFile.width,
-            height: videoFile.height,
-            fps: videoFile.fps,
-            type: videoFile.type,
+            metadata: {
+              id: `video-${Date.now()}`,
+              createdAt: new Date(),
+              modifiedAt: new Date(),
+              size: videoFile.size
+            },
+            mimeInfo: {
+              mimeType: videoFile.type,
+              category: 'video',
+              isSupported: true,
+              extensions: [videoFile.name.split('.').pop() || 'mp4']
+            },
+            filenameInfo: {
+              fullName: videoFile.name,
+              baseName: videoFile.name.substring(0, videoFile.name.lastIndexOf('.')),
+              extension: videoFile.name.split('.').pop() || 'mp4',
+              isValidName: true
+            },
+            duration: {
+              seconds: videoFile.duration,
+              formatted: '00:00:00.000'
+            },
+            resolution: {
+              width: videoFile.width,
+              height: videoFile.height,
+              aspectRatio: videoFile.width / videoFile.height
+            },
+            sourceType: 'local_upload',
+            processing: {
+              status: 'completed',
+              progress: 100
+            },
             url: videoFile.blobUrl,
+            videoMetadata: {
+              frameRate: videoFile.fps,
+              hasAudio: true,
+              hasSubtitles: false
+            },
             thumbnail: videoFile.thumbnail
           }]
         },
@@ -724,9 +815,9 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   };
 
   // Create a context value with state and methods
-  const contextValue = {
+  const contextValue: WorkflowContextType = {
     state,
-    currentStep: state.workflow.currentStep, // Added missing property
+    currentStep: state.workflow.currentStep as WorkflowStep, // Added type assertion
     data: state, // Added missing property
     navigation: {
       goToNextStep,
