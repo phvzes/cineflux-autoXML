@@ -28,6 +28,24 @@ export interface VideoChunkProgress extends ChunkProgress {
   stage: string;
 }
 
+export interface VideoFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  duration: number;
+  resolution: { width: number; height: number };
+  frameRate: number;
+  path?: string;
+  url?: string;
+}
+
+export interface ThumbnailOptions {
+  width?: number;
+  height?: number;
+  quality?: number;
+}
+
 /**
  * Service for processing video files
  * Implements the Singleton pattern
@@ -51,9 +69,63 @@ export class VideoService extends EventEmitter {
   }
   
   /**
-   * Analyze a video file
+   * Load a video file and return basic metadata
+   * @param file The video file to load
+   * @returns Promise resolving to a VideoFile object with metadata
    */
-  public async analyzeVideo(videoFile: File): Promise<VideoAnalysis> {
+  public async loadVideoFile(file: File): Promise<VideoFile> {
+    return new Promise((resolve, reject) => {
+      try {
+        // Create a URL for the file
+        const url = URL.createObjectURL(file);
+        
+        // Create a video element to extract metadata
+        const video = document.createElement('video');
+        
+        // Set up event handlers
+        video.onloadedmetadata = () => {
+          // Extract metadata
+          const videoFile: VideoFile = {
+            id: `video-${Date.now()}`,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            duration: video.duration,
+            resolution: {
+              width: video.videoWidth,
+              height: video.videoHeight
+            },
+            frameRate: 30, // Default, as we can't easily get this from the video element
+            url
+          };
+          
+          // Clean up
+          URL.revokeObjectURL(url);
+          
+          resolve(videoFile);
+        };
+        
+        video.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error(`Failed to load video file: ${file.name}`));
+        };
+        
+        // Start loading the video
+        video.src = url;
+        
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  
+  /**
+   * Analyze a video file
+   * @param videoFile The video file to analyze
+   * @param options Optional parameters for analysis
+   * @returns Promise resolving to video analysis data
+   */
+  public async analyzeVideo(videoFile: File, options?: any): Promise<VideoAnalysis> {
     try {
       // Check if we have cached results for this file
       const cacheKey = `${videoFile.name}-${videoFile.size}-${videoFile.lastModified}`;
@@ -85,6 +157,184 @@ export class VideoService extends EventEmitter {
       this.emitEvent(VideoServiceEvents.ERROR, error);
       throw error;
     }
+  }
+  
+  /**
+   * Extract frames from a video file at specified intervals
+   * @param file The video file to extract frames from
+   * @param options Optional parameters for frame extraction
+   * @returns Promise resolving to an array of frame data
+   */
+  public async extractFrames(file: File, options?: { 
+    interval?: number; // Interval in seconds
+    maxFrames?: number; // Maximum number of frames to extract
+    quality?: number; // JPEG quality (0-1)
+  }): Promise<{ time: number; dataUrl: string }[]> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Default options
+        const interval = options?.interval || 1; // 1 second interval
+        const maxFrames = options?.maxFrames || 100;
+        const quality = options?.quality || 0.8;
+        
+        // Create a URL for the file
+        const url = URL.createObjectURL(file);
+        
+        // Create video element
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        
+        // Set up event handlers
+        video.onloadedmetadata = async () => {
+          try {
+            // Calculate how many frames to extract
+            const duration = video.duration;
+            const frameCount = Math.min(
+              maxFrames,
+              Math.floor(duration / interval)
+            );
+            
+            // Create a canvas for frame extraction
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              throw new Error('Failed to create canvas context');
+            }
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Array to store frames
+            const frames: { time: number; dataUrl: string }[] = [];
+            
+            // Extract frames
+            for (let i = 0; i < frameCount; i++) {
+              const time = i * interval;
+              
+              // Seek to the time
+              video.currentTime = time;
+              
+              // Wait for the seek to complete
+              await new Promise<void>(seekResolve => {
+                const seekHandler = () => {
+                  video.removeEventListener('seeked', seekHandler);
+                  seekResolve();
+                };
+                video.addEventListener('seeked', seekHandler);
+              });
+              
+              // Draw the frame to the canvas
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              
+              // Convert to data URL
+              const dataUrl = canvas.toDataURL('image/jpeg', quality);
+              
+              // Add to frames array
+              frames.push({ time, dataUrl });
+            }
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+            
+            resolve(frames);
+          } catch (error) {
+            URL.revokeObjectURL(url);
+            reject(error);
+          }
+        };
+        
+        video.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error(`Failed to load video file: ${file.name}`));
+        };
+        
+        // Start loading the video
+        video.src = url;
+        
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  
+  /**
+   * Generate a thumbnail from a video file at a specific time
+   * @param file The video file to generate a thumbnail from
+   * @param time The time in seconds to capture the thumbnail
+   * @param options Optional parameters for thumbnail generation
+   * @returns Promise resolving to a data URL of the thumbnail
+   */
+  public async generateThumbnail(
+    file: File, 
+    time: number, 
+    options?: ThumbnailOptions
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        // Create a URL for the file
+        const url = URL.createObjectURL(file);
+        
+        // Create video element
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        
+        // Set up event handlers
+        video.onloadedmetadata = () => {
+          // Ensure the time is within the video duration
+          const seekTime = Math.min(time, video.duration - 0.1);
+          
+          // Seek to the specified time
+          video.currentTime = seekTime;
+        };
+        
+        video.onseeked = () => {
+          try {
+            // Create a canvas for the thumbnail
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              throw new Error('Failed to create canvas context');
+            }
+            
+            // Set canvas dimensions
+            const width = options?.width || video.videoWidth;
+            const height = options?.height || video.videoHeight;
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw the frame to the canvas
+            ctx.drawImage(video, 0, 0, width, height);
+            
+            // Convert to data URL
+            const quality = options?.quality || 0.8;
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+            
+            resolve(dataUrl);
+          } catch (error) {
+            URL.revokeObjectURL(url);
+            reject(error);
+          }
+        };
+        
+        video.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error(`Failed to load video file: ${file.name}`));
+        };
+        
+        // Start loading the video
+        video.src = url;
+        
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
   
   /**
@@ -292,3 +542,6 @@ export class VideoService extends EventEmitter {
     this.processingCache.clear();
   }
 }
+
+// Export the singleton instance
+export const videoService = VideoService.getInstance();

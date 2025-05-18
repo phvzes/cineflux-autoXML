@@ -1,3 +1,4 @@
+
 // src/services/AudioService.ts
 import { 
   AudioAnalysis, 
@@ -22,7 +23,7 @@ export class AudioProcessingError extends Error {
 /**
  * Service for audio analysis and processing
  */
-class AudioService {
+export class AudioService {
   // Singleton instance
   private static instance: AudioService;
 
@@ -63,9 +64,9 @@ class AudioService {
    */
   async analyzeAudio(
     audioFile: File,
-    progressCallback: (progress: number, step: string) => void
+    progressCallback?: (progress: number, step: string) => void
   ): Promise<AudioAnalysis> {
-    return AudioService.analyzeAudio(audioFile, progressCallback);
+    return AudioService.analyzeAudio(audioFile, progressCallback || ((progress, step) => {}));
   }
 
   /**
@@ -82,29 +83,60 @@ class AudioService {
   }
 
   /**
-   * Detect beats in an audio buffer
-   * @param audioBuffer The audio buffer to analyze
+   * Detect beats in an audio file
+   * @param audioFile The audio file to analyze
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to beat analysis data
    */
   async detectBeats(
-    audioBuffer: AudioBuffer,
-    progressCallback?: (progress: number) => void
+    audioFile: File,
+    progressCallback?: (progress: number, step?: string) => void
   ): Promise<BeatAnalysis> {
-    return AudioService.detectBeats(audioBuffer, progressCallback);
+    // First load the audio file to get the AudioBuffer
+    const audioBuffer = await this.loadAudio(audioFile, 
+      progressCallback ? (progress, step) => progressCallback(progress * 0.5, step) : undefined);
+    
+    // Then detect beats from the buffer
+    const result = await AudioService.detectBeats(audioBuffer, 
+      progressCallback ? (progress) => progressCallback(50 + progress * 0.5) : undefined);
+    
+    return result;
   }
 
   /**
-   * Analyze energy levels in an audio buffer
-   * @param audioBuffer The audio buffer to analyze
+   * Analyze energy levels in an audio file
+   * @param audioFile The audio file to analyze
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to energy analysis data
    */
   async analyzeEnergy(
-    audioBuffer: AudioBuffer,
-    progressCallback?: (progress: number) => void
+    audioFile: File,
+    progressCallback?: (progress: number, step?: string) => void
   ): Promise<EnergyAnalysis> {
-    return AudioService.analyzeEnergy(audioBuffer, progressCallback);
+    // First load the audio file to get the AudioBuffer
+    const audioBuffer = await this.loadAudio(audioFile, 
+      progressCallback ? (progress, step) => progressCallback(progress * 0.5, step) : undefined);
+    
+    // Then analyze energy from the buffer
+    const result = await AudioService.analyzeEnergy(audioBuffer, 
+      progressCallback ? (progress) => progressCallback(50 + progress * 0.5) : undefined);
+    
+    return result;
+  }
+
+  /**
+   * Generate waveform visualization for an audio file
+   * @param audioFile The audio file to visualize
+   * @param options Optional parameters for waveform generation
+   * @returns Promise resolving to waveform data
+   */
+  async generateWaveform(
+    audioFile: File,
+    options?: { width?: number; height?: number }
+  ): Promise<number[]> {
+    const width = options?.width || 800;
+    const height = options?.height || 200;
+    return AudioService.createWaveform(audioFile, width, height);
   }
 
   /**
@@ -958,9 +990,6 @@ class AudioService {
     });
   }
 }
-
-// Export the class
-export default AudioService;
 
 // Export the singleton instance
 export const audioService = AudioService.getInstance();

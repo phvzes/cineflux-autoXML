@@ -1,3 +1,4 @@
+
 /**
  * InputStep.tsx
  * 
@@ -5,7 +6,7 @@
  * select audio and video files and configure initial project settings.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Music, Video, FileUp, X, Info, Settings, Film } from 'lucide-react';
 import { useWorkflow } from '../../context/WorkflowContext';
@@ -13,8 +14,10 @@ import { useNotification } from '../../contexts/NotificationContext';
 import ProcessingProgress from '../common/ProcessingProgress';
 import { mapAudioProgressToProps, mapVideoProgressToProps } from '../../constants/processingStages';
 import { ProjectSettings } from '../../types/workflow';
-import { audioService as AudioService } from '../../services/AudioService';
-import { VideoService } from '../../services/VideoService';
+import { audioService } from '../../services/AudioService';
+import { videoService } from '../../services/VideoService';
+import { ExtendedFile } from '../../types/ExtendedFile';
+import { perfMonitor } from '../../utils/perfMonitor';
 
 const InputStep: React.FC = () => {
   // Get workflow context
@@ -38,10 +41,26 @@ const InputStep: React.FC = () => {
   const [isDraggingRawVideo, setIsDraggingRawVideo] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   
+  // Track component mount/unmount performance
+  useEffect(() => {
+    // Mark component mount
+    perfMonitor.mark('input-step-mount');
+    
+    // Return cleanup function to mark unmount
+    return () => {
+      perfMonitor.mark('input-step-unmount');
+      perfMonitor.measure(
+        'input-step-lifetime',
+        'input-step-mount',
+        'input-step-unmount'
+      );
+    };
+  }, []);
+  
   // Setup dropzone for audio
   const onAudioDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
+      const file = acceptedFiles[0] as ExtendedFile;
       
       try {
         /**
@@ -59,8 +78,11 @@ const InputStep: React.FC = () => {
          * This integration is critical as it initializes the audio analysis pipeline
          * that will later be used by EditDecisionEngine to create edit points.
          */
+        // Start performance tracking for audio processing
+        perfMonitor.mark('audio-processing-start');
+        
         // Use AudioService to load and analyze the audio file
-        const audioService = AudioService.getInstance();
+        // Use the exported singleton instance
         
         // Create a progress callback
         const progressCallback = (progress: number, step: string) => {
@@ -77,10 +99,20 @@ const InputStep: React.FC = () => {
         };
         
         // Load the audio file
+        perfMonitor.mark('audio-load-start');
         const audioBuffer = await audioService.loadAudio(file, progressCallback);
+        perfMonitor.mark('audio-load-end');
+        perfMonitor.measure('audio-file-loading', 'audio-load-start', 'audio-load-end');
         
         // Extract waveform data for visualization
+        perfMonitor.mark('waveform-extraction-start');
         const waveform = await audioService.extractWaveform(audioBuffer);
+        perfMonitor.mark('waveform-extraction-end');
+        perfMonitor.measure('waveform-extraction', 'waveform-extraction-start', 'waveform-extraction-end');
+        
+        // End performance tracking for audio processing
+        perfMonitor.mark('audio-processing-end');
+        perfMonitor.measure('audio-processing-total', 'audio-processing-start', 'audio-processing-end');
         
         // Update the workflow state with the music file and its metadata
         setData(prev => ({
@@ -111,6 +143,12 @@ const InputStep: React.FC = () => {
       } catch (error) {
         console.error('Error processing audio file:', error);
         
+        // End performance tracking on error
+        if (performance.getEntriesByName('audio-processing-start').length > 0) {
+          perfMonitor.mark('audio-processing-error');
+          perfMonitor.measure('audio-processing-failed', 'audio-processing-start', 'audio-processing-error');
+        }
+        
         // Update state with error
         setData(prev => ({
           ...prev,
@@ -119,12 +157,12 @@ const InputStep: React.FC = () => {
             audioProgress: null,
             errors: {
               ...prev.ui.errors,
-              audioUpload: `Error processing audio file: ${error.message}`
+              audioUpload: `Error processing audio file: ${(error as Error).message}`
             }
           }
         }));
 
-        showNotification('error', `Error processing audio file: ${error.message}`, {
+        showNotification('error', `Error processing audio file: ${(error as Error).message}`, {
           actionLabel: 'Retry',
           onAction: () => {
             setRetryCount(prev => prev + 1);
@@ -167,11 +205,17 @@ const InputStep: React.FC = () => {
      * This integration is critical as it prepares video files that will later be
      * analyzed by EditDecisionEngine to match with audio beats and create the edit.
      */
-    const videoService = VideoService.getInstance();
+    
+    // Start performance tracking for all video processing
+    perfMonitor.mark('video-processing-batch-start');
     
     // Process each video file
     for (const file of acceptedFiles) {
       try {
+        // Start performance tracking for this video file
+        const videoMarkPrefix = `video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        perfMonitor.mark(`${videoMarkPrefix}-start`);
+        
         // Set up progress tracking
         setData(prev => ({
           ...prev,
@@ -189,21 +233,23 @@ const InputStep: React.FC = () => {
         }));
 
         // Use VideoService to load and process the video file
-        const videoFile = await videoService.loadVideoFile(file);
+        const videoFile = await perfMonitor.trackTime(
+          `video-load-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`,
+          () => videoService.loadVideoFile(file as ExtendedFile)
+        );
         
         // Add the processed video file to the workflow state
         addVideoFile({
-          file,
           name: videoFile.name,
           size: videoFile.size,
           type: videoFile.type,
           duration: videoFile.duration,
-          width: videoFile.width,
-          height: videoFile.height,
-          fps: videoFile.fps,
-          url: videoFile.blobUrl,
-          thumbnail: videoFile.thumbnail
-        });
+          width: videoFile.resolution.width,
+          height: videoFile.resolution.height,
+          fps: videoFile.frameRate,
+          url: videoFile.url || '',
+          thumbnail: videoFile.url || ''
+        } as any);
 
         // Update progress to complete
         setData(prev => ({
@@ -217,9 +263,28 @@ const InputStep: React.FC = () => {
           }
         }));
 
+        // End performance tracking for this video file
+        perfMonitor.mark(`${videoMarkPrefix}-end`);
+        perfMonitor.measure(
+          `video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`,
+          `${videoMarkPrefix}-start`,
+          `${videoMarkPrefix}-end`
+        );
+
         showNotification('success', `Video "${file.name}" processed successfully!`);
       } catch (error) {
         console.error('Error processing video file:', error);
+        
+        // End performance tracking on error
+        const videoMarkPrefix = `video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        if (performance.getEntriesByName(`${videoMarkPrefix}-start`).length > 0) {
+          perfMonitor.mark(`${videoMarkPrefix}-error`);
+          perfMonitor.measure(
+            `video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}-failed`,
+            `${videoMarkPrefix}-start`,
+            `${videoMarkPrefix}-error`
+          );
+        }
         
         // Update state with error
         setData(prev => ({
@@ -229,12 +294,12 @@ const InputStep: React.FC = () => {
             videoProgress: null,
             errors: {
               ...prev.ui.errors,
-              videoUpload: `Error processing video file ${file.name}: ${error.message}`
+              videoUpload: `Error processing video file ${file.name}: ${(error as Error).message}`
             }
           }
         }));
 
-        showNotification('error', `Error processing video file ${file.name}: ${error.message}`, {
+        showNotification('error', `Error processing video file ${file.name}: ${(error as Error).message}`, {
           actionLabel: 'Retry',
           onAction: () => {
             setRetryCount(prev => prev + 1);
@@ -243,6 +308,14 @@ const InputStep: React.FC = () => {
         });
       }
     }
+    
+    // End performance tracking for all video processing
+    perfMonitor.mark('video-processing-batch-end');
+    perfMonitor.measure(
+      'video-processing-batch-total',
+      'video-processing-batch-start',
+      'video-processing-batch-end'
+    );
   }, [addVideoFile, setData, showNotification, retryCount]);
   
   const {
@@ -259,11 +332,16 @@ const InputStep: React.FC = () => {
   
   // Setup dropzone for raw video files
   const onRawVideoDrop = useCallback(async (acceptedFiles: File[]) => {
-    const videoService = VideoService.getInstance();
+    // Start performance tracking for all raw video processing
+    perfMonitor.mark('raw-video-processing-batch-start');
     
     // Process each raw video file
     for (const file of acceptedFiles) {
       try {
+        // Start performance tracking for this raw video file
+        const rawVideoMarkPrefix = `raw-video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        perfMonitor.mark(`${rawVideoMarkPrefix}-start`);
+        
         // Set up progress tracking
         setData(prev => ({
           ...prev,
@@ -295,26 +373,36 @@ const InputStep: React.FC = () => {
             }
           }));
 
+          // End performance tracking for validation error
+          perfMonitor.mark(`${rawVideoMarkPrefix}-validation-error`);
+          perfMonitor.measure(
+            `raw-video-validation-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}-failed`,
+            `${rawVideoMarkPrefix}-start`,
+            `${rawVideoMarkPrefix}-validation-error`
+          );
+
           showNotification('error', `Invalid video format: ${file.type}. Supported formats: MP4, MOV, AVI, WebM`);
           continue;
         }
         
         // Use VideoService to load and process the video file
-        const videoFile = await videoService.loadVideoFile(file);
+        const videoFile = await perfMonitor.trackTime(
+          `raw-video-load-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`,
+          () => videoService.loadVideoFile(file as ExtendedFile)
+        );
         
         // Add the processed raw video file to the workflow state
         addRawVideoFile({
-          file,
           name: videoFile.name,
           size: videoFile.size,
           type: videoFile.type,
           duration: videoFile.duration,
-          width: videoFile.width,
-          height: videoFile.height,
-          fps: videoFile.fps,
-          url: videoFile.blobUrl,
-          thumbnail: videoFile.thumbnail
-        });
+          width: videoFile.resolution.width,
+          height: videoFile.resolution.height,
+          fps: videoFile.frameRate,
+          url: videoFile.url || '',
+          thumbnail: videoFile.url || ''
+        } as any);
 
         // Update progress to complete
         setData(prev => ({
@@ -328,9 +416,28 @@ const InputStep: React.FC = () => {
           }
         }));
 
+        // End performance tracking for this raw video file
+        perfMonitor.mark(`${rawVideoMarkPrefix}-end`);
+        perfMonitor.measure(
+          `raw-video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`,
+          `${rawVideoMarkPrefix}-start`,
+          `${rawVideoMarkPrefix}-end`
+        );
+
         showNotification('success', `Raw video "${file.name}" processed successfully!`);
       } catch (error) {
         console.error('Error processing raw video file:', error);
+        
+        // End performance tracking on error
+        const rawVideoMarkPrefix = `raw-video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        if (performance.getEntriesByName(`${rawVideoMarkPrefix}-start`).length > 0) {
+          perfMonitor.mark(`${rawVideoMarkPrefix}-error`);
+          perfMonitor.measure(
+            `raw-video-processing-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}-failed`,
+            `${rawVideoMarkPrefix}-start`,
+            `${rawVideoMarkPrefix}-error`
+          );
+        }
         
         // Update state with error
         setData(prev => ({
@@ -340,12 +447,12 @@ const InputStep: React.FC = () => {
             rawVideoProgress: null,
             errors: {
               ...prev.ui.errors,
-              rawVideoUpload: `Error processing raw video file ${file.name}: ${error.message}`
+              rawVideoUpload: `Error processing raw video file ${file.name}: ${(error as Error).message}`
             }
           }
         }));
 
-        showNotification('error', `Error processing raw video file ${file.name}: ${error.message}`, {
+        showNotification('error', `Error processing raw video file ${file.name}: ${(error as Error).message}`, {
           actionLabel: 'Retry',
           onAction: () => {
             setRetryCount(prev => prev + 1);
@@ -354,6 +461,14 @@ const InputStep: React.FC = () => {
         });
       }
     }
+    
+    // End performance tracking for all raw video processing
+    perfMonitor.mark('raw-video-processing-batch-end');
+    perfMonitor.measure(
+      'raw-video-processing-batch-total',
+      'raw-video-processing-batch-start',
+      'raw-video-processing-batch-end'
+    );
   }, [addRawVideoFile, setData, showNotification, retryCount]);
   
   const {
@@ -384,6 +499,9 @@ const InputStep: React.FC = () => {
   
   // Handle analyze button click
   const handleAnalyze = () => {
+    // Track performance for analysis transition
+    perfMonitor.mark('analyze-button-click');
+    
     setData(prev => ({
       ...prev,
       workflow: {
@@ -399,7 +517,21 @@ const InputStep: React.FC = () => {
       }
     }));
     
-    goToStep('analysis');
+    // Preload the analysis step component
+    import('./AnalysisStep').catch(error => {
+      console.warn('Failed to preload AnalysisStep:', error);
+    });
+    
+    // Navigate to analysis step
+    goToStep('analysis' as any);
+    
+    // Mark end of transition
+    perfMonitor.mark('analyze-transition-complete');
+    perfMonitor.measure(
+      'analyze-transition-time',
+      'analyze-button-click',
+      'analyze-transition-complete'
+    );
   };
   
   // Format file size
@@ -503,7 +635,7 @@ const InputStep: React.FC = () => {
                     {/* Render waveform visualization */}
                     <svg width="100%" height="100%" viewBox={`0 0 ${state.project.musicFile.waveform.length} 100`} preserveAspectRatio="none">
                       <path
-                        d={`M 0,50 ${state.project.musicFile.waveform.map((value, index) => `L ${index},${50 - value * 40}`).join(' ')}`}
+                        d={`M 0,50 ${state.project.musicFile.waveform.map((value: number, index: number) => `L ${index},${50 - value * 40}`).join(' ')}`}
                         stroke="rgba(139, 92, 246, 0.8)"
                         strokeWidth="1.5"
                         fill="none"
@@ -579,7 +711,7 @@ const InputStep: React.FC = () => {
               ) : (
                 // Display selected video files
                 <div className="bg-gray-800 border border-gray-600 rounded p-2 max-h-64 overflow-y-auto">
-                  {state.project.videoFiles.map((file, index) => (
+                  {state.project.videoFiles.map((file: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-700 rounded">
                       <div className="flex items-center gap-2">
                         <Video size={16} />
@@ -663,7 +795,7 @@ const InputStep: React.FC = () => {
               ) : (
                 // Display selected raw video files
                 <div className="bg-gray-800 border border-gray-600 rounded p-2 max-h-64 overflow-y-auto">
-                  {state.project.rawVideoFiles.map((file, index) => (
+                  {state.project.rawVideoFiles.map((file: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-700 rounded">
                       <div className="flex items-center gap-2">
                         <Film size={16} />

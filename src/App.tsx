@@ -5,50 +5,61 @@
  * Optimized with code splitting and lazy loading for better performance.
  */
 
-import React, { Suspense, lazy, useRef, useEffect } from 'react';
+import React, { Suspense, useRef, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useProject } from './context/ProjectContext';
 import { useAnalysis } from './context/AnalysisContext';
 import Loading from './components/Loading';
 import ErrorBoundary from './components/ErrorBoundary';
 import errorLogger from './utils/errorLogger';
+import { namedLazy as lazy, preloadComponent } from './utils/lazy';
+import { perfMonitor } from './utils/perfMonitor';
+import { prefetchWasmModule } from './utils/prefetch';
 
 // Lazy load contexts and providers to reduce initial bundle size
-const NotificationProvider = lazy(() => 
-  import('./contexts/NotificationContext').then(module => ({
+const NotificationProvider = lazy(
+  () => import('./contexts/NotificationContext').then(module => ({
     default: module.NotificationProvider
-  }))
+  })),
+  'NotificationProvider'
 );
 
 // Lazy load welcome page with custom chunk name
-const WelcomePage = lazy(() => 
-  import(/* webpackChunkName: "welcome" */ './components/welcome/WelcomePage')
+const WelcomePage = lazy(
+  () => import(/* webpackChunkName: "welcome" */ './components/welcome/WelcomePage'),
+  'WelcomePage'
 );
 
 // Lazy load main container with custom chunk name
-const WorkflowContainer = lazy(() => 
-  import(/* webpackChunkName: "workflow-container" */ './components/WorkflowContainer')
+const WorkflowContainer = lazy(
+  () => import(/* webpackChunkName: "workflow-container" */ './components/WorkflowContainer'),
+  'WorkflowContainer'
 );
 
 // Lazy load step components with custom chunk names for better performance
-const InputStep = lazy(() => 
-  import(/* webpackChunkName: "step-input" */ './components/steps/InputStep')
+const InputStep = lazy(
+  () => import(/* webpackChunkName: "step-input" */ './components/steps/InputStep'),
+  'InputStep'
 );
 
-const AnalysisStep = lazy(() => 
-  import(/* webpackChunkName: "step-analysis" */ './components/steps/AnalysisStep')
+const AnalysisStep = lazy(
+  () => import(/* webpackChunkName: "step-analysis" */ './components/steps/AnalysisStep'),
+  'AnalysisStep'
 );
 
-const EditingStep = lazy(() => 
-  import(/* webpackChunkName: "step-editing" */ './components/steps/EditingStep')
+const EditingStep = lazy(
+  () => import(/* webpackChunkName: "step-editing" */ './components/steps/EditingStep'),
+  'EditingStep'
 );
 
-const PreviewStep = lazy(() => 
-  import(/* webpackChunkName: "step-preview" */ './components/steps/PreviewStep')
+const PreviewStep = lazy(
+  () => import(/* webpackChunkName: "step-preview" */ './components/steps/PreviewStep'),
+  'PreviewStep'
 );
 
-const ExportStep = lazy(() => 
-  import(/* webpackChunkName: "step-export" */ './components/steps/ExportStep')
+const ExportStep = lazy(
+  () => import(/* webpackChunkName: "step-export" */ './components/steps/ExportStep'),
+  'ExportStep'
 );
 
 export default function App() {
@@ -143,32 +154,73 @@ export default function App() {
 
   // Preload critical resources based on environment
   useEffect(() => {
-    // Preload WebAssembly modules if needed
+    // Track performance for resource preloading
+    perfMonitor.mark('preload-resources-start');
+    
+    // Preload WebAssembly modules
     const preloadWasmModules = async () => {
-      if (import.meta.env.PROD) {
-        const wasmCdnUrl = import.meta.env.VITE_WASM_CDN_URL;
+      try {
+        // Preload critical WASM modules
+        await Promise.all([
+          prefetchWasmModule('ffmpeg-core.wasm'),
+          prefetchWasmModule('opencv.wasm')
+        ]);
         
-        if (wasmCdnUrl) {
-          // Create preload links for critical WASM modules
-          const preloadLinks = [
-            `${wasmCdnUrl}/ffmpeg-core.wasm`,
-            `${wasmCdnUrl}/opencv.wasm`,
-          ];
-          
-          preloadLinks.forEach(url => {
-            const link = document.createElement('link');
-            link.rel = 'preload';
-            link.as = 'fetch';
-            link.href = url;
-            link.crossOrigin = 'anonymous';
-            document.head.appendChild(link);
-          });
+        if (import.meta.env.DEV) {
+          console.log('[App] WebAssembly modules prefetched successfully');
         }
+      } catch (error) {
+        console.warn('[App] Error prefetching WebAssembly modules:', error);
       }
     };
     
-    preloadWasmModules();
-  }, []);
+    // Preload components that will be needed soon
+    const preloadComponents = async () => {
+      try {
+        // Preload the next step components based on current step
+        if (projectState.currentStep === 'input') {
+          await preloadComponent(
+            () => import('./components/steps/AnalysisStep'),
+            'AnalysisStep'
+          );
+        } else if (projectState.currentStep === 'analysis') {
+          await preloadComponent(
+            () => import('./components/steps/EditingStep'),
+            'EditingStep'
+          );
+        } else if (projectState.currentStep === 'editing') {
+          await preloadComponent(
+            () => import('./components/steps/PreviewStep'),
+            'PreviewStep'
+          );
+        } else if (projectState.currentStep === 'preview') {
+          await preloadComponent(
+            () => import('./components/steps/ExportStep'),
+            'ExportStep'
+          );
+        }
+        
+        if (import.meta.env.DEV) {
+          console.log('[App] Components preloaded successfully');
+        }
+      } catch (error) {
+        console.warn('[App] Error preloading components:', error);
+      }
+    };
+    
+    // Execute preloading
+    Promise.all([
+      preloadWasmModules(),
+      preloadComponents()
+    ]).finally(() => {
+      perfMonitor.mark('preload-resources-end');
+      perfMonitor.measure(
+        'preload-resources',
+        'preload-resources-start',
+        'preload-resources-end'
+      );
+    });
+  }, [projectState.currentStep]);
 
   return (
     <Suspense fallback={<Loading />}>

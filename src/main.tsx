@@ -7,6 +7,9 @@ import { ProjectProvider } from './context/ProjectContext';
 import { WorkflowProvider } from './context/WorkflowContext';
 import { AnalysisProvider } from './context/AnalysisContext';
 import { configureWasmLoading } from './utils/wasmLoader';
+import { perfMonitor } from './utils/perfMonitor';
+import { initBrowserCompat, getBrowserCompatInfo } from './utils/compat';
+import { prefetchCriticalResources } from './utils/prefetch';
 import './index.css';
 
 // Log application version and environment
@@ -36,11 +39,40 @@ const configureFeatureFlags = () => {
 
 // Initialize application
 const initializeApp = () => {
+  // Start performance monitoring
+  perfMonitor.mark('app-init-start');
+  
+  // Check browser compatibility
+  const compatInfo = getBrowserCompatInfo();
+  if (import.meta.env.DEV) {
+    console.log('Browser compatibility:', compatInfo);
+  }
+  
+  // Initialize browser compatibility warnings
+  initBrowserCompat();
+  
   // Configure WebAssembly loading
   configureWasmLoading();
   
   // Configure feature flags
   configureFeatureFlags();
+  
+  // Prefetch critical resources
+  prefetchCriticalResources({
+    wasmModules: ['ffmpeg-core.wasm', 'opencv.wasm'],
+    images: [
+      // Add critical UI images here if needed
+    ],
+    scripts: [
+      // Add critical scripts here if needed
+    ]
+  }).catch(error => {
+    console.warn('Failed to prefetch some resources:', error);
+  });
+  
+  // Mark performance for time to initialize
+  perfMonitor.mark('app-init-end');
+  perfMonitor.measure('app-initialization', 'app-init-start', 'app-init-end');
   
   // Render the application
   ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -56,6 +88,13 @@ const initializeApp = () => {
       </BrowserRouter>
     </React.StrictMode>
   );
+  
+  // Track time to interactive
+  perfMonitor.trackTimeToInteractive(tti => {
+    if (import.meta.env.DEV) {
+      console.log(`Time to interactive: ${tti.toFixed(2)}ms`);
+    }
+  });
 };
 
 // Add feature flags type to window

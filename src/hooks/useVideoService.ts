@@ -5,45 +5,45 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { VideoService } from '../services/VideoService';
-
-export interface ThumbnailOptions {
-  width?: number;
-  height?: number;
-  quality?: number;
-}
+import { videoService, VideoService, ThumbnailOptions, VideoFile } from '../services/VideoService';
 
 /**
  * Hook to access VideoService functionality
  */
 export const useVideoService = () => {
   // Create a memoized instance of the VideoService
-  const videoService = useMemo(() => {
-    return VideoService.getInstance();
+  const service = useMemo(() => {
+    return videoService;
   }, []);
 
   // Wrap methods in useCallback to prevent unnecessary re-renders
   const analyzeVideo = useCallback(
-    (file: File, options?: any) => videoService.analyzeVideo(file, options),
-    [videoService]
+    (file: File, options?: any) => service.analyzeVideo(file, options),
+    [service]
   );
 
   const extractFrames = useCallback(
-    (file: File, options?: any) => videoService.extractFrames(file, options),
-    [videoService]
+    (file: File, options?: any) => service.extractFrames(file, options),
+    [service]
   );
 
   const generateThumbnail = useCallback(
-    (file: File, time: number, options?: any) => 
-      videoService.generateThumbnail(file, time, options),
-    [videoService]
+    (file: File, time: number, options?: ThumbnailOptions) => 
+      service.generateThumbnail(file, time, options),
+    [service]
+  );
+
+  const loadVideoFile = useCallback(
+    (file: File) => service.loadVideoFile(file),
+    [service]
   );
 
   return {
     analyzeVideo,
     extractFrames,
     generateThumbnail,
-    videoService
+    loadVideoFile,
+    videoService: service
   };
 };
 

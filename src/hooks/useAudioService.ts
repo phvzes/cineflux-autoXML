@@ -1,3 +1,4 @@
+
 /**
  * useAudioService.ts
  * 
@@ -5,7 +6,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { audioService } from '../services/AudioService';
+import { audioService, AudioService } from '../services/AudioService';
 
 /**
  * Hook to access AudioService functionality
