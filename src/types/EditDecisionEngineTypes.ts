@@ -5,7 +5,7 @@
  * to ensure proper typing throughout the algorithm functions that match video clips to music segments.
  */
 
-import { TransitionType } from './EditDecision';
+import { TransitionType } from './edit-types';
 
 /**
  * Configuration options for the EditDecisionEngine

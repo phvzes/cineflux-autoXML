@@ -7,12 +7,14 @@
  */
 
 /* ---------- Media analysis ---------- */
-export * from './AudioAnalysis';
-export * from './VideoAnalysis';
+export * from './audio-types';
+export * from './video-types';
 export * from './media-processing';
 
 /* ---------- Editing & decisions ----- */
+export * from './workflow-types';
 export * from './EditDecision';
+export * from './edit-types';
 
 /* ---------- Configuration ----------- */
 export * from './ProjectSettings';

@@ -9,11 +9,15 @@
 /**
  * Represents the main workflow steps/stages of the application
  */
+/**
+ * Enum for different application UI steps
+ * Note: This should be aligned with WorkflowStep enum where applicable
+ */
 export enum ApplicationStep {
   WELCOME = 'welcome',
   FILE_UPLOAD = 'file_upload',
   MEDIA_ANALYSIS = 'media_analysis',
-  EDIT_CONFIGURATION = 'edit_configuration',
+  EDIT = 'edit',
   PREVIEW = 'preview',
   EXPORT = 'export',
   SETTINGS = 'settings'

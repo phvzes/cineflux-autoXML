@@ -7,8 +7,8 @@
  * for automated video editing and XML generation.
  */
 
-import { AudioAnalysisResult } from './AudioAnalysis';
-import { VideoAnalysisResult } from './VideoAnalysis';
+import { AudioAnalysis } from './audio-types';
+import { VideoAnalysisResult } from './video-types';
 
 /**
  * Represents a timecode in the format HH:MM:SS:FF or as frame count
@@ -105,7 +105,7 @@ export interface MatchedClip {
   
   /** Optional reference to analysis results that informed this match */
   analysisReference?: {
-    audio?: string | AudioAnalysisResult;
+    audio?: string | AudioAnalysis;
     video?: string | VideoAnalysisResult;
   };
 }

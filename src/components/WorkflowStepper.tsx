@@ -29,7 +29,7 @@ const stepConfig = {
     label: 'Analysis',
     description: 'Process media content',
   },
-  [ApplicationStep.EDIT_CONFIGURATION]: {
+  [ApplicationStep.EDIT]: {
     label: 'Configure',
     description: 'Set editing parameters',
   },
@@ -52,7 +52,7 @@ const workflowOrder = [
   ApplicationStep.WELCOME,
   ApplicationStep.FILE_UPLOAD,
   ApplicationStep.MEDIA_ANALYSIS,
-  ApplicationStep.EDIT_CONFIGURATION,
+  ApplicationStep.EDIT,
   ApplicationStep.PREVIEW,
   ApplicationStep.EXPORT,
 ];

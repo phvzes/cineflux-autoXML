@@ -3,12 +3,12 @@ import {
   AudioAnalysis, 
   Beat, 
   EnergySample 
-} from '../types/AudioAnalysis';
+} from '../types/audio-types';
 import { 
   Scene, 
   VideoAnalysisResult, 
   SceneType 
-} from '../types/VideoAnalysis';
+} from '../types/video-types';
 import {
   createEmptyEDL,
   MatchedClip,

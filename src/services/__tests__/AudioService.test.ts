@@ -1,7 +1,7 @@
 // src/services/__tests__/AudioService.test.ts
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AudioService, { AudioProcessingError } from '../AudioService';
-import { AudioAnalysis, Beat, BeatAnalysis, EnergyAnalysis, EnergySample } from '../../types/AudioAnalysis';
+import { AudioAnalysis, Beat, BeatAnalysis, EnergyAnalysis, EnergySample } from '../../types/audio-types';
 
 // Mock the Web Audio API
 class MockAudioContext {

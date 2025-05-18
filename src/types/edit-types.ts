@@ -4,6 +4,9 @@
 import { AudioAnalysis } from './audio-types';
 import { Scene, VideoAnalysis } from './video-types';
 
+/**
+ * Enum representing different types of transitions
+ */
 export enum TransitionType {
   CUT = 'cut',
   DISSOLVE = 'dissolve',
@@ -14,6 +17,9 @@ export enum TransitionType {
   CUSTOM = 'custom'
 }
 
+/**
+ * Interface representing a transition between edits
+ */
 export interface Transition {
   /**
    * Type of transition
@@ -31,6 +37,9 @@ export interface Transition {
   params?: Record<string, unknown>;
 }
 
+/**
+ * Interface representing an edit decision in the workflow
+ */
 export interface EditDecision {
   /**
    * Unique identifier for this edit decision
@@ -86,8 +95,46 @@ export interface EditDecision {
    * Additional metadata for this edit
    */
   metadata?: Record<string, unknown>;
+  
+  /**
+   * Time position in the timeline
+   */
+  time?: number;
+  
+  /**
+   * Clip index
+   */
+  clipIndex?: number;
+  
+  /**
+   * Whether this edit is on a beat
+   */
+  onBeat?: boolean;
+  
+  /**
+   * Segment information
+   */
+  segment?: any;
+  
+  /**
+   * Beat information
+   */
+  beat?: any;
+  
+  /**
+   * Energy level
+   */
+  energy?: number;
+  
+  /**
+   * Importance level
+   */
+  importance?: number;
 }
 
+/**
+ * Interface representing a timeline marker
+ */
 export interface TimelineMarker {
   /**
    * Time in seconds on the timeline
@@ -110,6 +157,9 @@ export interface TimelineMarker {
   color?: string;
 }
 
+/**
+ * Interface representing an edit decision list
+ */
 export interface EditDecisionList {
   /**
    * Unique identifier for this EDL
@@ -134,19 +184,22 @@ export interface EditDecisionList {
   /**
    * Timeline markers
    */
-  markers: TimelineMarker[];
+  markers?: TimelineMarker[];
   
   /**
    * Creation date
    */
-  createdAt: Date;
+  createdAt?: Date;
   
   /**
    * Last modified date
    */
-  updatedAt: Date;
+  updatedAt?: Date;
 }
 
+/**
+ * Interface representing edit decision statistics
+ */
 export interface EditDecisionStats {
   /**
    * Total number of edits
@@ -167,8 +220,43 @@ export interface EditDecisionStats {
    * Total timeline duration in seconds
    */
   totalDuration: number;
+  
+  /**
+   * Total number of cuts in the edit (optional)
+   */
+  totalCuts?: number;
+  
+  /**
+   * Score representing how well cuts align with beats (0-1) (optional)
+   */
+  beatAlignmentScore?: number;
 }
 
+/**
+ * Configuration options for the EditDecisionEngine
+ */
+export interface EditDecisionEngineConfig {
+  /** Percentage of beats to use for cuts (0-100) */
+  beatCutPercentage?: number;
+  /** Minimum scene duration in seconds */
+  minSceneDuration?: number;
+  /** Maximum scene duration in seconds */
+  maxSceneDuration?: number;
+  /** Whether to prioritize scene boundaries over exact beat timing */
+  prioritizeSceneBoundaries?: boolean;
+  /** Energy threshold for determining transition types (0-1) */
+  energyThreshold?: {
+    low: number;
+    medium: number;
+    high: number;
+  };
+  /** Framerate for the output sequence */
+  framerate?: number;
+}
+
+/**
+ * Interface representing edit decision engine options
+ */
 export interface EditDecisionEngineOptions {
   /**
    * Minimum edit duration in seconds
@@ -206,6 +294,9 @@ export interface EditDecisionEngineOptions {
   [key: string]: unknown;
 }
 
+/**
+ * Events emitted by the EditDecisionEngine
+ */
 export enum EditDecisionEngineEvents {
   PROGRESS = 'progress',
   COMPLETE = 'complete',
@@ -215,6 +306,9 @@ export enum EditDecisionEngineEvents {
   EDIT_UPDATED = 'editUpdated'
 }
 
+/**
+ * Result of the edit decision generation process
+ */
 export interface EditDecisionEngineResult {
   /**
    * Generated edit decision list
@@ -236,3 +330,22 @@ export interface EditDecisionEngineResult {
    */
   videoAnalyses: VideoAnalysis[];
 }
+
+/**
+ * Represents a point on the timeline for visualization
+ */
+export interface TimelinePoint {
+  /** Time in seconds */
+  time: number;
+  /** Type of point */
+  type: 'beat' | 'scene' | 'cut';
+  /** Source video ID for scene and cut points */
+  sourceId?: string;
+  /** Energy level at this point (0-1) */
+  energy?: number;
+}
+
+/**
+ * Default export for backward compatibility
+ */
+export default EditDecision;

@@ -10,27 +10,21 @@ import { ProjectState } from './ProjectState';
 
 /**
  * Enum for different application steps
+ * Note: This should be aligned with WorkflowStep enum
  */
 export enum ApplicationStep {
   WELCOME = 'welcome',
   INPUT = 'input',
   ANALYZING = 'analyzing',
-  EDITING = 'editing',
+  EDIT = 'edit',
   PREVIEW = 'preview',
   EXPORT = 'export'
 }
 
 /**
- * Enum for different workflow steps
+ * Import the WorkflowStep enum from the workflow types
  */
-export enum WorkflowStep {
-  WELCOME = 'welcome',
-  INPUT = 'input',
-  ANALYSIS = 'analysis',
-  EDITING = 'editing',
-  PREVIEW = 'preview',
-  EXPORT = 'export'
-}
+import { WorkflowStep } from './workflow-types';
 
 /**
  * Enum for different modal types

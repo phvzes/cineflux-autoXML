@@ -162,7 +162,7 @@ const canAccessRoute = (
     case WorkflowStep.ANALYSIS:
       return true; // Accessible if we have a music file (would be checked in component)
     case WorkflowStep.EDIT:
-    case WorkflowStep.EDITING:
+    case WorkflowStep.EDIT:
       return hasAnalysisResults; // Need analysis results
     case WorkflowStep.EXPORT:
       return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
@@ -178,7 +178,7 @@ const getNextRoute = (currentStep: WorkflowStep): WorkflowStep => {
     case WorkflowStep.ANALYSIS:
       return WorkflowStep.EDIT;
     case WorkflowStep.EDIT:
-    case WorkflowStep.EDITING:
+    case WorkflowStep.EDIT:
       return WorkflowStep.EXPORT;
     case WorkflowStep.EXPORT:
     default:
@@ -193,7 +193,7 @@ const getPreviousRoute = (currentStep: WorkflowStep): WorkflowStep | null => {
     case WorkflowStep.ANALYSIS:
       return WorkflowStep.INPUT;
     case WorkflowStep.EDIT:
-    case WorkflowStep.EDITING:
+    case WorkflowStep.EDIT:
       return WorkflowStep.ANALYSIS;
     case WorkflowStep.EXPORT:
       return WorkflowStep.EDIT;
