@@ -1,3 +1,4 @@
+
 // src/services/AudioService.ts
 import { 
   AudioAnalysis, 
@@ -22,7 +23,167 @@ export class AudioProcessingError extends Error {
 /**
  * Service for audio analysis and processing
  */
-class AudioService {
+export class AudioService {
+  // Singleton instance
+  private static instance: AudioService;
+
+  /**
+   * Private constructor to prevent direct instantiation
+   */
+  private constructor() {}
+
+  /**
+   * Get the singleton instance of AudioService
+   * @returns The AudioService instance
+   */
+  public static getInstance(): AudioService {
+    if (!AudioService.instance) {
+      AudioService.instance = new AudioService();
+    }
+    return AudioService.instance;
+  }
+
+  /**
+   * Load an audio file and return an AudioBuffer
+   * @param source Audio file or URL to load
+   * @param progressCallback Optional callback for loading progress
+   * @returns Promise resolving to an AudioBuffer
+   */
+  async loadAudio(
+    source: File | string,
+    progressCallback?: (progress: number, step: string) => void
+  ): Promise<AudioBuffer> {
+    return AudioService.loadAudio(source, progressCallback);
+  }
+
+  /**
+   * Analyze an audio file to detect beats, segments, and energy levels
+   * @param audioFile The audio file to analyze
+   * @param progressCallback Callback function to report progress
+   * @returns Promise resolving to the analysis results
+   */
+  async analyzeAudio(
+    audioFile: File,
+    progressCallback?: (progress: number, step: string) => void
+  ): Promise<AudioAnalysis> {
+    return AudioService.analyzeAudio(audioFile, progressCallback || ((progress, step) => {}));
+  }
+
+  /**
+   * Extract waveform data from an audio buffer
+   * @param audioBuffer The audio buffer to analyze
+   * @param progressCallback Optional callback for progress updates
+   * @returns Promise resolving to waveform data
+   */
+  async extractWaveform(
+    audioBuffer: AudioBuffer,
+    progressCallback?: (progress: number) => void
+  ): Promise<Waveform> {
+    return AudioService.extractWaveform(audioBuffer, progressCallback);
+  }
+
+  /**
+   * Detect beats in an audio file
+   * @param audioFile The audio file to analyze
+   * @param progressCallback Optional callback for progress updates
+   * @returns Promise resolving to beat analysis data
+   */
+  async detectBeats(
+    audioFile: File,
+    progressCallback?: (progress: number, step?: string) => void
+  ): Promise<BeatAnalysis> {
+    // First load the audio file to get the AudioBuffer
+    const audioBuffer = await this.loadAudio(audioFile, 
+      progressCallback ? (progress, step) => progressCallback(progress * 0.5, step) : undefined);
+    
+    // Then detect beats from the buffer
+    const result = await AudioService.detectBeats(audioBuffer, 
+      progressCallback ? (progress) => progressCallback(50 + progress * 0.5) : undefined);
+    
+    return result;
+  }
+
+  /**
+   * Analyze energy levels in an audio file
+   * @param audioFile The audio file to analyze
+   * @param progressCallback Optional callback for progress updates
+   * @returns Promise resolving to energy analysis data
+   */
+  async analyzeEnergy(
+    audioFile: File,
+    progressCallback?: (progress: number, step?: string) => void
+  ): Promise<EnergyAnalysis> {
+    // First load the audio file to get the AudioBuffer
+    const audioBuffer = await this.loadAudio(audioFile, 
+      progressCallback ? (progress, step) => progressCallback(progress * 0.5, step) : undefined);
+    
+    // Then analyze energy from the buffer
+    const result = await AudioService.analyzeEnergy(audioBuffer, 
+      progressCallback ? (progress) => progressCallback(50 + progress * 0.5) : undefined);
+    
+    return result;
+  }
+
+  /**
+   * Generate waveform visualization for an audio file
+   * @param audioFile The audio file to visualize
+   * @param options Optional parameters for waveform generation
+   * @returns Promise resolving to waveform data
+   */
+  async generateWaveform(
+    audioFile: File,
+    options?: { width?: number; height?: number }
+  ): Promise<number[]> {
+    const width = options?.width || 800;
+    const height = options?.height || 200;
+    return AudioService.createWaveform(audioFile, width, height);
+  }
+
+  /**
+   * Estimate tempo from beat data
+   * @param beats Array of detected beats
+   * @param duration Duration of the audio in seconds
+   * @returns Promise resolving to tempo information
+   */
+  async estimateTempo(beats: Beat[], duration: number): Promise<Tempo> {
+    return AudioService.estimateTempo(beats, duration);
+  }
+
+  /**
+   * Detect sections in the audio based on energy and beat analysis
+   * @param energyAnalysis Energy analysis data
+   * @param beatAnalysis Beat analysis data
+   * @param duration Duration of the audio in seconds
+   * @returns Promise resolving to section analysis data
+   */
+  async detectSections(
+    energyAnalysis: EnergyAnalysis,
+    beatAnalysis: BeatAnalysis,
+    duration: number
+  ): Promise<any> {
+    return AudioService.detectSections(energyAnalysis, beatAnalysis, duration);
+  }
+
+  /**
+   * Extract the BPM (beats per minute) from an audio file
+   * @param audioFile The audio file to analyze
+   * @returns Promise resolving to the BPM and beat times
+   */
+  async extractBPM(audioFile: File): Promise<{ bpm: number; beats: number[] }> {
+    return AudioService.extractBPM(audioFile);
+  }
+
+  /**
+   * Create a waveform visualization for an audio file
+   * @param audioFile The audio file to visualize
+   * @param width The width of the visualization in pixels
+   * @param height The height of the visualization in pixels
+   * @returns Promise resolving to an array of amplitude values
+   */
+  async createWaveform(audioFile: File, width: number, height: number): Promise<number[]> {
+    return AudioService.createWaveform(audioFile, width, height);
+  }
+
   /**
    * Load an audio file and return an AudioBuffer
    * @param source Audio file or URL to load
@@ -830,4 +991,5 @@ class AudioService {
   }
 }
 
-export default AudioService;
+// Export the singleton instance
+export const audioService = AudioService.getInstance();

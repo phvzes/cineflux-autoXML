@@ -1,272 +1,240 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Video, Upload, Loader } from 'lucide-react';
-import VideoService, { VideoProcessingResult } from '../services/VideoService';
-import VideoAnalysisVisualizer from '../components/video/VideoAnalysisVisualizer';
 
-/**
- * Test page for video processing functionality
- */
+import React, { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { VideoService, VideoServiceEvents, VideoChunkProgress } from '../services/VideoService';
+import { useNotification } from '../contexts/NotificationContext';
+import ProcessingProgress from '../components/common/ProcessingProgress';
+import { mapVideoProgressToProps } from '../constants/processingStages';
+import { Upload, FileVideo, Database } from 'lucide-react';
+
 const VideoProcessingTest: React.FC = () => {
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStep, setProcessingStep] = useState('');
-  const [processingResult, setProcessingResult] = useState<VideoProcessingResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const videoUrlRef = useRef<string | null>(null);
-  
-  // Handle file drop
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'video/*': ['.mp4', '.webm', '.mov', '.avi']
-    },
-    maxFiles: 1,
-    onDrop: (acceptedFiles) => {
-      if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0];
-        setVideoFile(file);
-        
-        // Create object URL for the video
-        if (videoUrlRef.current) {
-          URL.revokeObjectURL(videoUrlRef.current);
-        }
-        videoUrlRef.current = URL.createObjectURL(file);
-        
-        // Reset state
-        setProcessingResult(null);
-        setError(null);
-        setIsProcessing(false);
-        setProcessingProgress(0);
-        setProcessingStep('');
-        setCurrentTime(0);
-        setIsPlaying(false);
-      }
-    }
-  });
-  
-  // Clean up object URL when component unmounts
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [chunkProgress, setChunkProgress] = useState<VideoChunkProgress | null>(null);
+  const { showNotification } = useNotification();
+
+  // Clean up event listeners when component unmounts
   useEffect(() => {
+    const videoService = VideoService.getInstance();
+    
     return () => {
-      if (videoUrlRef.current) {
-        URL.revokeObjectURL(videoUrlRef.current);
-      }
+      videoService.removeAllListeners();
     };
   }, []);
-  
-  // Handle video processing
-  const processVideo = async () => {
-    if (!videoFile) return;
-    
-    setIsProcessing(true);
-    setProcessingProgress(0);
-    setProcessingStep('Initializing...');
-    setError(null);
-    
+
+  // Handle file upload and processing
+  const handleVideoUpload = useCallback(async (videoFile: File) => {
     try {
-      const result = await VideoService.processVideo(videoFile, {
-        framesPerSecond: 1,
-        sceneThreshold: 0.4,
-        maxFrames: 300,
-        thumbnailWidth: 320,
-        thumbnailHeight: 180,
-        onProgress: (progress, step) => {
-          setProcessingProgress(progress);
-          setProcessingStep(step);
-        }
-      });
-      
-      setProcessingResult(result);
+      setFile(videoFile);
+      setIsProcessing(true);
+      setProcessingProgress(0);
+      setProcessingStep('Starting video analysis...');
+      setProcessingError(null);
+      setIsComplete(false);
+      setAnalysisResult(null);
+      setChunkProgress(null);
+
+      const videoService = VideoService.getInstance();
+
+      // Set up event listeners for progress updates
+      const handleProgress = ({ message, progress, stage }: { 
+        message: string; 
+        progress: number;
+        stage?: string;
+      }) => {
+        setProcessingProgress(Math.round(progress * 100));
+        setProcessingStep(message);
+      };
+
+      const handleChunkProgress = (progress: VideoChunkProgress) => {
+        setChunkProgress(progress);
+      };
+
+      const handleComplete = (result: any) => {
+        setIsProcessing(false);
+        setProcessingProgress(100);
+        setProcessingStep('Analysis complete');
+        setIsComplete(true);
+        setAnalysisResult(result);
+
+        videoService.off(VideoServiceEvents.PROGRESS, handleProgress);
+        videoService.off(VideoServiceEvents.CHUNK_PROGRESS, handleChunkProgress);
+        videoService.off(VideoServiceEvents.ANALYSIS_COMPLETE, handleComplete);
+        videoService.off(VideoServiceEvents.ERROR, handleError);
+
+        showNotification('success', 'Video analysis completed successfully!');
+      };
+
+      const handleError = (error: Error) => {
+        setIsProcessing(false);
+        setProcessingError(error.message);
+
+        videoService.off(VideoServiceEvents.PROGRESS, handleProgress);
+        videoService.off(VideoServiceEvents.CHUNK_PROGRESS, handleChunkProgress);
+        videoService.off(VideoServiceEvents.ANALYSIS_COMPLETE, handleComplete);
+        videoService.off(VideoServiceEvents.ERROR, handleError);
+
+        showNotification('error', `Video analysis failed: ${error.message}`, {
+          actionLabel: 'Retry',
+          onAction: () => handleVideoUpload(videoFile),
+        });
+      };
+
+      videoService.on(VideoServiceEvents.PROGRESS, handleProgress);
+      videoService.on(VideoServiceEvents.CHUNK_PROGRESS, handleChunkProgress);
+      videoService.on(VideoServiceEvents.ANALYSIS_COMPLETE, handleComplete);
+      videoService.on(VideoServiceEvents.ERROR, handleError);
+
+      // Start video analysis
+      await videoService.analyzeVideo(videoFile);
     } catch (error) {
-      console.error('Error processing video:', error);
-      setError(`Failed to process video: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
+      console.error('Error setting up video processing:', error);
       setIsProcessing(false);
-    }
-  };
-  
-  // Handle play/pause toggle
-  const handlePlayPauseToggle = () => {
-    if (!videoRef.current) return;
-    
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play().catch(error => {
-        console.error('Playback failed:', error);
+      setProcessingError(`Error setting up video processing: ${error.message}`);
+      
+      showNotification('error', `Error setting up video processing: ${error.message}`, {
+        actionLabel: 'Retry',
+        onAction: () => handleVideoUpload(videoFile),
       });
     }
-    
-    setIsPlaying(!isPlaying);
+  }, [showNotification]);
+
+  // Dropzone setup for file uploads
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0) return;
+      const videoFile = acceptedFiles[0];
+      handleVideoUpload(videoFile);
+    },
+    [handleVideoUpload]
+  );
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'video/*': [],
+    },
+    disabled: isProcessing,
+    multiple: false,
+  });
+
+  // Handle retry
+  const handleRetry = () => {
+    if (file) {
+      handleVideoUpload(file);
+    }
   };
-  
-  // Handle seeking
-  const handleSeek = (timeInSeconds: number) => {
-    if (!videoRef.current) return;
-    
-    videoRef.current.currentTime = timeInSeconds;
-    setCurrentTime(timeInSeconds);
+
+  // Handle clear cache
+  const handleClearCache = () => {
+    const videoService = VideoService.getInstance();
+    videoService.clearCache();
+    showNotification('info', 'Processing cache cleared');
   };
-  
-  // Update current time during playback
-  const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    
-    setCurrentTime(videoRef.current.currentTime);
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
-  
-  // Handle video ended
-  const handleEnded = () => {
-    setIsPlaying(false);
-  };
-  
+
   return (
-    <div className="video-processing-test p-6">
-      <h1 className="text-2xl font-bold mb-6">Video Processing Test</h1>
-      
-      <p className="mb-6">
-        This page demonstrates the video processing functionality using FFmpeg.wasm.
-        You can upload a video file to extract frames, detect scenes, and generate thumbnails.
-      </p>
-      
-      {/* Video upload area */}
-      {!videoFile && (
-        <div 
-          {...getRootProps()} 
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 mb-6 ${
-            isDragActive ? 'border-[#FF7A45] bg-[#FF7A45]/10' : 'border-[#3A3A40] hover:border-[#FF7A45]/50'
+    <div className="video-processing-test p-6 bg-[#1A1A1F] min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-[#F5F5F7]">Video Processing Test</h1>
+          <button
+            onClick={handleClearCache}
+            className="flex items-center px-3 py-2 bg-[#2A2A30] text-[#F5F5F7] rounded hover:bg-[#3A3A3F] transition-colors"
+          >
+            <Database className="mr-2" size={16} />
+            Clear Cache
+          </button>
+        </div>
+
+        {/* File upload dropzone */}
+        <div
+          {...getRootProps()}
+          className={`dropzone border-2 border-dashed rounded-lg p-8 mb-6 text-center cursor-pointer transition-colors ${
+            isDragActive ? 'border-[#FF7A45] bg-[#2A2A30]' : 'border-[#3A3A3F] hover:border-[#FF7A45]'
+          } ${
+            isProcessing ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
           <input {...getInputProps()} />
-          <Upload className="mx-auto mb-4 text-[#FF7A45]" size={48} />
-          <p className="text-lg mb-2">Drag & drop a video file here, or click to select</p>
-          <p className="text-sm text-[#B0B0B5]">
-            Supported formats: MP4, WebM, MOV, AVI
+          <Upload className="mx-auto text-[#FF7A45] mb-3" size={40} />
+          <p className="text-[#F5F5F7] mb-2">
+            {isDragActive
+              ? 'Drop the video file here...'
+              : 'Drag & drop a video file here, or click to select a file'}
+          </p>
+          <p className="text-[#A0A0A7] text-sm">
+            Supported formats: MP4, MOV (max 500MB)
           </p>
         </div>
-      )}
-      
-      {/* Video preview */}
-      {videoFile && videoUrlRef.current && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Video Preview</h2>
-            
-            {!isProcessing && !processingResult && (
-              <button
-                className="px-4 py-2 bg-[#FF7A45] hover:bg-[#FF8C5A] text-white rounded-md flex items-center"
-                onClick={processVideo}
-              >
-                <Video className="mr-2" size={16} />
-                Process Video
-              </button>
-            )}
-          </div>
-          
-          <div className="bg-[#1E1E24] p-4 rounded-lg">
-            <video
-              ref={videoRef}
-              src={videoUrlRef.current}
-              className="w-full max-h-[400px] rounded-md"
-              controls={!processingResult} // Hide controls when using our custom UI
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleEnded}
-            />
-            
-            <div className="mt-4">
-              <p className="font-medium">{videoFile.name}</p>
-              <p className="text-sm text-[#B0B0B5]">
-                {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+
+        {/* Processing status section */}
+        {file && (
+          <div className="video-status bg-[#2A2A30] p-6 rounded-lg mb-6">
+            <div className="flex items-center mb-4">
+              <FileVideo className="text-[#FF7A45] mr-2" size={24} />
+              <h3 className="text-lg font-medium text-[#F5F5F7]">Video Processing</h3>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-[#F5F5F7] text-sm mb-1">File: {file.name}</p>
+              <p className="text-[#A0A0A7] text-xs">
+                {formatFileSize(file.size)}
               </p>
             </div>
+
+            <ProcessingProgress
+              {...mapVideoProgressToProps(
+                processingProgress / 100, // Convert to 0-1 range
+                processingStep,
+                processingError,
+                isComplete
+              )}
+              onRetry={handleRetry}
+            />
+
+            {/* Chunk progress indicator (only shown for large files) */}
+            {chunkProgress && (
+              <div className="mt-4 p-4 bg-[#1A1A1F] rounded-md">
+                <h4 className="text-sm font-medium text-[#F5F5F7] mb-2">Chunk Processing</h4>
+                <div className="flex justify-between text-xs text-[#A0A0A7] mb-1">
+                  <span>Chunk {chunkProgress.chunkIndex + 1} of {chunkProgress.chunksTotal}</span>
+                  <span>{formatFileSize(chunkProgress.bytesLoaded)} / {formatFileSize(chunkProgress.bytesTotal)}</span>
+                </div>
+                <div className="w-full bg-[#2A2A30] rounded-full h-2 mb-2">
+                  <div 
+                    className="bg-[#4299E1] h-2 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${chunkProgress.percentage}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-[#A0A0A7]">
+                  Processing stage: {chunkProgress.stage}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-      
-      {/* Processing progress */}
-      {isProcessing && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">Processing Video</h2>
-          
-          <div className="bg-[#1E1E24] p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <Loader className="mr-2 text-[#FF7A45] animate-spin" size={20} />
-              <p className="text-[#F5F5F7]">{processingStep}</p>
-            </div>
-            
-            <div className="w-full bg-[#2A2A30] rounded-full h-4 mb-2">
-              <div 
-                className="bg-[#FF7A45] h-4 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${processingProgress}%` }}
-              ></div>
-            </div>
-            
-            <p className="text-right text-sm text-[#B0B0B5]">
-              {processingProgress.toFixed(0)}%
-            </p>
+        )}
+
+        {/* Analysis results */}
+        {analysisResult && (
+          <div className="analysis-results bg-[#2A2A30] p-6 rounded-lg">
+            <h3 className="text-lg font-medium text-[#F5F5F7] mb-4">Analysis Results</h3>
+            <pre className="bg-[#1A1A1F] p-4 rounded overflow-auto text-[#A0A0A7] text-sm">
+              {JSON.stringify(analysisResult, null, 2)}
+            </pre>
           </div>
-        </div>
-      )}
-      
-      {/* Error message */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded-lg">
-          <p className="text-red-500">{error}</p>
-        </div>
-      )}
-      
-      {/* Processing results */}
-      {processingResult && videoFile && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">Video Analysis Results</h2>
-          
-          <VideoAnalysisVisualizer
-            videoFile={videoFile}
-            thumbnails={processingResult.thumbnails}
-            sceneBoundaries={processingResult.scenes.map(scene => scene.startTime)}
-            duration={processingResult.metadata.duration}
-            onSeek={handleSeek}
-            currentTime={currentTime}
-            isPlaying={isPlaying}
-            onPlayPauseToggle={handlePlayPauseToggle}
-          />
-        </div>
-      )}
-      
-      {/* How it works section */}
-      <div className="mt-12">
-        <h2 className="text-xl font-semibold mb-4">How It Works</h2>
-        
-        <div className="bg-[#1E1E24] p-6 rounded-lg">
-          <p className="mb-4">
-            The video processing functionality is implemented using FFmpeg.wasm, which brings the power of FFmpeg to the browser through WebAssembly.
-          </p>
-          
-          <h3 className="text-lg font-medium mb-2">Processing Steps:</h3>
-          <ol className="list-decimal list-inside space-y-2 mb-6">
-            <li>The video file is loaded and processed using FFmpeg.wasm</li>
-            <li>Frames are extracted at regular intervals (1 frame per second by default)</li>
-            <li>Scene changes are detected using FFmpeg's scene detection filter</li>
-            <li>Thumbnails are generated from the extracted frames</li>
-            <li>The results are displayed in the visualization component</li>
-          </ol>
-          
-          <h3 className="text-lg font-medium mb-2">Features:</h3>
-          <ul className="list-disc list-inside space-y-2">
-            <li>Frame extraction at customizable intervals</li>
-            <li>Scene detection with adjustable threshold</li>
-            <li>Thumbnail generation for visual preview</li>
-            <li>Interactive timeline with scene markers</li>
-            <li>Progress tracking during processing</li>
-            <li>Error handling for robust operation</li>
-          </ul>
-        </div>
+        )}
       </div>
     </div>
   );

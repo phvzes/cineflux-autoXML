@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import AudioService from '../../services/AudioService';
+import { AudioService, audioService } from '../../services/AudioService';
 import WaveformVisualizer from './WaveformVisualizer';
 import AudioProcessingProgress from './AudioProcessingProgress';
 import { Beat, AudioAnalysis } from '../../types/AudioAnalysis';
@@ -176,7 +176,7 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
       setIsProcessingComplete(false);
       
       // Analyze the audio file
-      const analysis = await AudioService.analyzeAudio(file, (progress, step) => {
+      const analysis = await audioService.analyzeAudio(file, (progress, step) => {
         setProgress(progress);
         setProcessingStep(step);
       });
@@ -194,7 +194,7 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
       setWaveformData(analysis.waveform.data);
       
       // Load the audio buffer for visualization
-      const buffer = await AudioService.loadAudio(file);
+      const buffer = await audioService.loadAudio(file);
       setAudioBuffer(buffer);
       
       setIsProcessingComplete(true);

@@ -1,12 +1,84 @@
+
 // src/services/PreviewGenerator.ts
 
 /**
  * Service for generating preview frames and videos
  */
 class PreviewGenerator {
+  // Singleton instance
+  private static instance: PreviewGenerator;
+
   // Cache for preview frames
   private static frameCache: Record<string, string> = {};
   
+  /**
+   * Private constructor to prevent direct instantiation
+   */
+  private constructor() {}
+
+  /**
+   * Get the singleton instance of PreviewGenerator
+   * @returns The PreviewGenerator instance
+   */
+  public static getInstance(): PreviewGenerator {
+    if (!PreviewGenerator.instance) {
+      PreviewGenerator.instance = new PreviewGenerator();
+    }
+    return PreviewGenerator.instance;
+  }
+
+  /**
+   * Generate a preview frame for a specific edit decision
+   * @param videoFile The video file
+   * @param timeInSeconds The time to extract the frame from
+   * @returns Promise resolving to a data URL of the frame
+   */
+  async generatePreviewFrame(videoFile: File, timeInSeconds: number): Promise<string> {
+    return PreviewGenerator.generatePreviewFrame(videoFile, timeInSeconds);
+  }
+  
+  /**
+   * Generate a preview video for a sequence of edit decisions
+   * @param editDecisions The edit decisions to preview
+   * @param videoFiles The video files
+   * @param audioFile The audio file
+   * @returns Promise resolving to a data URL of the preview video
+   */
+  async generatePreviewVideo(
+    editDecisions: any[],
+    videoFiles: Record<string, File>,
+    audioFile: File | null
+  ): Promise<string> {
+    /**
+     * INTEGRATION POINT: PreviewGenerator -> EditDecisionEngine
+     * 
+     * This method represents a key integration point between PreviewGenerator and EditDecisionEngine.
+     * The flow is:
+     * 
+     * 1. EditDecisionEngine generates edit decisions based on audio and video analysis
+     * 2. These decisions are passed to PreviewGenerator.generatePreviewVideo()
+     * 3. PreviewGenerator uses the decisions to create a preview of the final edit
+     * 4. The preview allows users to see the results of the automated editing before export
+     * 
+     * This integration is critical for the user experience, as it provides visual feedback
+     * on how the EditDecisionEngine has matched video clips to audio elements.
+     * 
+     * In a real implementation, this would use a video processing library to:
+     * - Extract segments from each video file based on the edit decisions
+     * - Apply transitions between clips as specified in the decisions
+     * - Combine the segments with the audio track
+     * - Generate a preview video file or stream
+     */
+    return PreviewGenerator.generatePreviewVideo(editDecisions, videoFiles, audioFile);
+  }
+  
+  /**
+   * Clear the preview cache
+   */
+  clearCache(): void {
+    PreviewGenerator.clearCache();
+  }
+
   /**
    * Generate a preview frame for a specific edit decision
    * @param videoFile The video file
@@ -67,4 +139,8 @@ class PreviewGenerator {
   }
 }
 
+// Export the class
 export default PreviewGenerator;
+
+// Export the singleton instance
+export const previewGenerator = PreviewGenerator.getInstance();
