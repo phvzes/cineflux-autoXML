@@ -5,19 +5,20 @@ import {
   Beat, 
   BeatAnalysis, 
   Tempo, 
-  Waveform, 
+  WaveformData as Waveform, 
   EnergyAnalysis, 
   EnergySample,
-  Section,
+  AudioSegment as Section,
   SectionAnalysis
-} from '../types/AudioAnalysis';
+} from '../types/audio-types';
 import {
   AudioProcessingOptions,
   BeatDetectionOptions,
   EnergyAnalysisOptions,
   WaveformOptions,
-  AudioProcessingProgressCallback
-} from '../types/media-processing';
+  AudioProcessingProgressCallback,
+  AudioProcessingWasmModule
+} from '../types/media-processing.d';
 
 /**
  * Error class for audio processing errors
@@ -77,7 +78,7 @@ export class AudioService {
     options?: AudioProcessingOptions,
     progressCallback?: AudioProcessingProgressCallback
   ): Promise<AudioAnalysis> {
-    return AudioService.analyzeAudio(audioFile, progressCallback || ((progress, step) => {}));
+    return AudioService.analyzeAudio(audioFile, progressCallback || ((progress: number, step?: string) => {}), options);
   }
 
   /**
@@ -92,7 +93,7 @@ export class AudioService {
     options?: WaveformOptions,
     progressCallback?: (progress: number) => void
   ): Promise<Waveform> {
-    return AudioService.extractWaveform(audioBuffer, progressCallback);
+    return AudioService.extractWaveform(audioBuffer, progressCallback, options);
   }
 
   /**
@@ -109,11 +110,11 @@ export class AudioService {
   ): Promise<BeatAnalysis> {
     // First load the audio file to get the AudioBuffer
     const audioBuffer = await this.loadAudio(audioFile, 
-      progressCallback ? (progress, step) => progressCallback(progress * 0.5, step) : undefined);
+      progressCallback ? (progress: number, step?: string) => progressCallback(progress * 0.5, step) : undefined);
     
     // Then detect beats from the buffer
     const result = await AudioService.detectBeats(audioBuffer, 
-      progressCallback ? (progress) => progressCallback(50 + progress * 0.5) : undefined);
+      progressCallback ? (progress: number) => progressCallback(50 + progress * 0.5) : undefined, options);
     
     return result;
   }
@@ -132,11 +133,11 @@ export class AudioService {
   ): Promise<EnergyAnalysis> {
     // First load the audio file to get the AudioBuffer
     const audioBuffer = await this.loadAudio(audioFile, 
-      progressCallback ? (progress, step) => progressCallback(progress * 0.5, step) : undefined);
+      progressCallback ? (progress: number, step?: string) => progressCallback(progress * 0.5, step) : undefined);
     
     // Then analyze energy from the buffer
     const result = await AudioService.analyzeEnergy(audioBuffer, 
-      progressCallback ? (progress) => progressCallback(50 + progress * 0.5) : undefined);
+      progressCallback ? (progress: number) => progressCallback(50 + progress * 0.5) : undefined, options);
     
     return result;
   }
@@ -326,7 +327,7 @@ export class AudioService {
     try {
       // Load the audio file
       progressCallback(0, 'Loading audio file...');
-      const audioBuffer = await this.loadAudio(audioFile, (progress, step) => {
+      const audioBuffer = await this.loadAudio(audioFile, (progress: number, step?: string) => {
         // Map the loading progress to 0-30% of the total progress
         progressCallback(Math.floor(progress * 0.3), step);
       });
@@ -334,21 +335,21 @@ export class AudioService {
       progressCallback(30, 'Analyzing audio...');
       
       // Extract waveform data
-      const waveform = await this.extractWaveform(audioBuffer, (progress) => {
+      const waveform = await this.extractWaveform(audioBuffer, (progress: number) => {
         // Map waveform extraction to 30-40% of total progress
         progressCallback(30 + Math.floor(progress * 0.1), 'Extracting waveform...');
       });
       
       // Detect beats
       progressCallback(40, 'Detecting beats...');
-      const beatAnalysis = await this.detectBeats(audioBuffer, (progress) => {
+      const beatAnalysis = await this.detectBeats(audioBuffer, (progress: number) => {
         // Map beat detection to 40-60% of total progress
         progressCallback(40 + Math.floor(progress * 0.2), 'Detecting beats...');
       });
       
       // Analyze energy levels
       progressCallback(60, 'Analyzing energy levels...');
-      const energyAnalysis = await this.analyzeEnergy(audioBuffer, (progress) => {
+      const energyAnalysis = await this.analyzeEnergy(audioBuffer, (progress: number) => {
         // Map energy analysis to 60-80% of total progress
         progressCallback(60 + Math.floor(progress * 0.2), 'Analyzing energy levels...');
       });
@@ -365,15 +366,23 @@ export class AudioService {
       
       // Return the complete analysis
       return {
+        id: `audio-${Date.now()}`,
+        duration: audioBuffer.duration,
+        sampleRate: audioBuffer.sampleRate,
+        channels: audioBuffer.numberOfChannels,
+        beats: beatAnalysis.beats,
+        tempo: tempo.bpm,
+        segments: sections.sections as unknown as AudioSegment[],
+        energyPoints: energyAnalysis.samples,
+        averageEnergy: energyAnalysis.averageEnergy,
+        waveform,
         metadata: {
           title: audioFile.name,
           duration: audioBuffer.duration,
           format: audioFile.type.split('/')[1] || 'unknown',
           analyzedAt: new Date()
         },
-        waveform,
-        beats: beatAnalysis,
-        tempo,
+        beatAnalysis,
         energy: energyAnalysis,
         sections
       };
@@ -457,10 +466,10 @@ export class AudioService {
     progressCallback?.(100);
     
     return {
+      data,
       duration,
       sampleRate,
       channels,
-      data,
       maxAmplitude,
       minAmplitude
     };
@@ -493,12 +502,12 @@ export class AudioService {
     const beats: Beat[] = [];
     
     // Calculate the energy threshold multiplier (adjust sensitivity)
-    const energyThreshold = 1.5;
-    const minEnergyThreshold = 0.01;
+    const energyThreshold = options?.energyThreshold || 1.5;
+    const minEnergyThreshold = options?.minEnergyThreshold || 0.01;
     
     // Initialize variables for beat detection
     let recentEnergy: number[] = [];
-    const recentEnergyMax = 30; // Number of recent energy values to consider
+    const recentEnergyMax = options?.recentEnergyWindow || 30; // Number of recent energy values to consider
     
     // Process each window
     for (let i = 0; i < numWindows; i++) {
@@ -574,7 +583,7 @@ export class AudioService {
     const sampleRate = audioBuffer.sampleRate;
     
     // Calculate the window size (100ms)
-    const windowSize = Math.floor(sampleRate * 0.1);
+    const windowSize = Math.floor(sampleRate * (options?.windowSize || 0.1));
     
     // Calculate the number of windows
     const numWindows = Math.floor(audioBuffer.length / windowSize);
@@ -615,7 +624,7 @@ export class AudioService {
       const time = (i * windowSize) / sampleRate;
       
       // Add to samples array
-      samples.push({ time, level: windowEnergy });
+      samples.push({ time, level: windowEnergy, value: windowEnergy });
       
       // Update total energy
       totalEnergy += windowEnergy;
@@ -630,14 +639,12 @@ export class AudioService {
     // Calculate average energy
     const averageEnergy = totalEnergy / numWindows;
     
-    // Normalize energy levels to 0-1 range
-    if (peakEnergy > 0) {
+    // Normalize energy levels to 0-1 range if requested
+    if (options?.normalize !== false && peakEnergy > 0) {
       for (const sample of samples) {
         sample.level = sample.level / peakEnergy;
+        sample.value = sample.value / peakEnergy;
       }
-      
-      // Also normalize average energy
-      averageEnergy / peakEnergy;
     }
     
     // Final progress update
@@ -645,9 +652,11 @@ export class AudioService {
     
     return {
       samples,
-      averageEnergy,
+      energyPoints: samples,
+      averageEnergy: options?.normalize !== false && peakEnergy > 0 ? averageEnergy / peakEnergy : averageEnergy,
       peakEnergy,
-      peakEnergyTime
+      peakEnergyTime,
+      dynamicRange: peakEnergy - Math.min(...samples.map(s => s.level))
     };
   }
   
@@ -788,7 +797,7 @@ export class AudioService {
     // In a real app, you would use more sophisticated algorithms
     
     // Initialize sections array
-    const sections = [];
+    const sections: Section[] = [];
     
     // If we don't have enough energy samples, return a single section
     if (energyAnalysis.samples.length < 10) {
@@ -796,16 +805,20 @@ export class AudioService {
         sections: [
           {
             start: 0,
+            startTime: 0,
+            endTime: duration,
             duration,
             label: 'Section 1',
-            confidence: 0.5
+            confidence: 0.5,
+            energy: 0.5,
+            type: 'unknown'
           }
         ]
       };
     }
     
     // Calculate energy changes to detect section boundaries
-    const energyChanges = [];
+    const energyChanges: Array<{time: number, change: number}> = [];
     const windowSize = 5; // Number of samples to average
     
     for (let i = windowSize; i < energyAnalysis.samples.length - windowSize; i++) {
@@ -859,9 +872,13 @@ export class AudioService {
       if (sectionDuration >= 5) {
         sections.push({
           start: sectionStart,
+          startTime: sectionStart,
+          endTime: sectionEnd,
           duration: sectionDuration,
           label: `Section ${sections.length + 1}`,
-          confidence: 0.5 + (topChanges[i].change * 0.5) // Higher change = higher confidence
+          confidence: 0.5 + (topChanges[i].change * 0.5), // Higher change = higher confidence
+          energy: 0.5, // Default energy level
+          type: 'unknown'
         });
         
         sectionStart = sectionEnd;
@@ -873,9 +890,13 @@ export class AudioService {
     if (finalDuration >= 5) {
       sections.push({
         start: sectionStart,
+        startTime: sectionStart,
+        endTime: duration,
         duration: finalDuration,
         label: `Section ${sections.length + 1}`,
-        confidence: 0.5
+        confidence: 0.5,
+        energy: 0.5, // Default energy level
+        type: 'unknown'
       });
     }
     

@@ -1,5 +1,5 @@
 
-import EventEmitter from 'events';
+import { EventEmitter } from 'events';
 import { processFileInChunks, shouldUseChunkedProcessing, ChunkProgress } from '../utils/fileChunker';
 import { 
   VideoProcessingOptions, 
@@ -7,7 +7,20 @@ import {
   VideoProcessingProgressCallback,
   VideoProcessingWasmModule
 } from '../types/media-processing';
-import { VideoFile } from '../types/VideoFile';
+import { 
+  VideoFile, 
+  createVideoFile 
+} from '../types/VideoFile';
+import { 
+  MediaDuration, 
+  Resolution 
+} from '../types/FileTypes';
+import {
+  VideoAnalysis,
+  Scene,
+  VideoFrame,
+  ThumbnailOptions
+} from '../types/video-types';
 
 export enum VideoServiceEvents {
   ANALYSIS_START = 'analysis_start',
@@ -15,14 +28,6 @@ export enum VideoServiceEvents {
   CHUNK_PROGRESS = 'chunk_progress',
   ANALYSIS_COMPLETE = 'analysis_complete',
   ERROR = 'error'
-}
-
-export interface VideoAnalysis {
-  duration: number;
-  frameRate: number;
-  resolution: { width: number; height: number };
-  scenes: { startTime: number; endTime: number; keyFrameUrl: string }[];
-  contentAnalysis: { time: number; content: string }[];
 }
 
 export interface VideoProcessingProgress {
@@ -35,20 +40,12 @@ export interface VideoChunkProgress extends ChunkProgress {
   stage: string;
 }
 
-// VideoFile interface is now imported from '../types/VideoFile'
-
-export interface ThumbnailOptions {
-  width?: number;
-  height?: number;
-  quality?: number;
-}
-
 /**
  * Service for processing video files
  * Implements the Singleton pattern
  */
 export class VideoService extends EventEmitter {
-  private static instance: VideoService;
+  private static instance: VideoService | null = null;
   private processingCache: Map<string, VideoAnalysis> = new Map();
   
   private constructor() {
@@ -82,19 +79,34 @@ export class VideoService extends EventEmitter {
         // Set up event handlers
         video.onloadedmetadata = () => {
           // Extract metadata
-          const videoFile: VideoFile = {
-            id: `video-${Date.now()}`,
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            duration: video.duration,
-            resolution: {
-              width: video.videoWidth,
-              height: video.videoHeight
-            },
-            frameRate: 30, // Default, as we can't easily get this from the video element
-            url
+          const duration: MediaDuration = {
+            seconds: video.duration,
+            formatted: this.formatDuration(video.duration)
           };
+          
+          const resolution: Resolution = {
+            width: video.videoWidth,
+            height: video.videoHeight,
+            aspectRatio: video.videoWidth / video.videoHeight
+          };
+          
+          // Create VideoFile object
+          const videoFile = createVideoFile(
+            file,
+            {
+              id: `video-${Date.now()}`,
+              createdAt: new Date(),
+              modifiedAt: new Date(),
+              size: file.size
+            },
+            {
+              frameRate: 30, // Default, as we can't easily get this from the video element
+              hasAudio: true,
+              hasSubtitles: false
+            },
+            resolution,
+            duration
+          );
           
           // Clean up
           URL.revokeObjectURL(url);
@@ -162,7 +174,7 @@ export class VideoService extends EventEmitter {
    * @param options Optional parameters for frame extraction
    * @returns Promise resolving to an array of frame data
    */
-  public async extractFrames(file: File, options?: FrameExtractionOptions): Promise<{ time: number; dataUrl: string }[]> {
+  public async extractFrames(file: File, options?: FrameExtractionOptions): Promise<VideoFrame[]> {
     return new Promise(async (resolve, reject) => {
       try {
         // Default options
@@ -200,7 +212,7 @@ export class VideoService extends EventEmitter {
             canvas.height = video.videoHeight;
             
             // Array to store frames
-            const frames: { time: number; dataUrl: string }[] = [];
+            const frames: VideoFrame[] = [];
             
             // Extract frames
             for (let i = 0; i < frameCount; i++) {
@@ -225,7 +237,12 @@ export class VideoService extends EventEmitter {
               const dataUrl = canvas.toDataURL('image/jpeg', quality);
               
               // Add to frames array
-              frames.push({ time, dataUrl });
+              frames.push({
+                time,
+                dataUrl,
+                width: canvas.width,
+                height: canvas.height
+              });
             }
             
             // Clean up
@@ -399,7 +416,7 @@ export class VideoService extends EventEmitter {
     // Process the file in chunks
     await processFileInChunks(
       videoFile,
-      async (chunk, chunkIndex, chunksTotal) => {
+      async (_chunk, chunkIndex, chunksTotal) => {
         // Determine which processing stage we're in based on chunk index
         let stage = 'loading';
         let baseProgress = 0;
@@ -493,24 +510,63 @@ export class VideoService extends EventEmitter {
    * Create mock video analysis results
    */
   private createMockVideoAnalysis(videoFile: File): VideoAnalysis {
+    const scenes: Scene[] = [
+      { 
+        id: 'scene-1',
+        startTime: 0, 
+        endTime: 15, 
+        duration: 15,
+        keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      },
+      { 
+        id: 'scene-2',
+        startTime: 15, 
+        endTime: 45, 
+        duration: 30,
+        keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      },
+      { 
+        id: 'scene-3',
+        startTime: 45, 
+        endTime: 75, 
+        duration: 30,
+        keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      },
+      { 
+        id: 'scene-4',
+        startTime: 75, 
+        endTime: 105, 
+        duration: 30,
+        keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      },
+      { 
+        id: 'scene-5',
+        startTime: 105, 
+        endTime: 120, 
+        duration: 15,
+        keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      }
+    ];
+
     return {
+      id: `analysis-${Date.now()}`,
       duration: 120, // 2 minutes
       frameRate: 30,
+      width: 1920,
+      height: 1080,
       resolution: { width: 1920, height: 1080 },
-      scenes: [
-        { startTime: 0, endTime: 15, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
-        { startTime: 15, endTime: 45, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
-        { startTime: 45, endTime: 75, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
-        { startTime: 75, endTime: 105, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' },
-        { startTime: 105, endTime: 120, keyFrameUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' }
-      ],
-      contentAnalysis: [
-        { time: 10, content: 'Opening scene' },
-        { time: 30, content: 'Character introduction' },
-        { time: 60, content: 'Main action sequence' },
-        { time: 90, content: 'Resolution' },
-        { time: 115, content: 'Closing scene' }
-      ]
+      scenes,
+      motionData: [],
+      contentAnalysis: {
+        objects: [
+          { label: 'Opening scene', confidence: 0.9, time: 10 },
+          { label: 'Character introduction', confidence: 0.85, time: 30 },
+          { label: 'Main action sequence', confidence: 0.95, time: 60 },
+          { label: 'Resolution', confidence: 0.8, time: 90 },
+          { label: 'Closing scene', confidence: 0.9, time: 115 }
+        ]
+      },
+      videoId: `video-${Date.now()}`
     };
   }
   
@@ -526,6 +582,18 @@ export class VideoService extends EventEmitter {
    */
   private emitEvent(event: VideoServiceEvents, data?: any): void {
     this.emit(event, data);
+  }
+  
+  /**
+   * Format duration in seconds to HH:MM:SS.mmm format
+   */
+  private formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    const milliseconds = Math.floor((seconds % 1) * 1000);
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
   }
   
   /**
