@@ -42,10 +42,10 @@ class EditDecisionEngine {
           id: 'edit-1',
           videoIndex: 0,
           scene: this.videoAnalyses[0].scenes[0],
-          sourceStartTime: 0,
-          sourceEndTime: 10,
-          timelineStartTime: 0,
-          timelineEndTime: 10,
+          sourceStart: 0,
+          sourceEnd: 10,
+          timelineStart: 0,
+          timelineEnd: 10,
           duration: 10,
           enabled: true,
         },
@@ -53,10 +53,10 @@ class EditDecisionEngine {
           id: 'edit-2',
           videoIndex: 0,
           scene: this.videoAnalyses[0].scenes[1],
-          sourceStartTime: 10,
-          sourceEndTime: 20,
-          timelineStartTime: 10,
-          timelineEndTime: 20,
+          sourceStart: 10,
+          sourceEnd: 20,
+          timelineStart: 10,
+          timelineEnd: 20,
           duration: 10,
           transition: { type: TransitionType.CUT, duration: 0 },
           enabled: true,
@@ -65,10 +65,10 @@ class EditDecisionEngine {
           id: 'edit-3',
           videoIndex: 1,
           scene: this.videoAnalyses[1].scenes[0],
-          sourceStartTime: 0,
-          sourceEndTime: 10,
-          timelineStartTime: 20,
-          timelineEndTime: 30,
+          sourceStart: 0,
+          sourceEnd: 10,
+          timelineStart: 20,
+          timelineEnd: 30,
           duration: 10,
           transition: { type: TransitionType.DISSOLVE, duration: 1 },
           enabled: true,
@@ -119,10 +119,10 @@ describe('EditDecisionEngine', () => {
     const firstDecision = result.decisions[0];
     expect(firstDecision.id).toBe('edit-1');
     expect(firstDecision.videoIndex).toBe(0);
-    expect(firstDecision.sourceStartTime).toBe(0);
-    expect(firstDecision.sourceEndTime).toBe(10);
-    expect(firstDecision.timelineStartTime).toBe(0);
-    expect(firstDecision.timelineEndTime).toBe(10);
+    expect(firstDecision.sourceStart).toBe(0);
+    expect(firstDecision.sourceEnd).toBe(10);
+    expect(firstDecision.timelineStart).toBe(0);
+    expect(firstDecision.timelineEnd).toBe(10);
     expect(firstDecision.duration).toBe(10);
     expect(firstDecision.enabled).toBe(true);
     
@@ -176,10 +176,10 @@ describe('EditDecisionEngine', () => {
     expect(isEditDecision(mockDecision)).toBe(true);
     expect(mockDecision.id).toBe('test-decision');
     expect(mockDecision.videoIndex).toBe(0);
-    expect(mockDecision.sourceStartTime).toBe(10);
-    expect(mockDecision.sourceEndTime).toBe(20);
-    expect(mockDecision.timelineStartTime).toBe(30);
-    expect(mockDecision.timelineEndTime).toBe(40);
+    expect(mockDecision.sourceStart).toBe(10);
+    expect(mockDecision.sourceEnd).toBe(20);
+    expect(mockDecision.timelineStart).toBe(30);
+    expect(mockDecision.timelineEnd).toBe(40);
     expect(mockDecision.duration).toBe(10);
     expect(mockDecision.enabled).toBe(true);
     expect(mockDecision.scene).toBeDefined();
@@ -199,10 +199,10 @@ describe('EditDecisionEngine', () => {
     // Verify that each decision has the correct duration
     const decisionDuration = 60 / 5;
     mockList.decisions.forEach((decision, index) => {
-      expect(decision.sourceStartTime).toBe(index * decisionDuration);
-      expect(decision.sourceEndTime).toBe((index + 1) * decisionDuration);
-      expect(decision.timelineStartTime).toBe(index * decisionDuration);
-      expect(decision.timelineEndTime).toBe((index + 1) * decisionDuration);
+      expect(decision.sourceStart).toBe(index * decisionDuration);
+      expect(decision.sourceEnd).toBe((index + 1) * decisionDuration);
+      expect(decision.timelineStart).toBe(index * decisionDuration);
+      expect(decision.timelineEnd).toBe((index + 1) * decisionDuration);
       expect(decision.duration).toBe(decisionDuration);
     });
   });

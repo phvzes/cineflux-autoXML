@@ -198,8 +198,8 @@ describe('AudioService Comprehensive Tests', () => {
       
       const mockSections = {
         sections: Array.from({ length: 3 }, (_, i) => ({
-          startTime: i * 40,
-          endTime: (i + 1) * 40,
+          start: i * 40,
+          end: (i + 1) * 40,
           duration: 40,
           energy: 0.7,
           tempo: 120
@@ -345,8 +345,8 @@ describe('AudioService Comprehensive Tests', () => {
       
       // Verify that each section has the required properties
       result.sections.forEach(section => {
-        expect(section.startTime).toBeGreaterThanOrEqual(0);
-        expect(section.endTime).toBeLessThanOrEqual(120);
+        expect(section.start).toBeGreaterThanOrEqual(0);
+        expect(section.end).toBeLessThanOrEqual(120);
         expect(section.duration).toBeGreaterThan(0);
         expect(section.energy).toBeGreaterThanOrEqual(0);
         expect(section.energy).toBeLessThanOrEqual(1);
@@ -481,8 +481,8 @@ describe('AudioService Comprehensive Tests', () => {
       
       const mockSections = {
         sections: Array.from({ length: 3 }, (_, i) => ({
-          startTime: i * 40,
-          endTime: (i + 1) * 40,
+          start: i * 40,
+          end: (i + 1) * 40,
           duration: 40,
           energy: 0.7,
           tempo: 120
@@ -502,7 +502,7 @@ describe('AudioService Comprehensive Tests', () => {
         sampleRate: 48000,
         channels: 1,
         duration: 60,
-        startTime: 10,
+        start: 10,
         normalize: true,
         windowSize: 2048,
         hopSize: 512,

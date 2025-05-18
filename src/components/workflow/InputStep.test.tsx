@@ -48,7 +48,7 @@ const InputStep = () => {
     
     if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
       setMediaFile(file);
-      setCurrentStep(WorkflowStep.ANALYSIS);
+      setCurrentStep(WorkflowStep.ANALYZE);
     } else {
       // Show error message for unsupported file types
       const errorElement = document.createElement('div');
@@ -65,7 +65,7 @@ const InputStep = () => {
     
     if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
       setMediaFile(file);
-      setCurrentStep(WorkflowStep.ANALYSIS);
+      setCurrentStep(WorkflowStep.ANALYZE);
     } else {
       // Show error message for unsupported file types
       const errorElement = document.createElement('div');
@@ -132,7 +132,7 @@ describe('InputStep', () => {
       expect(mockSetMediaFile).toHaveBeenCalledWith(mockFile);
       
       // Check that setCurrentStep was called to advance to the next step
-      expect(mockSetCurrentStep).toHaveBeenCalledWith(WorkflowStep.ANALYSIS);
+      expect(mockSetCurrentStep).toHaveBeenCalledWith(WorkflowStep.ANALYZE);
     });
   });
 
@@ -187,7 +187,7 @@ describe('InputStep', () => {
       expect(mockSetMediaFile).toHaveBeenCalledWith(mockFile);
       
       // Check that setCurrentStep was called to advance to the next step
-      expect(mockSetCurrentStep).toHaveBeenCalledWith(WorkflowStep.ANALYSIS);
+      expect(mockSetCurrentStep).toHaveBeenCalledWith(WorkflowStep.ANALYZE);
     });
   });
 });

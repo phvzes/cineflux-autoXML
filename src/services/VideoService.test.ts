@@ -36,10 +36,10 @@ class VideoService {
         height: 1080,
         frameRate: 30,
         scenes: [
-          { id: 'scene-1', startTime: 0, endTime: 30, duration: 30 },
-          { id: 'scene-2', startTime: 30, endTime: 60, duration: 30 },
-          { id: 'scene-3', startTime: 60, endTime: 90, duration: 30 },
-          { id: 'scene-4', startTime: 90, endTime: 120, duration: 30 },
+          { id: 'scene-1', start: 0, end: 30, duration: 30 },
+          { id: 'scene-2', start: 30, end: 60, duration: 30 },
+          { id: 'scene-3', start: 60, end: 90, duration: 30 },
+          { id: 'scene-4', start: 90, end: 120, duration: 30 },
         ],
         motionData: [],
         clipType: ClipType.MEDIUM,
@@ -141,8 +141,8 @@ describe('VideoService', () => {
     // Verify the mock scene
     expect(mockScene).toBeDefined();
     expect(mockScene.id).toBe('test-scene');
-    expect(mockScene.startTime).toBe(30);
-    expect(mockScene.endTime).toBe(60);
+    expect(mockScene.start).toBe(30);
+    expect(mockScene.end).toBe(60);
     expect(mockScene.duration).toBe(30);
     expect(mockScene.keyFrame).toBeDefined();
     expect(mockScene.keyFrameUrl).toBeDefined();
