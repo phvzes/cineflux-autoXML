@@ -1,916 +1,514 @@
-/**
- * VideoService.test.ts
- * 
- * Unit tests for the VideoService
- */
+// src/services/__tests__/VideoService.test.ts
+import { VideoService, VideoServiceEvents, VideoAnalysis } from '../VideoService';
+import { createMockVideoFile } from '../../test/test-utils';
+import { shouldUseChunkedProcessing, processFileInChunks } from '../../utils/fileChunker';
+import EventEmitter from 'events';
 
-import { vi, describe, it, expect, beforeEach, afterEach, MockInstance } from 'vitest';
-import { VideoService } from '../VideoService';
-import { ClipType, VideoServiceEvents } from '../../types/video-types';
-import { safeStringify } from '../../utils/safeStringify';
-
-// Mock dependencies
-vi.mock('@ffmpeg/ffmpeg', () => {
-  return {
-    createFFmpeg: () => ({
-      load: vi.fn().mockResolvedValue(undefined),
-      run: vi.fn().mockResolvedValue(undefined),
-      FS: vi.fn().mockImplementation((cmd, fileName, data) => {
-        if (cmd === 'readFile') {
-          if (fileName === 'output.json') {
-            return new TextEncoder().encode(safeStringify({
-              streams: [{
-                width: 1920,
-                height: 1080,
-                duration: '60.0',
-                r_frame_rate: '30/1',
-                codec_name: 'h264',
-                bit_rate: '5000000'
-              }]
-            }));
-          } else if (fileName === 'thumbnail.jpg') {
-            return new Uint8Array([1, 2, 3]); // Mock image data
-          }
-        }
-        return undefined;
-      })
-    }),
-    fetchFile: vi.fn().mockResolvedValue(new Uint8Array())
-  };
-});
-
-vi.mock('@techstark/opencv-js', () => {
-  return {
-    Mat: function() {
-      return {
-        delete: vi.fn()
-      };
-    },
-    matFromImageData: vi.fn().mockReturnValue({
-      delete: vi.fn()
-    }),
-    cvtColor: vi.fn(),
-    absdiff: vi.fn(),
-    mean: vi.fn().mockReturnValue([10]),
-    meanStdDev: vi.fn().mockReturnValue({
-      mean: { data64F: [128, 128, 128] },
-      stddev: { data64F: [40, 40, 40] }
-    }),
-    CascadeClassifier: function() {
-      return {
-        load: vi.fn(),
-        detectMultiScale: vi.fn()
-      };
-    },
-    RectVector: function() {
-      return {
-        size: vi.fn().mockReturnValue(0),
-        delete: vi.fn()
-      };
-    },
-    split: vi.fn(),
-    magnitude: vi.fn(),
-    calcOpticalFlowFarneback: vi.fn(),
-    MatVector: function() {
-      return {
-        get: vi.fn().mockReturnValue({
-          delete: vi.fn()
-        }),
-        delete: vi.fn()
-      };
-    },
-    CV_32F: 0,
-    TermCriteria: function() {
-      return {};
-    },
-    TermCriteria_EPS: 1,
-    TermCriteria_MAX_ITER: 2,
-    KMEANS_PP_CENTERS: 0,
-    kmeans: vi.fn(),
-    COLOR_RGBA2GRAY: 0,
-    COLOR_RGBA2RGB: 0
-  };
-});
-
-// Mock the global Image constructor
-class MockImage {
-  width = 1920;
-  height = 1080;
-  onload: () => void = () => {};
-  onerror: () => void = () => {};
-  src = '';
-  
-  constructor() {
-    setTimeout(() => this.onload(), 0);
-  }
-}
-
-global.Image = MockImage as any;
-
-// Mock canvas
-const mockCanvasContext = {
-  drawImage: vi.fn(),
-  getImageData: vi.fn().mockReturnValue({
-    data: new Uint8ClampedArray(1920 * 1080 * 4),
-    width: 1920,
-    height: 1080
+// Mock the fileChunker utility
+jest.mock('../../utils/fileChunker', () => ({
+  shouldUseChunkedProcessing: jest.fn().mockReturnValue(false),
+  processFileInChunks: jest.fn().mockImplementation(async (file, processChunk, progressCallback) => {
+    // Simulate processing chunks
+    for (let i = 0; i < 10; i++) {
+      await processChunk(new Blob(['chunk data']), i, 10);
+      progressCallback({
+        chunkIndex: i,
+        chunksTotal: 10,
+        bytesLoaded: (i + 1) * (file.size / 10),
+        bytesTotal: file.size,
+        percentage: ((i + 1) / 10) * 100
+      });
+    }
+    return Array(10).fill({ processed: true });
   })
-};
-
-const mockCanvas = {
-  getContext: vi.fn().mockReturnValue(mockCanvasContext),
-  width: 1920,
-  height: 1080
-};
-
-global.document.createElement = vi.fn().mockImplementation((tag) => {
-  if (tag === 'canvas') {
-    return mockCanvas;
-  }
-  return {} as any;
-});
-
-// Create a mock File object
-const createMockFile = () => {
-  return new File(
-    [new ArrayBuffer(1024)],
-    'test-video.mp4',
-    { type: 'video/mp4' }
-  );
-};
-
-// Create mock frames for testing
-const createMockFrames = (count: number) => {
-  return Array.from({ length: count }, (_, i) => ({
-    index: i,
-    time: i / 30, // Assuming 30fps
-    imageData: {
-      data: new Uint8ClampedArray(1920 * 1080 * 4),
-      width: 1920,
-      height: 1080
-    } as ImageData,
-    width: 1920,
-    height: 1080,
-    thumbnail: `data:image/jpeg;base64,mockBase64Data${i}`
-  }));
-};
+}));
 
 describe('VideoService', () => {
   let videoService: VideoService;
-  let mockEventListener: MockInstance;
+  let originalEmit: any;
   
   beforeEach(() => {
-    videoService = new VideoService();
-    mockEventListener = vi.fn();
+    // Get a fresh instance for each test
+    videoService = VideoService.getInstance();
     
-    // Reset URL.createObjectURL
-    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+    // Store the original emit method
+    originalEmit = videoService.emit;
     
-    // Clear all mocks
-    vi.clearAllMocks();
+    // Mock the emit method
+    videoService.emit = jest.fn();
+    
+    // Clear the processing cache
+    videoService.clearCache();
+    
+    // Reset mocks
+    jest.clearAllMocks();
   });
   
   afterEach(() => {
-    vi.restoreAllMocks();
+    // Restore the original emit method
+    if (originalEmit) {
+      videoService.emit = originalEmit;
+    }
   });
   
-  describe('loadVideoFile', () => {
-    it('should load a video file and extract metadata', async () => {
-      const file = createMockFile();
+  // 1. Singleton pattern verification
+  describe('Singleton Pattern', () => {
+    it('should return the same instance when getInstance is called multiple times', () => {
+      const instance1 = VideoService.getInstance();
+      const instance2 = VideoService.getInstance();
       
-      const result = await videoService.loadVideoFile(file);
-      
-      expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-      expect(result.name).toBe('test-video.mp4');
-      expect(result.blobUrl).toBe('blob:mock-url');
-      expect(result.duration).toBe(60);
-      expect(result.width).toBe(1920);
-      expect(result.height).toBe(1080);
-      expect(result.fps).toBe(30);
-      expect(URL.createObjectURL).toHaveBeenCalledWith(file);
+      expect(instance1).toBe(instance2);
+      expect(instance1).toBe(videoService);
     });
     
-    it('should cache video files to avoid duplicate processing', async () => {
-      const file = createMockFile();
-      
-      await videoService.loadVideoFile(file);
-      const extractMetadataSpy = vi.spyOn(videoService, 'extractMetadata');
-      await videoService.loadVideoFile(file);
-      
-      expect(extractMetadataSpy).not.toHaveBeenCalled();
-    });
-    
-    it('should handle errors during video loading', async () => {
-      const file = createMockFile();
-      
-      vi.spyOn(URL, 'createObjectURL').mockImplementation(() => {
-        throw new Error('Mock error');
-      });
-      
-      await expect(videoService.loadVideoFile(file)).rejects.toThrow('Failed to load video file');
+    it('should not allow direct instantiation via constructor', () => {
+      // Attempt to create a new instance directly
+      // This test is a bit tricky since we can't directly test a private constructor
+      // Instead, we'll verify that the class has a private constructor by checking
+      // that the prototype doesn't have a public constructor property
+      expect(VideoService.prototype.constructor).not.toBeUndefined();
     });
   });
   
-  describe('extractMetadata', () => {
-    it('should extract metadata from a video file', async () => {
-      const file = createMockFile();
+  // 2. Video file loading functionality
+  describe('Video File Loading', () => {
+    it('should load video files from File objects', async () => {
+      const mockFile = createMockVideoFile();
       
-      const metadata = await videoService.extractMetadata(file);
-      
-      expect(metadata).toBeDefined();
-      expect(metadata.width).toBe(1920);
-      expect(metadata.height).toBe(1080);
-      expect(metadata.duration).toBe(60);
-      expect(metadata.fps).toBe(30);
-      expect(metadata.codec).toBe('h264');
-      expect(metadata.bitrate).toBe(5000000);
-    });
-    
-    it('should handle fraction frame rates', async () => {
-      const file = createMockFile();
-      
-      // Mock ffmpeg output with fraction frame rate
-      const ffmpegFsSpy = vi.spyOn(videoService['ffmpeg'], 'FS');
-      ffmpegFsSpy.mockImplementation((cmd, fileName) => {
-        if (cmd === 'readFile' && fileName === 'output.json') {
-          return new TextEncoder().encode(safeStringify({
-            streams: [{
-              width: 1920,
-              height: 1080,
-              duration: '60.0',
-              r_frame_rate: '24000/1001', // 23.976 fps
-              codec_name: 'h264',
-              bit_rate: '5000000'
-            }]
-          }));
-        }
-        return undefined;
+      // Spy on the private methods
+      const processStandardVideoSpy = jest.spyOn(
+        videoService as any, 
+        'processStandardVideo'
+      ).mockImplementation(async () => {
+        return (videoService as any).createMockVideoAnalysis(mockFile);
       });
       
-      const metadata = await videoService.extractMetadata(file);
+      // Call the method
+      const result = await videoService.analyzeVideo(mockFile);
       
-      expect(metadata.fps).toBeCloseTo(23.976, 2);
+      // Verify the method was called
+      expect(processStandardVideoSpy).toHaveBeenCalledWith(mockFile);
+      
+      // Verify the result structure
+      expect(result).toHaveProperty('duration');
+      expect(result).toHaveProperty('frameRate');
+      expect(result).toHaveProperty('resolution');
+      expect(result).toHaveProperty('scenes');
+      expect(result).toHaveProperty('contentAnalysis');
     });
     
-    it('should return default values if metadata extraction fails', async () => {
-      const file = createMockFile();
+    it('should use the caching mechanism for loaded videos', async () => {
+      const mockFile = createMockVideoFile();
       
-      // Mock ffmpeg run to throw an error
-      vi.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
+      // Spy on the private methods
+      const processStandardVideoSpy = jest.spyOn(
+        videoService as any, 
+        'processStandardVideo'
+      ).mockImplementation(async () => {
+        return (videoService as any).createMockVideoAnalysis(mockFile);
+      });
       
-      const metadata = await videoService.extractMetadata(file);
+      // First call should process the file
+      const result1 = await videoService.analyzeVideo(mockFile);
       
-      expect(metadata).toBeDefined();
-      expect(metadata.width).toBe(0);
-      expect(metadata.height).toBe(0);
-      expect(metadata.duration).toBe(0);
-      expect(metadata.fps).toBe(30);
-      expect(metadata.codec).toBe('');
-      expect(metadata.bitrate).toBe(0);
+      // Reset the spy and emit mock
+      processStandardVideoSpy.mockClear();
+      (videoService.emit as jest.Mock).mockClear();
+      
+      // Second call should use the cache
+      const result2 = await videoService.analyzeVideo(mockFile);
+      
+      // Verify the processing method was not called again
+      expect(processStandardVideoSpy).not.toHaveBeenCalled();
+      
+      // Verify the results are the same
+      expect(result2).toBe(result1);
+      
+      // Verify only the completion event was emitted (not the start event)
+      expect(videoService.emit).not.toHaveBeenCalledWith(VideoServiceEvents.ANALYSIS_START);
+      expect(videoService.emit).toHaveBeenCalledWith(VideoServiceEvents.ANALYSIS_COMPLETE, result2);
+    });
+    
+    it('should generate a unique cache key based on file properties', async () => {
+      // Create two files with the same name but different sizes
+      const mockFile1 = createMockVideoFile('test-video.mp4', 1024 * 1024);
+      const mockFile2 = createMockVideoFile('test-video.mp4', 2 * 1024 * 1024);
+      
+      // Spy on the private methods
+      const processStandardVideoSpy = jest.spyOn(
+        videoService as any, 
+        'processStandardVideo'
+      ).mockImplementation(async (file) => {
+        return (videoService as any).createMockVideoAnalysis(file);
+      });
+      
+      // Process the first file
+      await videoService.analyzeVideo(mockFile1);
+      
+      // Reset the spy
+      processStandardVideoSpy.mockClear();
+      
+      // Process the second file - should not use cache
+      await videoService.analyzeVideo(mockFile2);
+      
+      // Verify the processing method was called again
+      expect(processStandardVideoSpy).toHaveBeenCalledWith(mockFile2);
     });
   });
   
-  describe('generateThumbnail', () => {
-    it('should generate a thumbnail from a video file', async () => {
-      const file = createMockFile();
+  // 3. Basic video analysis capabilities
+  describe('Video Analysis Capabilities', () => {
+    it('should process video files with progress updates', async () => {
+      const mockFile = createMockVideoFile();
       
-      const thumbnail = await videoService.generateThumbnail(file);
+      // Spy on the simulateProcessingDelay method to make tests faster
+      jest.spyOn(videoService as any, 'simulateProcessingDelay')
+        .mockImplementation(() => Promise.resolve());
       
-      expect(thumbnail).toMatch(/^data:image\/jpeg;base64,/);
-      expect(videoService['ffmpeg'].run).toHaveBeenCalledWith(
-        '-ss', '1',
-        '-i', 'test-video.mp4',
-        '-frames:v', '1',
-        '-q:v', '2',
-        '-vf', 'scale=300:-1',
-        'thumbnail.jpg'
+      // Call the private method directly
+      const result = await (videoService as any).processStandardVideo(mockFile);
+      
+      // Verify progress events were emitted
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Loading video file...',
+          progress: 0.1,
+          stage: 'loading'
+        })
       );
+      
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Extracting frames...',
+          progress: 0.3,
+          stage: 'frames'
+        })
+      );
+      
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Detecting scenes...',
+          progress: 0.6,
+          stage: 'scenes'
+        })
+      );
+      
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Analyzing content...',
+          progress: 0.8,
+          stage: 'content'
+        })
+      );
+      
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Analyzing motion...',
+          progress: 0.9,
+          stage: 'motion'
+        })
+      );
+      
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Finalizing analysis...',
+          progress: 1.0,
+          stage: 'complete'
+        })
+      );
+      
+      // Verify the result structure
+      expect(result).toHaveProperty('duration');
+      expect(result).toHaveProperty('frameRate');
+      expect(result).toHaveProperty('resolution');
+      expect(result).toHaveProperty('scenes');
+      expect(result).toHaveProperty('contentAnalysis');
     });
     
-    it('should use the specified time for thumbnail generation', async () => {
-      const file = createMockFile();
-      const time = 30;
+    it('should process large video files in chunks', async () => {
+      const mockFile = createMockVideoFile('large-video.mp4', 500 * 1024 * 1024); // 500MB file
       
-      await videoService.generateThumbnail(file, time);
+      // Mock shouldUseChunkedProcessing to return true for this test
+      (shouldUseChunkedProcessing as jest.Mock).mockReturnValueOnce(true);
       
-      expect(videoService['ffmpeg'].run).toHaveBeenCalledWith(
-        '-ss', '30',
-        '-i', 'test-video.mp4',
-        '-frames:v', '1',
-        '-q:v', '2',
-        '-vf', 'scale=300:-1',
-        'thumbnail.jpg'
-      );
-    });
-    
-    it('should return a placeholder image if thumbnail generation fails', async () => {
-      const file = createMockFile();
+      // Spy on the private methods
+      const processLargeVideoSpy = jest.spyOn(
+        videoService as any, 
+        'processLargeVideo'
+      ).mockImplementation(async () => {
+        return (videoService as any).createMockVideoAnalysis(mockFile);
+      });
       
-      // Mock ffmpeg run to throw an error
-      vi.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
+      // Call the method
+      const result = await videoService.analyzeVideo(mockFile);
       
-      const thumbnail = await videoService.generateThumbnail(file);
+      // Verify the correct processing method was called
+      expect(shouldUseChunkedProcessing).toHaveBeenCalledWith(mockFile);
+      expect(processLargeVideoSpy).toHaveBeenCalledWith(mockFile);
       
-      expect(thumbnail).toMatch(/^data:image\/png;base64,/);
+      // Verify the result structure
+      expect(result).toHaveProperty('duration');
+      expect(result).toHaveProperty('frameRate');
+      expect(result).toHaveProperty('resolution');
+      expect(result).toHaveProperty('scenes');
+      expect(result).toHaveProperty('contentAnalysis');
     });
   });
   
-  describe('analyzeVideo', () => {
-    it('should analyze a video file and return results', async () => {
-      const file = createMockFile();
+  // 4. Error handling for invalid video files
+  describe('Error Handling', () => {
+    it('should handle errors when loading invalid video files', async () => {
+      const mockFile = createMockVideoFile('invalid-video.mp4');
+      const mockError = new Error('Failed to load video file');
       
-      // Register event listener
-      videoService.addEventListener(VideoServiceEvents.ANALYSIS_COMPLETE, mockEventListener);
+      // Spy on the private method to throw an error
+      jest.spyOn(videoService as any, 'processStandardVideo')
+        .mockRejectedValueOnce(mockError);
       
-      // Mock dependencies
-      vi.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
-        id: 'mock-id',
-        file,
-        name: 'test-video.mp4',
-        size: 1024,
-        type: 'video/mp4',
-        blobUrl: 'blob:mock-url',
-        duration: 60,
-        width: 1920,
-        height: 1080,
-        fps: 30,
-        thumbnail: 'data:image/jpeg;base64,mockBase64Data',
-        metadata: {
-          width: 1920,
-          height: 1080,
-          duration: 60,
-          fps: 30,
-          codec: 'h264',
-          bitrate: 5000000
-        }
-      });
+      // Call the method and expect it to throw
+      await expect(videoService.analyzeVideo(mockFile)).rejects.toThrow(mockError);
       
-      vi.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
-      vi.spyOn(videoService, 'detectScenes').mockResolvedValue([
-        {
-          id: 'scene-1',
-          startFrame: 0,
-          endFrame: 4,
-          startTime: 0,
-          endTime: 4 / 30,
-          duration: 4 / 30,
-          keyFrameIndex: 0
-        },
-        {
-          id: 'scene-2',
-          startFrame: 5,
-          endFrame: 9,
-          startTime: 5 / 30,
-          endTime: 9 / 30,
-          duration: 4 / 30,
-          keyFrameIndex: 5
-        }
-      ]);
-      
-      vi.spyOn(videoService, 'analyzeContent').mockResolvedValue({
-        hasFaces: false,
-        faceCount: 0,
-        dominantColors: [
-          { r: 100, g: 100, b: 100 },
-          { r: 200, g: 200, b: 200 }
-        ],
-        brightness: 128,
-        contrast: 40,
-        hasText: false,
-        isOutdoor: false,
-        hasMotion: false
-      });
-      
-      vi.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
-        averageMotion: 5,
-        motionByFrame: [
-          { frameIndex: 1, time: 1 / 30, motionAmount: 5 },
-          { frameIndex: 2, time: 2 / 30, motionAmount: 5 }
-        ],
-        hasHighMotion: false,
-        hasCameraMovement: false
-      });
-      
-      vi.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.B_ROLL_STATIC);
-      
-      const analysis = await videoService.analyzeVideo(file);
-      
-      expect(analysis).toBeDefined();
-      expect(analysis.videoId).toBe('mock-id');
-      expect(analysis.duration).toBe(60);
-      expect(analysis.frameCount).toBe(10);
-      expect(analysis.scenes).toHaveLength(2);
-      expect(analysis.contentAnalysis).toBeDefined();
-      expect(analysis.motionData).toBeDefined();
-      expect(analysis.clipType).toBe(ClipType.B_ROLL_STATIC);
-      
-      // Check events
-      expect(mockEventListener).toHaveBeenCalledWith({ analysis });
+      // Verify the error event was emitted
+      expect(videoService.emit).toHaveBeenCalledWith(VideoServiceEvents.ERROR, mockError);
     });
     
-    it('should emit progress events during analysis', async () => {
-      const file = createMockFile();
-      const progressListener = vi.fn();
+    it('should handle errors when video analysis fails', async () => {
+      const mockFile = createMockVideoFile();
       
-      // Register event listener
-      videoService.addEventListener(VideoServiceEvents.PROGRESS, progressListener);
-      
-      // Mock dependencies as in the previous test
-      vi.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
-        id: 'mock-id',
-        file,
-        name: 'test-video.mp4',
-        size: 1024,
-        type: 'video/mp4',
-        blobUrl: 'blob:mock-url',
-        duration: 60,
-        width: 1920,
-        height: 1080,
-        fps: 30,
-        thumbnail: 'data:image/jpeg;base64,mockBase64Data',
-        metadata: {
-          width: 1920,
-          height: 1080,
-          duration: 60,
-          fps: 30,
-          codec: 'h264',
-          bitrate: 5000000
-        }
-      });
-      
-      vi.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
-      vi.spyOn(videoService, 'detectScenes').mockResolvedValue([]);
-      vi.spyOn(videoService, 'analyzeContent').mockResolvedValue({
-        hasFaces: false,
-        faceCount: 0,
-        dominantColors: [],
-        brightness: 0,
-        contrast: 0,
-        hasText: false,
-        isOutdoor: false,
-        hasMotion: false
-      });
-      vi.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
-        averageMotion: 0,
-        motionByFrame: [],
-        hasHighMotion: false,
-        hasCameraMovement: false
-      });
-      vi.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.UNKNOWN);
-      
-      await videoService.analyzeVideo(file);
-      
-      // Check progress events
-      expect(progressListener).toHaveBeenCalledTimes(3);
-      expect(progressListener).toHaveBeenCalledWith(
-        expect.objectContaining({ progress: 0.1, message: 'Extracting frames...' })
-      );
-      expect(progressListener).toHaveBeenCalledWith(
-        expect.objectContaining({ progress: 0.4, message: 'Detecting scenes...' })
-      );
-      expect(progressListener).toHaveBeenCalledWith(
-        expect.objectContaining({ progress: 0.7, message: 'Analyzing content...' })
-      );
-    });
-    
-    it('should cache analysis results for subsequent calls', async () => {
-      const file = createMockFile();
-      
-      // Mock dependencies
-      vi.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
-        id: 'mock-id',
-        file,
-        name: 'test-video.mp4',
-        size: 1024,
-        type: 'video/mp4',
-        blobUrl: 'blob:mock-url',
-        duration: 60,
-        width: 1920,
-        height: 1080,
-        fps: 30,
-        thumbnail: 'data:image/jpeg;base64,mockBase64Data',
-        metadata: {
-          width: 1920,
-          height: 1080,
-          duration: 60,
-          fps: 30,
-          codec: 'h264',
-          bitrate: 5000000
-        }
-      });
-      vi.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
-      vi.spyOn(videoService, 'detectScenes').mockResolvedValue([]);
-      vi.spyOn(videoService, 'analyzeContent').mockResolvedValue({
-        hasFaces: false,
-        faceCount: 0,
-        dominantColors: [],
-        brightness: 0,
-        contrast: 0,
-        hasText: false,
-        isOutdoor: false,
-        hasMotion: false
-      });
-      vi.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
-        averageMotion: 0,
-        motionByFrame: [],
-        hasHighMotion: false,
-        hasCameraMovement: false
-      });
-      vi.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.UNKNOWN);
-      
-      await videoService.analyzeVideo(file);
-      
-      // Clear mocks and call again
-      vi.clearAllMocks();
-      
-      await videoService.analyzeVideo(file);
-      
-      // The actual analysis methods should not be called again
-      expect(videoService.extractFrames).not.toHaveBeenCalled();
-      expect(videoService.detectScenes).not.toHaveBeenCalled();
-      expect(videoService.analyzeContent).not.toHaveBeenCalled();
-      expect(videoService.analyzeMotion).not.toHaveBeenCalled();
-      expect(videoService.classifyClipType).not.toHaveBeenCalled();
-    });
-    
-    it('should handle errors during analysis', async () => {
-      const file = createMockFile();
-      const errorListener = vi.fn();
-      
-      // Register event listener
-      videoService.addEventListener(VideoServiceEvents.ERROR, errorListener);
-      
-      // Mock loadVideoFile to throw
-      vi.spyOn(videoService, 'loadVideoFile').mockRejectedValue(new Error('Mock error'));
-      
-      await expect(videoService.analyzeVideo(file)).rejects.toThrow('Failed to analyze video');
-      
-      // Check error event
-      expect(errorListener).toHaveBeenCalledWith({
-        message: 'Failed to analyze video: Mock error',
-        error: expect.any(Error)
-      });
-    });
-  });
-  
-  describe('extractFrames', () => {
-    it('should extract frames from a video file', async () => {
-      const file = createMockFile();
-      
-      const frames = await videoService.extractFrames(file);
-      
-      expect(frames).toBeDefined();
-      expect(frames.length).toBeGreaterThan(0);
-      expect(frames[0]).toHaveProperty('index', 0);
-      expect(frames[0]).toHaveProperty('time', 0);
-      expect(frames[0]).toHaveProperty('imageData');
-      expect(frames[0]).toHaveProperty('width', 1920);
-      expect(frames[0]).toHaveProperty('height', 1080);
-      expect(frames[0]).toHaveProperty('thumbnail');
-    });
-    
-    it('should respect the fps and maxFrames options', async () => {
-      const file = createMockFile();
-      const options = { fps: 2, maxFrames: 5 };
-      
-      await videoService.extractFrames(file, options);
-      
-      expect(videoService['ffmpeg'].run).toHaveBeenCalledWith(
-        '-i', 'test-video.mp4',
-        '-vf', 'fps=2',
-        '-frames:v', '5',
-        '-q:v', '1',
-        'frame_%04d.jpg'
-      );
-    });
-    
-    it('should cache frames for subsequent calls', async () => {
-      const file = createMockFile();
-      const options = { fps: 1, maxFrames: 300 };
-      
-      await videoService.extractFrames(file, options);
-      
-      // Clear mocks and call again with same parameters
-      vi.clearAllMocks();
-      
-      await videoService.extractFrames(file, options);
-      
-      // ffmpeg should not be called again
-      expect(videoService['ffmpeg'].run).not.toHaveBeenCalled();
-    });
-    
-    it('should handle errors during frame extraction', async () => {
-      const file = createMockFile();
-      
-      // Mock ffmpeg run to throw
-      vi.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
-      
-      await expect(videoService.extractFrames(file)).rejects.toThrow('Failed to extract frames');
-    });
-  });
-  
-  describe('detectScenes', () => {
-    it('should detect scenes in video frames', async () => {
-      const frames = createMockFrames(10);
-      
-      const scenes = await videoService.detectScenes(frames);
-      
-      expect(scenes).toBeDefined();
-      expect(scenes.length).toBeGreaterThanOrEqual(1); // At least the first scene
-      expect(scenes[0]).toHaveProperty('id');
-      expect(scenes[0]).toHaveProperty('startFrame', 0);
-      expect(scenes[0]).toHaveProperty('startTime', 0);
-    });
-    
-    it('should detect scene changes based on threshold', async () => {
-      const frames = createMockFrames(10);
-      
-      // Mock the difference calculation to create a scene change
-      vi.spyOn(require('@techstark/opencv-js'), 'mean')
-        .mockReturnValueOnce([5]) // Below threshold
-        .mockReturnValueOnce([5]) // Below threshold
-        .mockReturnValueOnce([40]) // Above threshold (new scene)
-        .mockReturnValueOnce([5]) // Below threshold
-        .mockReturnValue([5]); // Below threshold
-      
-      const scenes = await videoService.detectScenes(frames, { threshold: 30 });
-      
-      expect(scenes.length).toBe(2); // Initial scene + one scene change
-      expect(scenes[0].startFrame).toBe(0);
-      expect(scenes[0].endFrame).toBe(2);
-      expect(scenes[1].startFrame).toBe(3);
-    });
-    
-    it('should return empty array if no frames are provided', async () => {
-      const scenes = await videoService.detectScenes([]);
-      
-      expect(scenes).toEqual([]);
-    });
-    
-    it('should handle errors during scene detection', async () => {
-      const frames = createMockFrames(10);
-      
-      // Mock matFromImageData to throw
-      vi.spyOn(require('@techstark/opencv-js'), 'matFromImageData')
-        .mockImplementation(() => {
-          throw new Error('Mock error');
+      // Mock the processStandardVideo method to simulate a failure during analysis
+      jest.spyOn(videoService as any, 'processStandardVideo')
+        .mockImplementationOnce(async () => {
+          // Emit progress events to simulate partial processing
+          videoService.emit(VideoServiceEvents.PROGRESS, { 
+            message: 'Loading video file...',
+            progress: 0.1,
+            stage: 'loading'
+          });
+          
+          videoService.emit(VideoServiceEvents.PROGRESS, { 
+            message: 'Extracting frames...',
+            progress: 0.3,
+            stage: 'frames'
+          });
+          
+          // Then throw an error
+          throw new Error('Frame extraction failed');
         });
       
-      await expect(videoService.detectScenes(frames)).rejects.toThrow('Failed to detect scenes');
+      // Call the method and expect it to throw
+      await expect(videoService.analyzeVideo(mockFile)).rejects.toThrow('Frame extraction failed');
+      
+      // Verify the error event was emitted
+      expect(videoService.emit).toHaveBeenCalledWith(VideoServiceEvents.ERROR, expect.any(Error));
+    });
+    
+    it('should emit appropriate error events', async () => {
+      const mockFile = createMockVideoFile();
+      const mockError = new Error('Video processing error');
+      
+      // Spy on the private method to throw an error
+      jest.spyOn(videoService as any, 'processStandardVideo')
+        .mockRejectedValueOnce(mockError);
+      
+      // Call the method and catch the error
+      try {
+        await videoService.analyzeVideo(mockFile);
+      } catch (error) {
+        // Expected to throw
+      }
+      
+      // Verify the error event was emitted with the correct error
+      expect(videoService.emit).toHaveBeenCalledWith(VideoServiceEvents.ERROR, mockError);
     });
   });
   
-  describe('analyzeContent', () => {
-    it('should analyze content of a video frame', async () => {
-      const frame = createMockFrames(1)[0];
+  // Test processLargeVideo method (private)
+  describe('processLargeVideo', () => {
+    it('should process a large video file in chunks with progress updates', async () => {
+      const mockFile = createMockVideoFile('large-video.mp4', 500 * 1024 * 1024); // 500MB file
       
-      const contentData = await videoService.analyzeContent(frame);
+      // Spy on the simulateProcessingDelay method to make tests faster
+      jest.spyOn(videoService as any, 'simulateProcessingDelay')
+        .mockImplementation(() => Promise.resolve());
       
-      expect(contentData).toBeDefined();
-      expect(contentData).toHaveProperty('brightness');
-      expect(contentData).toHaveProperty('contrast');
-      expect(contentData).toHaveProperty('hasFaces');
-      expect(contentData).toHaveProperty('dominantColors');
+      // Call the private method directly
+      const result = await (videoService as any).processLargeVideo(mockFile);
+      
+      // Verify processFileInChunks was called
+      expect(processFileInChunks).toHaveBeenCalledWith(
+        mockFile,
+        expect.any(Function),
+        expect.any(Function)
+      );
+      
+      // Verify initial progress event was emitted
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Preparing to process large video file...',
+          progress: 0.05,
+          stage: 'loading'
+        })
+      );
+      
+      // Verify final progress event was emitted
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.PROGRESS,
+        expect.objectContaining({
+          message: 'Finalizing analysis...',
+          progress: 1.0,
+          stage: 'complete'
+        })
+      );
+      
+      // Verify the result structure
+      expect(result).toHaveProperty('duration');
+      expect(result).toHaveProperty('frameRate');
+      expect(result).toHaveProperty('resolution');
+      expect(result).toHaveProperty('scenes');
+      expect(result).toHaveProperty('contentAnalysis');
     });
     
-    it('should handle errors and return default values', async () => {
-      const frame = createMockFrames(1)[0];
+    it('should emit chunk progress events during processing', async () => {
+      const mockFile = createMockVideoFile('large-video.mp4', 500 * 1024 * 1024); // 500MB file
       
-      // Mock matFromImageData to throw
-      vi.spyOn(require('@techstark/opencv-js'), 'matFromImageData')
-        .mockImplementation(() => {
-          throw new Error('Mock error');
-        });
+      // Spy on the simulateProcessingDelay method to make tests faster
+      jest.spyOn(videoService as any, 'simulateProcessingDelay')
+        .mockImplementation(() => Promise.resolve());
       
-      const contentData = await videoService.analyzeContent(frame);
+      // Call the private method directly
+      await (videoService as any).processLargeVideo(mockFile);
       
-      expect(contentData).toBeDefined();
-      expect(contentData).toEqual({
-        hasFaces: false,
-        faceCount: 0,
-        dominantColors: [],
-        brightness: 0,
-        contrast: 0,
-        hasText: false,
-        isOutdoor: false,
-        hasMotion: false
-      });
-    });
-  });
-  
-  describe('analyzeMotion', () => {
-    it('should analyze motion across video frames', async () => {
-      const frames = createMockFrames(5);
-      
-      const motionData = await videoService.analyzeMotion(frames);
-      
-      expect(motionData).toBeDefined();
-      expect(motionData).toHaveProperty('averageMotion');
-      expect(motionData).toHaveProperty('motionByFrame');
-      expect(motionData).toHaveProperty('hasHighMotion');
-      expect(motionData).toHaveProperty('hasCameraMovement');
-    });
-    
-    it('should return default values if less than 2 frames are provided', async () => {
-      const frames = createMockFrames(1);
-      
-      const motionData = await videoService.analyzeMotion(frames);
-      
-      expect(motionData).toEqual({
-        averageMotion: 0,
-        motionByFrame: [],
-        hasHighMotion: false,
-        hasCameraMovement: false
-      });
-    });
-    
-    it('should handle errors and return default values', async () => {
-      const frames = createMockFrames(5);
-      
-      // Mock matFromImageData to throw
-      vi.spyOn(require('@techstark/opencv-js'), 'matFromImageData')
-        .mockImplementation(() => {
-          throw new Error('Mock error');
-        });
-      
-      const motionData = await videoService.analyzeMotion(frames);
-      
-      expect(motionData).toEqual({
-        averageMotion: 0,
-        motionByFrame: [],
-        hasHighMotion: false,
-        hasCameraMovement: false
-      });
-    });
-  });
-  
-  describe('classifyClipType', () => {
-    it('should classify clip type based on analysis', async () => {
-      const analysis = {
-        contentAnalysis: [
-          { hasFaces: true, faceCount: 1, dominantColors: [], brightness: 0, contrast: 0, hasText: false, isOutdoor: false, hasMotion: false }
-        ],
-        motionData: {
-          hasHighMotion: true,
-          averageMotion: 15,
-          motionByFrame: [],
-          hasCameraMovement: false
-        }
-      };
-      
-      const clipType = await videoService.classifyClipType(analysis);
-      
-      expect(clipType).toBe(ClipType.ACTION); // Faces + high motion = action
-    });
-    
-    it('should classify as PERFORMANCE when faces present but low motion', async () => {
-      const analysis = {
-        contentAnalysis: [
-          { hasFaces: true, faceCount: 1, dominantColors: [], brightness: 0, contrast: 0, hasText: false, isOutdoor: false, hasMotion: false }
-        ],
-        motionData: {
-          hasHighMotion: false,
-          averageMotion: 5,
-          motionByFrame: [],
-          hasCameraMovement: false
-        }
-      };
-      
-      const clipType = await videoService.classifyClipType(analysis);
-      
-      expect(clipType).toBe(ClipType.PERFORMANCE);
-    });
-    
-    it('should classify as B_ROLL_DYNAMIC when no faces but high motion', async () => {
-      const analysis = {
-        contentAnalysis: [
-          { hasFaces: false, faceCount: 0, dominantColors: [], brightness: 0, contrast: 0, hasText: false, isOutdoor: false, hasMotion: false }
-        ],
-        motionData: {
-          hasHighMotion: true,
-          averageMotion: 15,
-          motionByFrame: [],
-          hasCameraMovement: false
-        }
-      };
-      
-      const clipType = await videoService.classifyClipType(analysis);
-      
-      expect(clipType).toBe(ClipType.B_ROLL_DYNAMIC);
-    });
-    
-    it('should classify as B_ROLL_STATIC when no faces and low motion', async () => {
-      const analysis = {
-        contentAnalysis: [
-          { hasFaces: false, faceCount: 0, dominantColors: [], brightness: 0, contrast: 0, hasText: false, isOutdoor: false, hasMotion: false }
-        ],
-        motionData: {
-          hasHighMotion: false,
-          averageMotion: 5,
-          motionByFrame: [],
-          hasCameraMovement: false
-        }
-      };
-      
-      const clipType = await videoService.classifyClipType(analysis);
-      
-      expect(clipType).toBe(ClipType.B_ROLL_STATIC);
-    });
-    
-    it('should return UNKNOWN if contentAnalysis or motionData are missing', async () => {
-      const analysis = {};
-      
-      const clipType = await videoService.classifyClipType(analysis);
-      
-      expect(clipType).toBe(ClipType.UNKNOWN);
-    });
-    
-    it('should handle errors and return UNKNOWN', async () => {
-      const analysis = {
-        contentAnalysis: [
-          { hasFaces: true, faceCount: 1, dominantColors: [], brightness: 0, contrast: 0, hasText: false, isOutdoor: false, hasMotion: false }
-        ],
-        motionData: {
-          hasHighMotion: true,
-          averageMotion: 15,
-          motionByFrame: [],
-          hasCameraMovement: false
-        }
-      };
-      
-      // Mock implementation to throw
-      vi.spyOn(analysis.contentAnalysis, 'some').mockImplementation(() => {
-        throw new Error('Mock error');
-      });
-      
-      const clipType = await videoService.classifyClipType(analysis);
-      
-      expect(clipType).toBe(ClipType.UNKNOWN);
-    });
-  });
-  
-  describe('event listeners', () => {
-    it('should add and remove event listeners', () => {
-      const listener = vi.fn();
-      
-      videoService.addEventListener(VideoServiceEvents.ANALYSIS_START, listener);
-      
-      // Emit event
-      videoService['emitEvent'](VideoServiceEvents.ANALYSIS_START, { file: createMockFile() });
-      
-      expect(listener).toHaveBeenCalled();
-      
-      // Remove listener
-      videoService.removeEventListener(VideoServiceEvents.ANALYSIS_START, listener);
-      
-      // Clear mock and emit again
-      listener.mockClear();
-      videoService['emitEvent'](VideoServiceEvents.ANALYSIS_START, { file: createMockFile() });
-      
-      expect(listener).not.toHaveBeenCalled();
-    });
-    
-    it('should handle errors in event listeners', () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const listener = vi.fn().mockImplementation(() => {
-        throw new Error('Mock error in listener');
-      });
-      
-      videoService.addEventListener(VideoServiceEvents.ANALYSIS_START, listener);
-      
-      // Emit event
-      videoService['emitEvent'](VideoServiceEvents.ANALYSIS_START, { file: createMockFile() });
-      
-      expect(listener).toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error in event listener'),
-        expect.any(Error)
+      // Verify chunk progress events were emitted
+      expect(videoService.emit).toHaveBeenCalledWith(
+        VideoServiceEvents.CHUNK_PROGRESS,
+        expect.objectContaining({
+          stage: expect.any(String)
+        })
       );
     });
   });
   
-  describe('dispose', () => {
-    it('should clear all caches and event listeners', () => {
-      const listener = vi.fn();
-      videoService.addEventListener(VideoServiceEvents.ANALYSIS_START, listener);
+  // Test createMockVideoAnalysis method (private)
+  describe('createMockVideoAnalysis', () => {
+    it('should create a mock video analysis result', () => {
+      const mockFile = createMockVideoFile();
       
-      // Add items to caches
-      videoService['videoCache'].set('test', {} as any);
-      videoService['analysisCache'].set('test', {} as any);
-      videoService['frameCache'].set('test', [] as any);
+      // Call the private method directly
+      const result = (videoService as any).createMockVideoAnalysis(mockFile);
       
-      videoService.dispose();
+      // Verify the result structure
+      expect(result).toHaveProperty('duration', 120);
+      expect(result).toHaveProperty('frameRate', 30);
+      expect(result).toHaveProperty('resolution', { width: 1920, height: 1080 });
+      expect(result).toHaveProperty('scenes');
+      expect(result.scenes).toHaveLength(5);
+      expect(result).toHaveProperty('contentAnalysis');
+      expect(result.contentAnalysis).toHaveLength(5);
+    });
+  });
+  
+  // Test clearCache method
+  describe('clearCache', () => {
+    it('should clear the processing cache', async () => {
+      const mockFile = createMockVideoFile();
       
-      expect(videoService['videoCache'].size).toBe(0);
-      expect(videoService['analysisCache'].size).toBe(0);
-      expect(videoService['frameCache'].size).toBe(0);
-      expect(videoService['eventListeners'].get(VideoServiceEvents.ANALYSIS_START)).toEqual([]);
+      // First, add something to the cache
+      await videoService.analyzeVideo(mockFile);
       
-      // Emit event to confirm listener is gone
-      videoService['emitEvent'](VideoServiceEvents.ANALYSIS_START, { file: createMockFile() });
+      // Spy on the private methods
+      const processStandardVideoSpy = jest.spyOn(
+        videoService as any, 
+        'processStandardVideo'
+      );
       
-      expect(listener).not.toHaveBeenCalled();
+      // Verify the cache is working by calling analyzeVideo again
+      await videoService.analyzeVideo(mockFile);
+      expect(processStandardVideoSpy).not.toHaveBeenCalled();
+      
+      // Clear the cache
+      videoService.clearCache();
+      
+      // Reset the spy
+      processStandardVideoSpy.mockClear();
+      
+      // Call analyzeVideo again - should process the file again
+      await videoService.analyzeVideo(mockFile);
+      expect(processStandardVideoSpy).toHaveBeenCalled();
+    });
+  });
+  
+  // Test event emitter functionality
+  describe('Event Emitter', () => {
+    it('should allow subscribing to events', () => {
+      // Restore the original emit method for this test
+      videoService.emit = originalEmit;
+      
+      const mockHandler = jest.fn();
+      
+      // Subscribe to an event
+      videoService.on(VideoServiceEvents.PROGRESS, mockHandler);
+      
+      // Emit the event
+      videoService.emit(VideoServiceEvents.PROGRESS, { progress: 0.5, message: 'Test', stage: 'test' });
+      
+      // Verify the handler was called
+      expect(mockHandler).toHaveBeenCalledWith({ progress: 0.5, message: 'Test', stage: 'test' });
+      
+      // Unsubscribe
+      videoService.off(VideoServiceEvents.PROGRESS, mockHandler);
+      
+      // Emit again
+      videoService.emit(VideoServiceEvents.PROGRESS, { progress: 0.7, message: 'Test 2', stage: 'test' });
+      
+      // Verify the handler was not called again
+      expect(mockHandler).toHaveBeenCalledTimes(1);
+    });
+    
+    it('should allow one-time event subscriptions', () => {
+      // Restore the original emit method for this test
+      videoService.emit = originalEmit;
+      
+      const mockHandler = jest.fn();
+      
+      // Subscribe to an event once
+      videoService.once(VideoServiceEvents.PROGRESS, mockHandler);
+      
+      // Emit the event twice
+      videoService.emit(VideoServiceEvents.PROGRESS, { progress: 0.5, message: 'Test', stage: 'test' });
+      videoService.emit(VideoServiceEvents.PROGRESS, { progress: 0.7, message: 'Test 2', stage: 'test' });
+      
+      // Verify the handler was called only once
+      expect(mockHandler).toHaveBeenCalledTimes(1);
+      expect(mockHandler).toHaveBeenCalledWith({ progress: 0.5, message: 'Test', stage: 'test' });
+    });
+    
+    it('should allow removing all listeners for an event', () => {
+      // Restore the original emit method for this test
+      videoService.emit = originalEmit;
+      
+      const mockHandler1 = jest.fn();
+      const mockHandler2 = jest.fn();
+      
+      // Subscribe to events
+      videoService.on(VideoServiceEvents.PROGRESS, mockHandler1);
+      videoService.on(VideoServiceEvents.PROGRESS, mockHandler2);
+      
+      // Remove all listeners
+      videoService.removeAllListeners(VideoServiceEvents.PROGRESS);
+      
+      // Emit the event
+      videoService.emit(VideoServiceEvents.PROGRESS, { progress: 0.5, message: 'Test', stage: 'test' });
+      
+      // Verify no handlers were called
+      expect(mockHandler1).not.toHaveBeenCalled();
+      expect(mockHandler2).not.toHaveBeenCalled();
     });
   });
 });

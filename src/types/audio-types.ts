@@ -1,73 +1,101 @@
 /**
- * audio-types.ts
- * 
- * Central definitions for audio-related types used throughout the application.
- * These types are used for audio analysis, visualization, and editing.
+ * Types related to audio processing and analysis
  */
 
-/**
- * Represents a single beat in the audio
- */
 export interface Beat {
-  /** Time of the beat in seconds */
   time: number;
-  /** Confidence level of the beat detection (0-1) */
-  confidence?: number;
-  /** Energy level at this beat (0-1) */
+  confidence: number;
   energy?: number;
+  type?: 'downbeat' | 'upbeat';
+  index?: number;
 }
 
-/**
- * Represents a segment of audio with a start and end time
- */
+export interface BeatAnalysis {
+  beats: Beat[];
+  tempo: number;
+  confidence: number;
+  timeSignature?: {
+    upper: number;
+    lower: number;
+  };
+}
+
 export interface AudioSegment {
-  /** Unique identifier for the segment */
-  id?: string;
-  /** Start time of the segment in seconds */
   startTime: number;
-  /** End time of the segment in seconds */
   endTime: number;
-  /** Type or label of the segment (e.g., 'verse', 'chorus', 'bridge') */
-  type?: string;
-  /** Confidence level of the segment detection (0-1) */
-  boundaryConfidence?: number;
-}
-
-/**
- * Represents audio waveform data
- */
-export interface AudioWaveform {
-  /** Array of amplitude values */
-  samples: number[];
-  /** Sample rate in Hz */
-  sampleRate: number;
-  /** Number of channels */
-  channels?: number;
-  /** Maximum amplitude value */
-  maxAmplitude?: number;
-}
-
-/**
- * Represents a complete audio analysis result
- */
-export interface AudioAnalysis {
-  /** Unique identifier for this analysis */
-  id?: string;
-  /** Duration of the audio in seconds */
   duration: number;
-  /** Detected tempo in BPM */
-  tempo?: number;
-  /** Array of detected beats */
-  beats?: Beat[];
-  /** Array of detected segments */
-  segments?: AudioSegment[];
-  /** Waveform data */
-  waveform?: AudioWaveform;
-  /** Energy points over time */
-  energyPoints?: Array<{
-    time: number;
-    energy: number;
-  }>;
-  /** Any additional properties */
-  [key: string]: any;
+  type: 'verse' | 'chorus' | 'bridge' | 'intro' | 'outro' | 'drop' | 'buildup' | 'unknown';
+  confidence: number;
+  energyLevel: number;
+  tags?: string[];
+}
+
+export interface EnergySample {
+  time: number;
+  value: number;
+}
+
+export interface EnergyAnalysis {
+  samples: EnergySample[];
+  average: number;
+  peak: number;
+  energyPoints: {
+    high: number[];
+    medium: number[];
+    low: number[];
+  };
+  segments: {
+    startTime: number;
+    endTime: number;
+    energyLevel: 'high' | 'medium' | 'low';
+  }[];
+}
+
+export interface AudioAnalysis {
+  id: string;
+  duration: number;
+  sampleRate: number;
+  channels: number;
+  beats: Beat[];
+  segments: AudioSegment[];
+  tempo: number;
+  timeSignature?: {
+    upper: number;
+    lower: number;
+  };
+  key?: {
+    note: string;
+    scale: 'major' | 'minor';
+    confidence: number;
+  };
+  loudness: {
+    integrated: number;
+    truePeak: number;
+    range: number;
+  };
+  energyAnalysis: EnergyAnalysis;
+  energyPoints: {
+    high: number[];
+    medium: number[];
+    low: number[];
+  };
+  waveformData?: number[];
+}
+
+export interface AudioFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  duration?: number;
+  sampleRate?: number;
+  channels?: number;
+  file: File;
+  url?: string;
+  waveform?: number[];
+  analysis?: AudioAnalysis;
+}
+
+export function isAudioFile(file: File): boolean {
+  return file.type.startsWith('audio/');
 }

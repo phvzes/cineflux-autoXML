@@ -1,3 +1,4 @@
+
 /**
  * EditDecisionEngine.ts
  * 
@@ -9,38 +10,41 @@ import {
   VideoAnalysis, 
   Scene, 
   ClipType, 
-  TimelineMarker, 
-  MarkerType 
+  SceneType
 } from '../types/video-types';
 import { 
   Beat, 
   AudioSegment, 
   AudioAnalysis 
-} from '../types/audio-types'; // You may need to create or update this file
+} from '../types/audio-types';
 import { 
   EditDecision, 
   EditPoint, 
-  TransitionType, 
-  EditStyle, 
-  ProjectSettings, 
-  VideoClipAssignment,
-  EditDecisionEngineEvents
-} from '../types/edit-types'; // You may need to create this file
+  EditSettings,
+  EditMatch
+} from '../types/edit-types';
+import { TransitionType } from '../types/workflow/EditDecision';
 
 // Import the services
-import AudioService from './AudioService';
-import VideoService from './VideoService';
+import { AudioService } from './AudioService';
+import { VideoService } from './VideoService';
 
 /**
  * EditDecisionEngine generates automatic edits based on audio and video analysis
  */
 export class EditDecisionEngine {
+  // Singleton instance
+  private static instance: EditDecisionEngine;
+
   private eventListeners: Map<EditDecisionEngineEvents, Function[]> = new Map();
   private editCache: Map<string, EditDecision[]> = new Map();
   private audioService: typeof AudioService;
   private videoService: typeof VideoService;
   
-  constructor(
+  /**
+   * Private constructor to prevent direct instantiation
+   */
+  private constructor(
     audioService = AudioService,
     videoService = VideoService
   ) {
@@ -49,9 +53,37 @@ export class EditDecisionEngine {
       this.eventListeners.set(event, []);
     });
 
+    /**
+     * INTEGRATION POINT: EditDecisionEngine -> AudioService, VideoService
+     * 
+     * Here the EditDecisionEngine integrates with both AudioService and VideoService.
+     * This integration happens at the constructor level, where references to both services
+     * are stored for later use throughout the engine's lifecycle.
+     * 
+     * This design allows:
+     * 1. Dependency injection for easier testing (services can be mocked)
+     * 2. Singleton pattern enforcement for consistent state management
+     * 3. Clear separation of concerns between audio analysis, video analysis, and edit decision logic
+     * 
+     * The EditDecisionEngine will use these services to:
+     * - Get audio analysis data (beats, segments, energy levels) from AudioService
+     * - Get video analysis data (scenes, content, motion) from VideoService
+     * - Combine these analyses to generate intelligent edit decisions
+     */
     // Store service references
     this.audioService = audioService;
     this.videoService = videoService;
+  }
+  
+  /**
+   * Get the singleton instance of EditDecisionEngine
+   * @returns The EditDecisionEngine instance
+   */
+  public static getInstance(): EditDecisionEngine {
+    if (!EditDecisionEngine.instance) {
+      EditDecisionEngine.instance = new EditDecisionEngine();
+    }
+    return EditDecisionEngine.instance;
   }
   
   /**
@@ -66,30 +98,43 @@ export class EditDecisionEngine {
     videoAnalyses: Record<string, VideoAnalysis>,
     settings: ProjectSettings
   ): Promise<EditDecision[]> {
+    return EditDecisionEngine.generateEditDecisions(audioAnalysis, videoAnalyses, settings);
+  }
+
+  /**
+   * Static implementation of generateEditDecisions
+   */
+  static async generateEditDecisions(
+    audioAnalysis: AudioAnalysis,
+    videoAnalyses: Record<string, VideoAnalysis>,
+    settings: ProjectSettings
+  ): Promise<EditDecision[]> {
     try {
+      const instance = this.getInstance();
+      
       // Check cache first
-      const cacheKey = this.getCacheKey(audioAnalysis, videoAnalyses, settings);
-      if (this.editCache.has(cacheKey)) {
-        return this.editCache.get(cacheKey)!;
+      const cacheKey = instance.getCacheKey(audioAnalysis, videoAnalyses, settings);
+      if (instance.editCache.has(cacheKey)) {
+        return instance.editCache.get(cacheKey)!;
       }
       
       // Emit start event
-      this.emitEvent(EditDecisionEngineEvents.GENERATION_START, { 
+      instance.emitEvent(EditDecisionEngineEvents.GENERATION_START, { 
         audioAnalysis, 
         videoAnalyses, 
         settings 
       });
       
       // Step 1: Generate cut points based on audio analysis
-      this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+      instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Generating cut points...',
         progress: 0.1 
       });
       
-      const cutPoints = this.getCutPoints(audioAnalysis, settings.editStyle);
+      const cutPoints = instance.getCutPoints(audioAnalysis, settings.editStyle);
       
       // Step 2: Assign video clips to each cut point
-      this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+      instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Assigning video clips...',
         progress: 0.3 
       });
@@ -115,10 +160,10 @@ export class EditDecisionEngine {
         const duration = nextCutPoint ? nextCutPoint.time - cutPoint.time : 2.0;
         
         // Find best matching clip
-        const clipAssignment = await this.findBestClip(cutPoint, videoPool, duration);
+        const clipAssignment = await instance.findBestClip(cutPoint, videoPool, duration);
         
         // Determine transition type
-        const transition = this.determineTransition(cutPoint, settings);
+        const transition = instance.determineTransition(cutPoint, settings);
         
         // Create edit decision
         const decision: EditDecision = {
@@ -138,25 +183,25 @@ export class EditDecisionEngine {
         decisions.push(decision);
         
         // Update progress
-        this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+        instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
           message: `Processing cut point ${i + 1} of ${cutPoints.length}...`,
           progress: 0.3 + (0.6 * (i / cutPoints.length)) 
         });
       }
       
       // Step 3: Optimize the edit decisions
-      this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+      instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Optimizing edit decisions...',
         progress: 0.9 
       });
       
-      const optimizedDecisions = this.optimizeEditDecisions(decisions);
+      const optimizedDecisions = instance.optimizeEditDecisions(decisions);
       
       // Cache the result
-      this.editCache.set(cacheKey, optimizedDecisions);
+      instance.editCache.set(cacheKey, optimizedDecisions);
       
       // Emit complete event
-      this.emitEvent(EditDecisionEngineEvents.GENERATION_COMPLETE, { 
+      instance.emitEvent(EditDecisionEngineEvents.GENERATION_COMPLETE, { 
         decisions: optimizedDecisions 
       });
       
@@ -165,7 +210,8 @@ export class EditDecisionEngine {
       console.error('Error generating edit decisions:', error);
       
       // Emit error event
-      this.emitEvent(EditDecisionEngineEvents.ERROR, { 
+      const instance = this.getInstance();
+      instance.emitEvent(EditDecisionEngineEvents.ERROR, { 
         message: `Failed to generate edit decisions: ${error.message}`,
         error 
       });
@@ -186,26 +232,69 @@ export class EditDecisionEngine {
     videoFiles: File[],
     settings: ProjectSettings
   ): Promise<EditDecision[]> {
+    return EditDecisionEngine.analyzeAndGenerateDecisions(audioFile, videoFiles, settings);
+  }
+
+  /**
+   * Static implementation of analyzeAndGenerateDecisions
+   */
+  static async analyzeAndGenerateDecisions(
+    audioFile: File,
+    videoFiles: File[],
+    settings: ProjectSettings
+  ): Promise<EditDecision[]> {
     try {
+      const instance = this.getInstance();
+      
+      /**
+       * INTEGRATION POINT: EditDecisionEngine -> AudioService
+       * 
+       * This is a critical integration point where EditDecisionEngine uses AudioService
+       * to analyze the audio file. The flow is:
+       * 
+       * 1. EditDecisionEngine receives the raw audio file from the user
+       * 2. It calls AudioService.analyzeAudio() to process the file
+       * 3. AudioService performs beat detection, energy analysis, and segment detection
+       * 4. The analysis results are returned to EditDecisionEngine
+       * 5. EditDecisionEngine uses this data to determine where to place edit points
+       * 
+       * This integration enables the core functionality of matching video edits to 
+       * musical elements like beats, energy changes, and structural segments.
+       */
       // Step 1: Analyze audio using AudioService
-      this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+      instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Analyzing audio...',
         progress: 0.1 
       });
 
-      const audioAnalysis = await this.audioService.analyzeAudio(
+      const audioAnalysis = await instance.audioService.analyzeAudio(
         audioFile,
         (progress, step) => {
           // Map audio analysis progress to 10-40% of total progress
-          this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+          instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
             message: step,
             progress: 0.1 + (progress * 0.3 / 100)
           });
         }
       );
 
+      /**
+       * INTEGRATION POINT: EditDecisionEngine -> VideoService
+       * 
+       * This is another critical integration point where EditDecisionEngine uses VideoService
+       * to analyze each video file. The flow is:
+       * 
+       * 1. EditDecisionEngine receives the raw video files from the user
+       * 2. For each file, it calls VideoService.analyzeVideo() to process the file
+       * 3. VideoService performs scene detection, content analysis, and motion analysis
+       * 4. The analysis results are collected in the videoAnalyses object
+       * 5. EditDecisionEngine uses this data to match appropriate video clips to edit points
+       * 
+       * This integration enables intelligent selection of video clips based on their
+       * content, motion, and scene boundaries to create a cohesive edit.
+       */
       // Step 2: Analyze videos using VideoService
-      this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+      instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Analyzing videos...',
         progress: 0.4 
       });
@@ -215,17 +304,17 @@ export class EditDecisionEngine {
       for (let i = 0; i < videoFiles.length; i++) {
         const videoFile = videoFiles[i];
         
-        this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+        instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
           message: `Analyzing video ${i + 1} of ${videoFiles.length}...`,
           progress: 0.4 + (0.3 * (i / videoFiles.length))
         });
 
-        const videoAnalysis = await this.videoService.analyzeVideo(videoFile);
+        const videoAnalysis = await instance.videoService.analyzeVideo(videoFile);
         videoAnalyses[videoAnalysis.videoId] = videoAnalysis;
       }
 
       // Step 3: Generate edit decisions
-      this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
+      instance.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
         message: 'Generating edit decisions...',
         progress: 0.7
       });
@@ -235,7 +324,8 @@ export class EditDecisionEngine {
       console.error('Error analyzing and generating decisions:', error);
       
       // Emit error event
-      this.emitEvent(EditDecisionEngineEvents.ERROR, { 
+      const instance = this.getInstance();
+      instance.emitEvent(EditDecisionEngineEvents.ERROR, { 
         message: `Failed to analyze and generate decisions: ${error.message}`,
         error 
       });
@@ -266,6 +356,14 @@ export class EditDecisionEngine {
    * @returns Array of cut points
    */
   getCutPoints(audioAnalysis: AudioAnalysis, style: EditStyle): EditPoint[] {
+    return EditDecisionEngine.getCutPoints(audioAnalysis, style);
+  }
+
+  /**
+   * Static implementation of getCutPoints
+   */
+  static getCutPoints(audioAnalysis: AudioAnalysis, style: EditStyle): EditPoint[] {
+    const instance = this.getInstance();
     const cutPoints: EditPoint[] = [];
     
     // Always start with a cut at the beginning
@@ -280,24 +378,24 @@ export class EditDecisionEngine {
     // Different strategies based on edit style
     switch (style) {
       case EditStyle.RHYTHM_MATCH:
-        this.generateRhythmBasedCuts(audioAnalysis, cutPoints);
+        instance.generateRhythmBasedCuts(audioAnalysis, cutPoints);
         break;
         
       case EditStyle.SEGMENT_BASED:
-        this.generateSegmentBasedCuts(audioAnalysis, cutPoints);
+        instance.generateSegmentBasedCuts(audioAnalysis, cutPoints);
         break;
         
       case EditStyle.ENERGY_BASED:
-        this.generateEnergyBasedCuts(audioAnalysis, cutPoints);
+        instance.generateEnergyBasedCuts(audioAnalysis, cutPoints);
         break;
         
       case EditStyle.CINEMATIC:
-        this.generateCinematicCuts(audioAnalysis, cutPoints);
+        instance.generateCinematicCuts(audioAnalysis, cutPoints);
         break;
         
       default:
         // Default to rhythm-based
-        this.generateRhythmBasedCuts(audioAnalysis, cutPoints);
+        instance.generateRhythmBasedCuts(audioAnalysis, cutPoints);
     }
     
     // Sort cut points by time
@@ -719,6 +817,19 @@ export class EditDecisionEngine {
     videoPool: { analysis: VideoAnalysis, videoId: string }[],
     duration: number
   ): Promise<VideoClipAssignment> {
+    return EditDecisionEngine.findBestClip(cutPoint, videoPool, duration);
+  }
+
+  /**
+   * Static implementation of findBestClip
+   */
+  static async findBestClip(
+    cutPoint: EditPoint,
+    videoPool: { analysis: VideoAnalysis, videoId: string }[],
+    duration: number
+  ): Promise<VideoClipAssignment> {
+    const instance = this.getInstance();
+    
     // No videos available
     if (!videoPool.length) {
       throw new Error('No videos available to assign to cut point');
@@ -841,6 +952,13 @@ export class EditDecisionEngine {
    * @returns Appropriate transition type
    */
   determineTransition(cutPoint: EditPoint, settings: ProjectSettings): TransitionType {
+    return EditDecisionEngine.determineTransition(cutPoint, settings);
+  }
+
+  /**
+   * Static implementation of determineTransition
+   */
+  static determineTransition(cutPoint: EditPoint, settings: ProjectSettings): TransitionType {
     // Default to cut for most transitions
     let transition = TransitionType.CUT;
     
@@ -899,6 +1017,13 @@ export class EditDecisionEngine {
    * @returns Optimized edit decisions
    */
   optimizeEditDecisions(decisions: EditDecision[]): EditDecision[] {
+    return EditDecisionEngine.optimizeEditDecisions(decisions);
+  }
+
+  /**
+   * Static implementation of optimizeEditDecisions
+   */
+  static optimizeEditDecisions(decisions: EditDecision[]): EditDecision[] {
     if (decisions.length <= 1) {
       return [...decisions];
     }
@@ -995,6 +1120,15 @@ export class EditDecisionEngine {
    * @returns Updated edit decisions
    */
   regenerateWithStyle(decisions: EditDecision[], newStyle: EditStyle): EditDecision[] {
+    return EditDecisionEngine.regenerateWithStyle(decisions, newStyle);
+  }
+
+  /**
+   * Static implementation of regenerateWithStyle
+   */
+  static regenerateWithStyle(decisions: EditDecision[], newStyle: EditStyle): EditDecision[] {
+    const instance = this.getInstance();
+    
     // Create a copy of the decisions
     const updated = [...decisions];
     
@@ -1015,11 +1149,11 @@ export class EditDecisionEngine {
       };
       
       // Determine new transition based on the style
-      decision.transitionType = this.determineTransition(cutPoint, { editStyle: newStyle } as ProjectSettings);
+      decision.transitionType = instance.determineTransition(cutPoint, { editStyle: newStyle } as ProjectSettings);
     }
     
     // Optimize the updated decisions
-    return this.optimizeEditDecisions(updated);
+    return instance.optimizeEditDecisions(updated);
   }
   
   /**
@@ -1030,6 +1164,17 @@ export class EditDecisionEngine {
    * @returns Updated edit decisions
    */
   applyManualEdit(
+    decisions: EditDecision[],
+    editIndex: number,
+    newSettings: Partial<EditDecision>
+  ): EditDecision[] {
+    return EditDecisionEngine.applyManualEdit(decisions, editIndex, newSettings);
+  }
+
+  /**
+   * Static implementation of applyManualEdit
+   */
+  static applyManualEdit(
     decisions: EditDecision[],
     editIndex: number,
     newSettings: Partial<EditDecision>
@@ -1065,6 +1210,13 @@ export class EditDecisionEngine {
    * @returns Array of timeline markers
    */
   generateTimelineMarkers(decisions: EditDecision[]): TimelineMarker[] {
+    return EditDecisionEngine.generateTimelineMarkers(decisions);
+  }
+
+  /**
+   * Static implementation of generateTimelineMarkers
+   */
+  static generateTimelineMarkers(decisions: EditDecision[]): TimelineMarker[] {
     const markers: TimelineMarker[] = [];
     
     decisions.forEach((decision, index) => {
@@ -1098,8 +1250,16 @@ export class EditDecisionEngine {
    * Disposes of resources and clears caches
    */
   dispose(): void {
-    this.editCache.clear();
-    this.eventListeners.clear();
+    EditDecisionEngine.dispose();
+  }
+
+  /**
+   * Static implementation of dispose
+   */
+  static dispose(): void {
+    const instance = this.getInstance();
+    instance.editCache.clear();
+    instance.eventListeners.clear();
   }
   
   /**
@@ -1108,9 +1268,17 @@ export class EditDecisionEngine {
    * @param callback Callback function to execute when event occurs
    */
   addEventListener(event: EditDecisionEngineEvents, callback: Function): void {
-    const listeners = this.eventListeners.get(event) || [];
+    EditDecisionEngine.addEventListener(event, callback);
+  }
+
+  /**
+   * Static implementation of addEventListener
+   */
+  static addEventListener(event: EditDecisionEngineEvents, callback: Function): void {
+    const instance = this.getInstance();
+    const listeners = instance.eventListeners.get(event) || [];
     listeners.push(callback);
-    this.eventListeners.set(event, listeners);
+    instance.eventListeners.set(event, listeners);
   }
   
   /**
@@ -1119,9 +1287,17 @@ export class EditDecisionEngine {
    * @param callback The callback function to remove
    */
   removeEventListener(event: EditDecisionEngineEvents, callback: Function): void {
-    const listeners = this.eventListeners.get(event) || [];
+    EditDecisionEngine.removeEventListener(event, callback);
+  }
+
+  /**
+   * Static implementation of removeEventListener
+   */
+  static removeEventListener(event: EditDecisionEngineEvents, callback: Function): void {
+    const instance = this.getInstance();
+    const listeners = instance.eventListeners.get(event) || [];
     const filteredListeners = listeners.filter(listener => listener !== callback);
-    this.eventListeners.set(event, filteredListeners);
+    instance.eventListeners.set(event, filteredListeners);
   }
   
   /**
@@ -1141,6 +1317,5 @@ export class EditDecisionEngine {
   }
 }
 
-// Export singleton instance
-const editDecisionEngine = new EditDecisionEngine();
-export default editDecisionEngine;
+// Export the singleton instance
+export default EditDecisionEngine.getInstance();
