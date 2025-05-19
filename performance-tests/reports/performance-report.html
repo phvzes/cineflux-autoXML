@@ -1,0 +1,487 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>CineFlux-AutoXML Performance Report</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        h1 {
+          color: #2c3e50;
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        h2 {
+          color: #3498db;
+          border-bottom: 2px solid #3498db;
+          padding-bottom: 5px;
+          margin-top: 30px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 30px;
+        }
+        th, td {
+          padding: 12px 15px;
+          text-align: left;
+          border-bottom: 1px solid #ddd;
+        }
+        th {
+          background-color: #f8f9fa;
+          font-weight: bold;
+        }
+        tr:hover {
+          background-color: #f5f5f5;
+        }
+        .chart-container {
+          height: 300px;
+          margin-bottom: 50px;
+        }
+        .timestamp {
+          text-align: center;
+          color: #7f8c8d;
+          font-size: 0.9em;
+          margin-bottom: 30px;
+        }
+      </style>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body>
+      <h1>CineFlux-AutoXML Performance Report</h1>
+      <p class="timestamp">Generated on 5/19/2025, 7:52:51 AM</p>
+    
+        <h2>WebAssembly Loading</h2>
+        <div class="chart-container">
+          <canvas id="webassembly-loading-chart"></canvas>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th>Average (ms)</th>
+              <th>Median (ms)</th>
+              <th>Min (ms)</th>
+              <th>Max (ms)</th>
+              <th>Iterations</th>
+            </tr>
+          </thead>
+          <tbody>
+      
+          <tr>
+            <td>FFmpeg.wasm Loading</td>
+            <td>0.15</td>
+            <td>0.07</td>
+            <td>0.05</td>
+            <td>0.37</td>
+            <td>5</td>
+          </tr>
+        
+          <tr>
+            <td>OpenCV.js Loading</td>
+            <td>0.01</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td>0.04</td>
+            <td>5</td>
+          </tr>
+        
+          <tr>
+            <td>Web Audio API Initialization</td>
+            <td>0.07</td>
+            <td>0.05</td>
+            <td>0.04</td>
+            <td>0.17</td>
+            <td>5</td>
+          </tr>
+        
+          </tbody>
+        </table>
+      
+        <h2>Audio Analysis</h2>
+        <div class="chart-container">
+          <canvas id="audio-analysis-chart"></canvas>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th>Average (ms)</th>
+              <th>Median (ms)</th>
+              <th>Min (ms)</th>
+              <th>Max (ms)</th>
+              <th>Iterations</th>
+            </tr>
+          </thead>
+          <tbody>
+      
+          <tr>
+            <td>Beat Detection</td>
+            <td>54.44</td>
+            <td>53.04</td>
+            <td>49.54</td>
+            <td>60.72</td>
+            <td>3</td>
+          </tr>
+        
+          <tr>
+            <td>Waveform Generation</td>
+            <td>54.58</td>
+            <td>56.01</td>
+            <td>49.27</td>
+            <td>58.45</td>
+            <td>3</td>
+          </tr>
+        
+          <tr>
+            <td>Frequency Analysis</td>
+            <td>55.55</td>
+            <td>53.39</td>
+            <td>47.00</td>
+            <td>66.25</td>
+            <td>3</td>
+          </tr>
+        
+          <tr>
+            <td>Beat Detection</td>
+            <td>47.67</td>
+            <td>47.60</td>
+            <td>47.48</td>
+            <td>47.92</td>
+            <td>3</td>
+          </tr>
+        
+          <tr>
+            <td>Waveform Generation</td>
+            <td>47.17</td>
+            <td>46.42</td>
+            <td>46.17</td>
+            <td>48.93</td>
+            <td>3</td>
+          </tr>
+        
+          <tr>
+            <td>Frequency Analysis</td>
+            <td>46.48</td>
+            <td>45.98</td>
+            <td>45.59</td>
+            <td>47.88</td>
+            <td>3</td>
+          </tr>
+        
+          </tbody>
+        </table>
+      
+        <h2>Video Processing</h2>
+        <div class="chart-container">
+          <canvas id="video-processing-chart"></canvas>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th>Average (ms)</th>
+              <th>Median (ms)</th>
+              <th>Min (ms)</th>
+              <th>Max (ms)</th>
+              <th>Iterations</th>
+            </tr>
+          </thead>
+          <tbody>
+      
+          <tr>
+            <td>Frame Extraction</td>
+            <td>200.40</td>
+            <td>200.38</td>
+            <td>200.36</td>
+            <td>200.45</td>
+            <td>3</td>
+          </tr>
+        
+          <tr>
+            <td>Scene Detection</td>
+            <td>100.22</td>
+            <td>100.22</td>
+            <td>100.18</td>
+            <td>100.27</td>
+            <td>3</td>
+          </tr>
+        
+          <tr>
+            <td>Thumbnail Generation</td>
+            <td>150.35</td>
+            <td>150.35</td>
+            <td>150.34</td>
+            <td>150.37</td>
+            <td>3</td>
+          </tr>
+        
+          </tbody>
+        </table>
+      
+        <h2>Edit Decision Generation</h2>
+        <div class="chart-container">
+          <canvas id="edit-decision-generation-chart"></canvas>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th>Average (ms)</th>
+              <th>Median (ms)</th>
+              <th>Min (ms)</th>
+              <th>Max (ms)</th>
+              <th>Iterations</th>
+            </tr>
+          </thead>
+          <tbody>
+      
+          <tr>
+            <td>EDL Generation</td>
+            <td>0.06</td>
+            <td>0.01</td>
+            <td>0.00</td>
+            <td>0.22</td>
+            <td>5</td>
+          </tr>
+        
+          <tr>
+            <td>XML Export</td>
+            <td>0.04</td>
+            <td>0.02</td>
+            <td>0.01</td>
+            <td>0.09</td>
+            <td>5</td>
+          </tr>
+        
+          <tr>
+            <td>Edit Optimization</td>
+            <td>0.04</td>
+            <td>0.01</td>
+            <td>0.00</td>
+            <td>0.13</td>
+            <td>5</td>
+          </tr>
+        
+          <tr>
+            <td>EDL Generation</td>
+            <td>0.05</td>
+            <td>0.01</td>
+            <td>0.01</td>
+            <td>0.20</td>
+            <td>5</td>
+          </tr>
+        
+          <tr>
+            <td>XML Export</td>
+            <td>0.06</td>
+            <td>0.02</td>
+            <td>0.01</td>
+            <td>0.15</td>
+            <td>5</td>
+          </tr>
+        
+          <tr>
+            <td>Edit Optimization</td>
+            <td>0.03</td>
+            <td>0.01</td>
+            <td>0.00</td>
+            <td>0.09</td>
+            <td>5</td>
+          </tr>
+        
+          </tbody>
+        </table>
+      
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    
+          // Chart for WebAssembly Loading
+          new Chart(document.getElementById('webassembly-loading-chart'), {
+            type: 'bar',
+            data: {
+              labels: ['FFmpeg.wasm Loading', 'OpenCV.js Loading', 'Web Audio API Initialization'],
+              datasets: [
+                {
+                  label: 'Average Time (ms)',
+                  data: [0.15, 0.01, 0.07],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Min Time (ms)',
+                  data: [0.05, 0.00, 0.04],
+                  backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Max Time (ms)',
+                  data: [0.37, 0.04, 0.17],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Time (ms)'
+                  }
+                }
+              }
+            }
+          });
+      
+          // Chart for Audio Analysis
+          new Chart(document.getElementById('audio-analysis-chart'), {
+            type: 'bar',
+            data: {
+              labels: ['Beat Detection', 'Waveform Generation', 'Frequency Analysis', 'Beat Detection', 'Waveform Generation', 'Frequency Analysis'],
+              datasets: [
+                {
+                  label: 'Average Time (ms)',
+                  data: [54.44, 54.58, 55.55, 47.67, 47.17, 46.48],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Min Time (ms)',
+                  data: [49.54, 49.27, 47.00, 47.48, 46.17, 45.59],
+                  backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Max Time (ms)',
+                  data: [60.72, 58.45, 66.25, 47.92, 48.93, 47.88],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Time (ms)'
+                  }
+                }
+              }
+            }
+          });
+      
+          // Chart for Video Processing
+          new Chart(document.getElementById('video-processing-chart'), {
+            type: 'bar',
+            data: {
+              labels: ['Frame Extraction', 'Scene Detection', 'Thumbnail Generation'],
+              datasets: [
+                {
+                  label: 'Average Time (ms)',
+                  data: [200.40, 100.22, 150.35],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Min Time (ms)',
+                  data: [200.36, 100.18, 150.34],
+                  backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Max Time (ms)',
+                  data: [200.45, 100.27, 150.37],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Time (ms)'
+                  }
+                }
+              }
+            }
+          });
+      
+          // Chart for Edit Decision Generation
+          new Chart(document.getElementById('edit-decision-generation-chart'), {
+            type: 'bar',
+            data: {
+              labels: ['EDL Generation', 'XML Export', 'Edit Optimization', 'EDL Generation', 'XML Export', 'Edit Optimization'],
+              datasets: [
+                {
+                  label: 'Average Time (ms)',
+                  data: [0.06, 0.04, 0.04, 0.05, 0.06, 0.03],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Min Time (ms)',
+                  data: [0.00, 0.01, 0.00, 0.01, 0.01, 0.00],
+                  backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  borderWidth: 1
+                },
+                {
+                  label: 'Max Time (ms)',
+                  data: [0.22, 0.09, 0.13, 0.20, 0.15, 0.09],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Time (ms)'
+                  }
+                }
+              }
+            }
+          });
+      
+        });
+      </script>
+    </body>
+    </html>
+    
