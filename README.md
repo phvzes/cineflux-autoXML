@@ -1,4 +1,3 @@
-
 # CineFlux-AutoXML
 
 ```
@@ -23,49 +22,98 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Vite](https://img.shields.io/badge/Vite-5.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![CI Status](https://img.shields.io/github/actions/workflow/status/your-username/cineflux-autoxml/ci.yml?branch=main&label=CI)](https://github.com/your-username/cineflux-autoxml/actions)
 [![Version](https://img.shields.io/badge/Version-0.1.0-brightgreen)](VERSION.md)
-
-## Description
-
-CineFlux-AutoXML is a powerful browser-based application that automatically creates professional music videos by intelligently synchronizing video clips with music tracks. Using advanced audio analysis and visual content recognition, it identifies musical beats, energy levels, and video scene changes to create perfectly timed edits. The system exports industry-standard XML files compatible with professional editing software like Final Cut Pro, Adobe Premiere Pro, and DaVinci Resolve.
 
 ## Table of Contents
 
-- [Key Features](#key-features)
-- [Installation](#installation)
-- [Development Workflow](#development-workflow)
-- [Build Process](#build-process)
-- [Deployment Options](#deployment-options)
-- [Performance Optimization](#performance-optimization)
-- [Browser Compatibility](#browser-compatibility)
-- [Contributing](#contributing)
+- [Project Overview](#project-overview)
+- [Architecture](#architecture)
+- [Quick Start Guide](#quick-start-guide)
+- [Technology Stack](#technology-stack)
+- [Performance Expectations](#performance-expectations)
+- [Documentation](#documentation)
 - [License](#license)
 
-## Key Features
+## Project Overview
+
+CineFlux-AutoXML is a powerful browser-based application that automatically creates professional music videos by intelligently synchronizing video clips with music tracks. Using advanced audio analysis and visual content recognition, it identifies musical beats, energy levels, and video scene changes to create perfectly timed edits. The system exports industry-standard XML files compatible with professional editing software like Final Cut Pro, Adobe Premiere Pro, and DaVinci Resolve.
+
+### Key Features
 
 - **Intelligent Audio Analysis**: Automatically detects beats, identifies segments, and creates energy profiles from music tracks to drive video editing decisions.
-
 - **Advanced Video Analysis**: Performs scene detection, content analysis, and motion tracking to identify optimal cut points and transitions.
-
 - **Beat-Synchronized Editing**: Precisely matches video cuts and transitions with musical beats and energy changes for professional-quality results.
-
 - **Real-time Preview**: Visualizes edits in the browser before export, allowing for adjustments and fine-tuning.
-
 - **Multi-format Export**: Generates industry-standard XML files (FCPXML, Adobe Premiere Pro XML, DaVinci Resolve XML) for seamless integration with professional editing software.
-
 - **Browser-based Processing**: Performs all operations client-side using WebAssembly technologies, ensuring privacy and eliminating the need for server uploads.
 
-## Installation
+### Use Cases and Target Audience
+
+- **Content Creators**: YouTubers, social media influencers, and digital marketers looking to create engaging music-driven content quickly.
+- **Music Video Producers**: Professional and amateur music video creators seeking to streamline their workflow.
+- **Editors**: Video editors looking for a tool to automate the initial synchronization of music and video.
+- **Musicians**: Artists wanting to create promotional videos for their music without extensive editing knowledge.
+- **Event Videographers**: Wedding and event videographers creating highlight reels synchronized to music.
+- **Educational Institutions**: Schools and universities teaching video production with limited resources.
+
+## Architecture
+
+CineFlux-AutoXML uses a client-side processing architecture that leverages WebAssembly for high-performance audio and video processing directly in the browser.
+
+### Architecture Diagram
+
+```mermaid
+graph TD
+    subgraph "Client Browser"
+        A[User Interface] --> B[Project Manager]
+        B --> C[Input Module]
+        C --> D[Media Files]
+        D --> E[Audio Analysis Module]
+        D --> F[Video Analysis Module]
+        E --> G[Edit Decision Engine]
+        F --> G
+        G --> H[Preview Generator]
+        H --> I[Export Module]
+        I --> J[XML Output]
+    end
+
+    subgraph "WebAssembly Modules"
+        K[FFmpeg.wasm] --- F & E & H
+        L[OpenCV.js] --- F
+        M[Essentia.js] --- E
+    end
+
+    subgraph "Web APIs"
+        N[Web Audio API] --- E
+        O[Canvas API] --- H
+        P[File System API] --- C & J
+        Q[Web Workers API] --- E & F & G
+    end
+```
+
+### Architecture Explanation
+
+CineFlux-AutoXML is built on a modular architecture that processes everything client-side:
+
+1. **Input Module**: Handles file uploads and initial processing of audio and video files.
+2. **Audio Analysis Module**: Analyzes music tracks to detect beats, energy levels, and segments.
+3. **Video Analysis Module**: Processes video clips to detect scenes, content, and motion.
+4. **Edit Decision Engine**: Combines audio and video analysis to generate synchronized edit decisions.
+5. **Preview Generator**: Creates a real-time preview of the edited video.
+6. **Export Module**: Generates industry-standard XML files for professional editing software.
+
+All processing occurs in the browser using WebAssembly modules (FFmpeg.wasm, OpenCV.js, Essentia.js) and Web APIs (Web Audio API, Canvas API, Web Workers). This architecture ensures user privacy as no media files are uploaded to servers, and provides high performance through optimized compiled code.
+
+## Quick Start Guide
 
 ### Prerequisites
 
 - Node.js 16.x or higher
 - npm or pnpm package manager
-- Modern browser with WebAssembly support
+- Modern browser with WebAssembly support (Chrome 74+, Firefox 78+, Safari 14.1+, Edge 79+)
 - Git
 
-### Setup Instructions
+### Installation
 
 #### Standard Installation
 
@@ -100,7 +148,7 @@ CineFlux-AutoXML is a powerful browser-based application that automatically crea
 
 #### Docker Installation
 
-For Docker-based installation, refer to the [Docker Usage Guide](docs/DOCKER.md).
+For Docker-based installation:
 
 1. Start the development environment:
    ```bash
@@ -112,237 +160,102 @@ For Docker-based installation, refer to the [Docker Usage Guide](docs/DOCKER.md)
    docker-compose up app-prod
    ```
 
-### Environment Configuration
-
-1. Copy the example environment file:
-   ```bash
-   cp .env.example .env.development.local
-   ```
-
-2. Adjust the environment variables as needed.
-
-## Development Workflow
-
-### Project Structure
-
-```
-cineflux-autoxml/
-├── public/            # Static assets
-├── src/
-│   ├── components/    # React components
-│   ├── modules/       # Core modules
-│   │   ├── input/
-│   │   ├── audio/
-│   │   ├── video/
-│   │   ├── edit/
-│   │   ├── preview/
-│   │   └── export/
-│   ├── services/      # Core services
-│   │   ├── audio/
-│   │   ├── video/
-│   │   ├── project/
-│   │   ├── storage/
-│   │   └── export/
-│   ├── utils/         # Utility functions
-│   ├── hooks/         # Custom React hooks
-│   ├── types/         # TypeScript type definitions
-│   ├── App.tsx        # Main application component
-│   └── main.tsx       # Application entry point
-├── tests/             # Test files
-├── docs/              # Documentation
-└── vite.config.ts     # Vite configuration
-```
-
-### Development Commands
-
-- `npm run dev` - Start the development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview the production build
-- `npm run test` - Run tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:e2e` - Run end-to-end tests with Cypress
-- `npm run lint` - Run linting
-- `npm run format` - Format code with Prettier
-- `npm run type-check` - Run TypeScript type checking
-- `npm run clean` - Remove build artifacts
-
-### Git Workflow
-
-1. Create a feature branch from `main`:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. Make your changes and commit them with descriptive messages following [Conventional Commits](https://www.conventionalcommits.org/).
-
-3. Push your branch and create a pull request.
-
-4. Ensure CI checks pass before merging.
-
-## Build Process
-
-### Standard Build
-
-The build process uses Vite for fast and optimized builds:
-
-```bash
-# Production build
-npm run build
-
-# Development build
-npm run build:dev
-
-# Build with bundle analysis
-npm run build:analyze
-```
-
-### Build Optimization
-
-The build process includes several optimizations:
-
-- **Code Splitting**: Automatically splits code into chunks for better loading performance
-- **Tree Shaking**: Removes unused code
-- **Minification**: Reduces file sizes
-- **Compression**: Applies gzip/brotli compression
-- **WebAssembly Optimization**: Optimizes loading of WebAssembly modules
-
-For detailed information on build optimizations, see [Build Optimization Guide](docs/BUILD_OPTIMIZATION.md).
-
-### TypeScript Configuration
-
-The project uses TypeScript for type safety. The build process includes:
-
-- Type checking before build
-- Separate tsconfig files for different build targets
-- Optimized TypeScript compilation
-
-## Deployment Options
-
-CineFlux-AutoXML supports multiple deployment options:
-
-### Docker Deployment
-
-The recommended deployment method is using Docker:
-
-```bash
-# Build and run the production container
-docker-compose up -d app-prod
-```
-
-For detailed Docker deployment instructions, see the [Docker Usage Guide](docs/DOCKER.md).
-
-### Static Hosting
-
-The application can be deployed to any static hosting service:
-
-1. Build the application:
-   ```bash
-   npm run build
-   ```
-
-2. Deploy the `dist` directory to your hosting service.
-
-### CI/CD Integration
-
-The project includes GitHub Actions workflows for continuous integration:
-
-- Automated testing
-- Linting and formatting checks
-- Build verification
-
-To set up continuous deployment:
-
-1. Configure your deployment platform (Netlify, Vercel, GitHub Pages)
-2. Connect your repository
-3. Set the build command to `npm run build`
-4. Set the publish directory to `dist`
-
-## Performance Optimization
-
-### Client-side Processing Architecture
-
-CineFlux-AutoXML employs a client-side processing architecture that prioritizes:
-
-- **User Privacy**: All processing happens locally
-- **Performance**: Uses WebAssembly for near-native performance
-- **Accessibility**: Works offline after initial load
-
-### Optimization Techniques
-
-- **WebAssembly Modules**: Uses compiled C/C++ code for performance-critical operations
-- **Web Workers**: Offloads heavy processing to background threads
-- **Memory Management**: Implements efficient memory usage patterns
-- **Caching**: Caches processed data to avoid redundant calculations
-- **Lazy Loading**: Loads components and resources only when needed
-
-### Performance Monitoring
-
-The application includes performance monitoring tools:
-
-- Bundle size analysis
-- Runtime performance metrics
-- Memory usage tracking
-
-## Browser Compatibility
-
-CineFlux-AutoXML is compatible with modern browsers that support WebAssembly:
-
-| Browser | Minimum Version | Notes |
-|---------|----------------|-------|
-| Chrome  | 74+            | Recommended for best performance |
-| Firefox | 78+            | Full support |
-| Safari  | 14.1+          | May have limited WebAssembly performance |
-| Edge    | 79+            | Based on Chromium, good support |
-
-### Requirements
-
-- WebAssembly support
-- Web Audio API support
-- IndexedDB support
-- Sufficient memory (2GB+ recommended)
-- Modern JavaScript support (ES2020+)
-
-### Mobile Support
-
-- **iOS**: Limited support on Safari 14.5+
-- **Android**: Supported on Chrome 90+
-
-## Contributing
-
-We welcome contributions to CineFlux-AutoXML! Please follow these guidelines to contribute to the project.
-
-### Contribution Process
-
-1. **Fork the repository** to your GitHub account
-2. **Create a feature branch** from the `main` branch:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Make your changes** and commit them with descriptive messages
-4. **Push your branch** to your forked repository
-5. **Submit a pull request** to the main repository
-
-### Coding Standards
-
-- Follow the existing code style and formatting
-- Write meaningful commit messages following [Conventional Commits](https://www.conventionalcommits.org/)
-- Include tests for new features
-- Update documentation as necessary
-
-### Pull Request Guidelines
-
-- Provide a clear description of the changes
-- Link to any related issues
-- Include screenshots or GIFs for UI changes
-- Ensure all tests pass
-- Make sure your code is properly formatted
-
-### Development Practices
-
-- Use TypeScript for all new code
-- Follow React best practices
-- Write unit tests for new functionality
-- Document complex algorithms and functions
+### Basic Usage
+
+1. **Upload Media**: Upload your music track and video clips.
+2. **Analysis**: Let the application analyze your media files.
+3. **Edit**: Review and adjust the automatically generated edit decisions.
+4. **Preview**: Watch a real-time preview of your edited video.
+5. **Export**: Generate an XML file for your preferred editing software.
+
+For detailed usage instructions, refer to the [User Guide](USER_GUIDE.md).
+
+## Technology Stack
+
+CineFlux-AutoXML is built using a modern web technology stack with a focus on performance and modularity:
+
+### Frontend Framework and Libraries
+
+- **React 18+**: Core UI framework with TypeScript for type safety
+- **React Router**: For application navigation and routing
+- **Zustand**: Lightweight state management
+- **TailwindCSS**: Utility-first CSS framework for styling
+- **React Dropzone**: For file uploads
+- **WaveSurfer.js**: For audio waveform visualization
+
+### WebAssembly Modules
+
+- **FFmpeg.wasm**: WebAssembly port of FFmpeg for video processing
+  - Handles video decoding, encoding, and frame extraction
+  - Enables video format conversion and optimization
+  
+- **OpenCV.js**: WebAssembly port of OpenCV for computer vision
+  - Performs scene detection and video content analysis
+  - Enables motion tracking and visual feature extraction
+  
+- **Essentia.js**: WebAssembly port of Essentia for audio analysis
+  - Provides advanced beat detection and tempo estimation
+  - Enables music segmentation and energy analysis
+
+### Web APIs
+
+- **Web Audio API**: For audio processing and analysis
+- **Canvas API**: For visualization and rendering
+- **IndexedDB**: For client-side storage of project data
+- **Web Workers API**: For multi-threaded processing
+
+### Build and Deployment Tools
+
+- **Vite**: Fast, modern build tool and development server
+- **TypeScript**: For type safety and improved developer experience
+- **ESLint & Prettier**: For code quality and formatting
+- **Jest & Testing Library**: For unit and component testing
+- **Cypress**: For end-to-end testing
+- **Docker**: For containerized deployment
+
+## Performance Expectations
+
+### Minimum Hardware Requirements
+
+- **Processor**: Dual-core CPU, 2.0 GHz or higher
+- **Memory**: 4 GB RAM (8 GB recommended)
+- **Storage**: 500 MB available space for the application
+- **Internet**: Broadband connection for initial loading
+- **Display**: 1280x720 resolution or higher
+
+### Recommended Hardware
+
+- **Processor**: Quad-core CPU, 2.5 GHz or higher
+- **Memory**: 16 GB RAM
+- **Storage**: 2 GB available space for the application and temporary files
+- **Internet**: High-speed broadband connection
+- **Display**: 1920x1080 resolution or higher
+
+### Expected Performance Metrics
+
+| Operation | Low-end Hardware | Mid-range Hardware | High-end Hardware |
+|-----------|------------------|-------------------|-------------------|
+| Audio Analysis (5 min track) | 45-60 seconds | 20-30 seconds | 10-15 seconds |
+| Video Analysis (1 min clip, 1080p) | 60-90 seconds | 30-45 seconds | 15-20 seconds |
+| Preview Generation | 2-3x real-time | 1-1.5x real-time | 0.5-0.8x real-time |
+| XML Export | 10-15 seconds | 5-8 seconds | 2-4 seconds |
+
+### Browser Compatibility
+
+| Browser | Minimum Version | Recommended Version | Notes |
+|---------|----------------|---------------------|-------|
+| Chrome  | 74+            | 90+                 | Best performance and compatibility |
+| Firefox | 78+            | 86+                 | Good performance, some WebAssembly optimizations may be limited |
+| Safari  | 14.1+          | 15+                 | Acceptable performance, some WebAssembly features may be limited |
+| Edge    | 79+            | 90+                 | Based on Chromium, similar performance to Chrome |
+
+## Documentation
+
+- [User Guide](USER_GUIDE.md): Detailed instructions for using CineFlux-AutoXML
+- [Deployment Guide](docs/DEPLOYMENT.md): Instructions for deploying the application
+- [Developer Guide](docs/DEVELOPER.md): Information for developers contributing to the project
+- [API Documentation](docs/API.md): Documentation of the application's internal APIs
+- [Performance Optimization](docs/PERFORMANCE.md): Tips for optimizing performance
 
 ## License
 
