@@ -1,0 +1,186 @@
+name: Performance Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - integrate/production-ready
+
+jobs:
+  performance-tests:
+    name: Run Performance Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for comparing with base branch
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run performance tests
+        id: run-tests
+        run: npm run test:perf
+      
+      - name: Generate performance report
+        run: node performance-tests/report.js
+      
+      - name: Check for performance regressions
+        id: check-regressions
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Load current performance results
+            const currentReportPath = path.join(process.env.GITHUB_WORKSPACE, 'performance-tests/reports/combined-report.json');
+            const currentReport = JSON.parse(fs.readFileSync(currentReportPath, 'utf8'));
+            
+            // Get the base branch name
+            const baseBranch = context.payload.pull_request.base.ref;
+            
+            // Fetch the baseline report from the base branch if it exists
+            let baselineReport = null;
+            try {
+              // Try to get the baseline report from the base branch
+              await exec.exec('git', ['checkout', baseBranch]);
+              await exec.exec('npm', ['run', 'test:perf']);
+              await exec.exec('node', ['performance-tests/report.js']);
+              
+              const baselineReportPath = path.join(process.env.GITHUB_WORKSPACE, 'performance-tests/reports/combined-report.json');
+              if (fs.existsSync(baselineReportPath)) {
+                baselineReport = JSON.parse(fs.readFileSync(baselineReportPath, 'utf8'));
+              }
+              
+              // Go back to the PR branch
+              await exec.exec('git', ['checkout', context.payload.pull_request.head.ref]);
+            } catch (error) {
+              console.log('Error fetching baseline report:', error);
+              console.log('Will use current report as baseline');
+            }
+            
+            // If no baseline report, we can't compare, so exit
+            if (!baselineReport) {
+              console.log('No baseline report found. This is likely the first run.');
+              return;
+            }
+            
+            // Compare results and check for regressions
+            const regressions = [];
+            const improvements = [];
+            const unchanged = [];
+            
+            // Create a map of baseline results by name for easier lookup
+            const baselineResultsMap = {};
+            baselineReport.results.forEach(result => {
+              baselineResultsMap[result.name] = result;
+            });
+            
+            // Compare each current result with its baseline
+            currentReport.results.forEach(currentResult => {
+              const baselineResult = baselineResultsMap[currentResult.name];
+              
+              if (!baselineResult) {
+                console.log(`New metric: ${currentResult.name}`);
+                return;
+              }
+              
+              // Calculate percentage change
+              const percentChange = ((currentResult.average - baselineResult.average) / baselineResult.average) * 100;
+              
+              // Format the change for reporting
+              const changeInfo = {
+                name: currentResult.name,
+                current: currentResult.average.toFixed(2),
+                baseline: baselineResult.average.toFixed(2),
+                change: percentChange.toFixed(2) + '%'
+              };
+              
+              // Check if it's a regression (>10% slower)
+              if (percentChange > 10) {
+                regressions.push(changeInfo);
+              } else if (percentChange < -5) {
+                // It's an improvement (>5% faster)
+                improvements.push(changeInfo);
+              } else {
+                // No significant change
+                unchanged.push(changeInfo);
+              }
+            });
+            
+            // Generate a summary
+            let summary = '## Performance Test Results\n\n';
+            
+            if (regressions.length > 0) {
+              summary += '### ⚠️ Performance Regressions\n\n';
+              summary += '| Operation | Current (ms) | Baseline (ms) | Change |\n';
+              summary += '|-----------|--------------|---------------|--------|\n';
+              
+              regressions.forEach(reg => {
+                summary += `| ${reg.name} | ${reg.current} | ${reg.baseline} | ${reg.change} |\n`;
+              });
+              
+              summary += '\n';
+            }
+            
+            if (improvements.length > 0) {
+              summary += '### ✅ Performance Improvements\n\n';
+              summary += '| Operation | Current (ms) | Baseline (ms) | Change |\n';
+              summary += '|-----------|--------------|---------------|--------|\n';
+              
+              improvements.forEach(imp => {
+                summary += `| ${imp.name} | ${imp.current} | ${imp.baseline} | ${imp.change} |\n`;
+              });
+              
+              summary += '\n';
+            }
+            
+            if (unchanged.length > 0) {
+              summary += '### ℹ️ Unchanged Metrics\n\n';
+              summary += '| Operation | Current (ms) | Baseline (ms) | Change |\n';
+              summary += '|-----------|--------------|---------------|--------|\n';
+              
+              unchanged.forEach(unc => {
+                summary += `| ${unc.name} | ${unc.current} | ${unc.baseline} | ${unc.change} |\n`;
+              });
+            }
+            
+            // Save the summary for the PR comment
+            core.setOutput('summary', summary);
+            
+            // Fail the workflow if there are regressions
+            if (regressions.length > 0) {
+              core.setFailed(`Found ${regressions.length} performance regressions exceeding the 10% threshold.`);
+            }
+      
+      - name: Upload performance report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-reports
+          path: performance-tests/reports/
+          retention-days: 14
+      
+      - name: Comment on PR
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const summary = process.env.SUMMARY || 'Performance tests completed.';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+        env:
+          SUMMARY: ${{ steps.check-regressions.outputs.summary }}
