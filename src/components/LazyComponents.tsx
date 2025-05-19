@@ -7,7 +7,8 @@
  * improving initial load performance.
  */
 
-import React from 'react';
+// Using named import instead of default import to avoid unused React warning
+import { lazy } from 'react';
 import { namedLazy, preloadComponent } from '../utils/lazy';
 
 // Lazy load edit-decision components
@@ -82,27 +83,27 @@ export const preloadNextComponents = (currentStep: string): void => {
   switch (currentStep) {
     case 'input':
       // Preload components needed for the analysis step
-      preloadComponent(() => import('./steps/AnalysisStep'), 'AnalysisStep');
-      preloadComponent(() => import('./video/VideoAnalyzer'), 'VideoAnalyzer');
+      preloadComponent(() => import('./steps/AnalysisStep'));
+      preloadComponent(() => import('./video/VideoAnalyzer'));
       break;
     
     case 'analysis':
       // Preload components needed for the editing step
-      preloadComponent(() => import('./steps/EditingStep'), 'EditingStep');
-      preloadComponent(() => import('./edit-decision/EditDecisionControls'), 'EditDecisionControls');
-      preloadComponent(() => import('./edit-decision/EditDecisionVisualizer'), 'EditDecisionVisualizer');
+      preloadComponent(() => import('./steps/EditingStep'));
+      preloadComponent(() => import('./edit-decision/EditDecisionControls'));
+      preloadComponent(() => import('./edit-decision/EditDecisionVisualizer'));
       break;
     
     case 'editing':
       // Preload components needed for the preview step
-      preloadComponent(() => import('./steps/PreviewStep'), 'PreviewStep');
-      preloadComponent(() => import('./edit-decision/EditPreview'), 'EditPreview');
+      preloadComponent(() => import('./steps/PreviewStep'));
+      preloadComponent(() => import('./edit-decision/EditPreview'));
       break;
     
     case 'preview':
       // Preload components needed for the export step
-      preloadComponent(() => import('./steps/ExportStep'), 'ExportStep');
-      preloadComponent(() => import('./export/ExportModal'), 'ExportModal');
+      preloadComponent(() => import('./steps/ExportStep'));
+      preloadComponent(() => import('./export/ExportModal'));
       break;
     
     default:

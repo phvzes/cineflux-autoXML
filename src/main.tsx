@@ -7,10 +7,10 @@ import App from './App';
 import { ProjectProvider } from './context/ProjectContext';
 import { WorkflowProvider } from './context/WorkflowContext';
 import { AnalysisProvider } from './context/AnalysisContext';
-import { configureWasmLoading } from './utils/wasm/wasmLoader';
-import { perfMonitor } from './utils/performance/perfMonitor';
-import { initBrowserCompat, getBrowserCompatInfo } from './utils/compat';
-import { prefetchCriticalResources, PrefetchPriority } from './utils/performance/prefetch';
+import wasmLoader from './utils/wasm/wasmLoader';
+import PerfMonitor from './utils/performance/perfMonitor';
+import { isWebAssemblySupported, getCompatibilityReport } from './utils/compat';
+import prefetch from './utils/performance/prefetch';
 import './index.css';
 
 // Log application version and environment
@@ -41,51 +41,36 @@ const configureFeatureFlags = () => {
 // Initialize application
 const initializeApp = async () => {
   // Start performance monitoring for critical workflow
-  perfMonitor.mark('app-init-start');
+  PerfMonitor.startMeasure('app-init-start');
   
   // Register app initialization as a critical workflow step
-  perfMonitor.registerCriticalWorkflowStep('app-initialization');
+  PerfMonitor.registerCriticalWorkflowStep('app-initialization', 'Application Initialization');
   
   // Check browser compatibility
-  const compatInfo = getBrowserCompatInfo();
+  const compatInfo = getCompatibilityReport();
   if (import.meta.env.DEV) {
     console.log('Browser compatibility:', compatInfo);
   }
   
-  // Initialize browser compatibility warnings
-  initBrowserCompat();
+  // Check WebAssembly support
+  if (!isWebAssemblySupported()) {
+    console.warn('WebAssembly is not supported in this browser. Some features may not work properly.');
+  }
   
   // Configure feature flags
   configureFeatureFlags();
   
   // Configure WebAssembly loading - this now preloads critical modules
-  await configureWasmLoading();
+  await wasmLoader.preloadWasmModules();
   
-  // Prefetch critical resources with priority
-  await prefetchCriticalResources({
-    wasmModules: [
-      { path: 'ffmpeg-core.wasm', priority: PrefetchPriority.CRITICAL },
-      { path: 'opencv.wasm', priority: PrefetchPriority.CRITICAL }
-    ],
-    scripts: [
-      // Add critical scripts with priorities
-      { url: '/assets/critical-vendor.js', priority: PrefetchPriority.HIGH }
-    ],
-    stylesheets: [
-      // Add critical stylesheets with priorities
-      { url: '/assets/critical-styles.css', priority: PrefetchPriority.HIGH }
-    ],
-    images: [
-      // Add critical UI images with priorities
-      { url: '/assets/logo.svg', priority: PrefetchPriority.MEDIUM }
-    ]
-  }).catch(error => {
+  // Prefetch critical resources
+  await prefetch.prefetchCriticalResources().catch(error => {
     console.warn('Failed to prefetch some resources:', error);
   });
   
   // Mark performance for time to initialize
-  perfMonitor.mark('app-init-end');
-  perfMonitor.measure('app-initialization', 'app-init-start', 'app-init-end');
+  const initEndId = PerfMonitor.startMeasure('app-init-end');
+  PerfMonitor.stopMeasure(initEndId);
   
   // Render the application
   ReactDOM.createRoot(document.getElementById('root')!).render(

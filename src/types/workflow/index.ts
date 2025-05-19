@@ -7,6 +7,7 @@
 export { default as Beat } from './Beat';
 export { default as AudioSegment } from './AudioSegment';
 export { default as TransitionType } from './TransitionType';
+export { default as EditDecision } from './EditDecision';
 export { WorkflowStep } from './WorkflowStep';
 
 // Re-export types from parent directory that are related to workflow

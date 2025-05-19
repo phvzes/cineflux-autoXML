@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useWorkflow } from '../context/WorkflowContext';
 import WorkflowStepper from './WorkflowStepper';
-import { perfMonitor } from '../utils/performance/perfMonitor';
+import PerfMonitor from '../utils/performance/perfMonitor';
 import { preloadNextComponents } from './LazyComponents';
 
 // Import steps
@@ -25,22 +25,19 @@ const WorkflowContainer: React.FC = () => {
   useEffect(() => {
     // Mark the start of the step transition
     const stepTransitionName = `workflow-transition-to-${currentStep}`;
-    perfMonitor.mark(`${stepTransitionName}-start`);
+    const measureId = PerfMonitor.startMeasure(stepTransitionName);
     
     // Register this as a critical workflow step
-    perfMonitor.registerCriticalWorkflowStep(stepTransitionName);
+    PerfMonitor.registerCriticalWorkflowStep(stepTransitionName, `Transition to ${currentStep}`);
     
     // Preload components for the next step
     preloadNextComponents(currentStep);
     
     // Mark the end of the step transition when the component is mounted
     const timeoutId = setTimeout(() => {
-      perfMonitor.mark(`${stepTransitionName}-end`);
-      perfMonitor.measure(
-        stepTransitionName,
-        `${stepTransitionName}-start`,
-        `${stepTransitionName}-end`
-      );
+      PerfMonitor.stopMeasure(measureId);
+      // Log completion of step transition
+      console.debug(`Completed transition to ${currentStep}`);
     }, 100);
     
     return () => {

@@ -10,27 +10,24 @@ import {
   VideoAnalysis, 
   Scene, 
   ClipType, 
-  TimelineMarker, 
-  MarkerType 
+  SceneType
 } from '../types/video-types';
 import { 
   Beat, 
   AudioSegment, 
   AudioAnalysis 
-} from '../types/audio-types'; // You may need to create or update this file
+} from '../types/audio-types';
 import { 
   EditDecision, 
   EditPoint, 
-  TransitionType, 
-  EditStyle, 
-  ProjectSettings, 
-  VideoClipAssignment,
-  EditDecisionEngineEvents
-} from '../types/edit-types'; // You may need to create this file
+  EditSettings,
+  EditMatch
+} from '../types/edit-types';
+import { TransitionType } from '../types/workflow/EditDecision';
 
 // Import the services
-import AudioService from './AudioService';
-import VideoService from './VideoService';
+import { AudioService } from './AudioService';
+import { VideoService } from './VideoService';
 
 /**
  * EditDecisionEngine generates automatic edits based on audio and video analysis
@@ -1319,9 +1316,6 @@ export class EditDecisionEngine {
     });
   }
 }
-
-// Export the class
-export { EditDecisionEngine };
 
 // Export the singleton instance
 export default EditDecisionEngine.getInstance();
