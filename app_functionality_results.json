@@ -1,0 +1,18 @@
+{
+  "initialPageLoaded": true,
+  "title": "CineFlux-AutoXML",
+  "hasUploadButton": false,
+  "hasVideoElement": false,
+  "appState": {
+    "url": "http://localhost:5175/",
+    "title": "CineFlux-AutoXML",
+    "bodyText": "\n    \n    \n    \n    \n  \n\n",
+    "elements": {
+      "buttons": 0,
+      "inputs": 0,
+      "videos": 0,
+      "audios": 0,
+      "canvases": 0
+    }
+  }
+}
