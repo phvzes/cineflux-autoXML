@@ -1,0 +1,142 @@
+{
+  "@testing-library/react": {
+    "current": "14.3.1",
+    "wanted": "14.3.1",
+    "latest": "16.3.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/@testing-library/react"
+  },
+  "@types/react": {
+    "current": "18.3.21",
+    "wanted": "18.3.21",
+    "latest": "19.1.4",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/@types/react"
+  },
+  "@types/react-dom": {
+    "current": "18.3.7",
+    "wanted": "18.3.7",
+    "latest": "19.1.5",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/@types/react-dom"
+  },
+  "@types/uuid": {
+    "current": "9.0.8",
+    "wanted": "9.0.8",
+    "latest": "10.0.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/@types/uuid"
+  },
+  "@typescript-eslint/eslint-plugin": {
+    "current": "6.21.0",
+    "wanted": "6.21.0",
+    "latest": "8.32.1",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/@typescript-eslint/eslint-plugin"
+  },
+  "@typescript-eslint/parser": {
+    "current": "6.21.0",
+    "wanted": "6.21.0",
+    "latest": "8.32.1",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/@typescript-eslint/parser"
+  },
+  "cypress": {
+    "current": "13.17.0",
+    "wanted": "13.17.0",
+    "latest": "14.4.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/cypress"
+  },
+  "eslint": {
+    "current": "8.57.1",
+    "wanted": "8.57.1",
+    "latest": "9.27.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/eslint"
+  },
+  "eslint-plugin-react-hooks": {
+    "current": "4.6.2",
+    "wanted": "4.6.2",
+    "latest": "5.2.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/eslint-plugin-react-hooks"
+  },
+  "lint-staged": {
+    "current": "15.5.2",
+    "wanted": "15.5.2",
+    "latest": "16.0.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/lint-staged"
+  },
+  "lucide-react": {
+    "current": "0.507.0",
+    "wanted": "0.507.0",
+    "latest": "0.511.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/lucide-react"
+  },
+  "react": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.1.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/react"
+  },
+  "react-dom": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.1.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/react-dom"
+  },
+  "react-router-dom": {
+    "current": "7.5.3",
+    "wanted": "7.6.0",
+    "latest": "7.6.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/react-router-dom"
+  },
+  "tailwindcss": {
+    "current": "3.4.17",
+    "wanted": "3.4.17",
+    "latest": "4.1.7",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/tailwindcss"
+  },
+  "ts-jest": {
+    "current": "29.3.2",
+    "wanted": "29.3.4",
+    "latest": "29.3.4",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/ts-jest"
+  },
+  "uuid": {
+    "current": "9.0.1",
+    "wanted": "9.0.1",
+    "latest": "11.1.0",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/uuid"
+  },
+  "vite": {
+    "current": "5.4.19",
+    "wanted": "5.4.19",
+    "latest": "6.3.5",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/vite"
+  },
+  "web-audio-beat-detector": {
+    "current": "8.2.27",
+    "wanted": "8.2.28",
+    "latest": "8.2.28",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/web-audio-beat-detector"
+  },
+  "zustand": {
+    "current": "4.5.6",
+    "wanted": "4.5.7",
+    "latest": "5.0.4",
+    "dependent": "cineflux-autoXML",
+    "location": "/home/ubuntu/cineflux-autoXML/node_modules/zustand"
+  }
+}

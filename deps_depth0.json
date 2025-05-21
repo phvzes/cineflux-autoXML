@@ -1,0 +1,221 @@
+{
+  "version": "0.1.0",
+  "name": "cineflux-autoxml",
+  "dependencies": {
+    "@ffmpeg/core": {
+      "version": "0.12.10",
+      "resolved": "https://registry.npmjs.org/@ffmpeg/core/-/core-0.12.10.tgz",
+      "overridden": false
+    },
+    "@ffmpeg/ffmpeg": {
+      "version": "0.12.15",
+      "resolved": "https://registry.npmjs.org/@ffmpeg/ffmpeg/-/ffmpeg-0.12.15.tgz",
+      "overridden": false
+    },
+    "@ffmpeg/util": {
+      "version": "0.12.2",
+      "resolved": "https://registry.npmjs.org/@ffmpeg/util/-/util-0.12.2.tgz",
+      "overridden": false
+    },
+    "@techstark/opencv-js": {
+      "version": "4.10.0-release.1",
+      "resolved": "https://registry.npmjs.org/@techstark/opencv-js/-/opencv-js-4.10.0-release.1.tgz",
+      "overridden": false
+    },
+    "@testing-library/jest-dom": {
+      "version": "6.6.3",
+      "resolved": "https://registry.npmjs.org/@testing-library/jest-dom/-/jest-dom-6.6.3.tgz",
+      "overridden": false
+    },
+    "@testing-library/react": {
+      "version": "14.3.1",
+      "resolved": "https://registry.npmjs.org/@testing-library/react/-/react-14.3.1.tgz",
+      "overridden": false
+    },
+    "@testing-library/user-event": {
+      "version": "14.6.1",
+      "resolved": "https://registry.npmjs.org/@testing-library/user-event/-/user-event-14.6.1.tgz",
+      "overridden": false
+    },
+    "@types/jest": {
+      "version": "29.5.14",
+      "resolved": "https://registry.npmjs.org/@types/jest/-/jest-29.5.14.tgz",
+      "overridden": false
+    },
+    "@types/react-dom": {
+      "version": "18.3.7",
+      "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-18.3.7.tgz",
+      "overridden": false
+    },
+    "@types/react": {
+      "version": "18.3.21",
+      "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.21.tgz",
+      "overridden": false
+    },
+    "@types/uuid": {
+      "version": "9.0.8",
+      "resolved": "https://registry.npmjs.org/@types/uuid/-/uuid-9.0.8.tgz",
+      "overridden": false
+    },
+    "@typescript-eslint/eslint-plugin": {
+      "version": "6.21.0",
+      "resolved": "https://registry.npmjs.org/@typescript-eslint/eslint-plugin/-/eslint-plugin-6.21.0.tgz",
+      "overridden": false
+    },
+    "@typescript-eslint/parser": {
+      "version": "6.21.0",
+      "resolved": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-6.21.0.tgz",
+      "overridden": false
+    },
+    "@vitejs/plugin-react": {
+      "version": "4.4.1",
+      "resolved": "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-4.4.1.tgz",
+      "overridden": false
+    },
+    "autoprefixer": {
+      "version": "10.4.21",
+      "resolved": "https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.4.21.tgz",
+      "overridden": false
+    },
+    "cypress": {
+      "version": "13.17.0",
+      "resolved": "https://registry.npmjs.org/cypress/-/cypress-13.17.0.tgz",
+      "overridden": false
+    },
+    "eslint-plugin-jsx-a11y": {
+      "version": "6.10.2",
+      "resolved": "https://registry.npmjs.org/eslint-plugin-jsx-a11y/-/eslint-plugin-jsx-a11y-6.10.2.tgz",
+      "overridden": false
+    },
+    "eslint-plugin-react-hooks": {
+      "version": "4.6.2",
+      "resolved": "https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-4.6.2.tgz",
+      "overridden": false
+    },
+    "eslint-plugin-react-refresh": {
+      "version": "0.4.20",
+      "resolved": "https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.4.20.tgz",
+      "overridden": false
+    },
+    "eslint-plugin-react": {
+      "version": "7.37.5",
+      "resolved": "https://registry.npmjs.org/eslint-plugin-react/-/eslint-plugin-react-7.37.5.tgz",
+      "overridden": false
+    },
+    "eslint": {
+      "version": "8.57.1",
+      "resolved": "https://registry.npmjs.org/eslint/-/eslint-8.57.1.tgz",
+      "overridden": false
+    },
+    "essentia.js": {
+      "version": "0.1.3",
+      "resolved": "https://registry.npmjs.org/essentia.js/-/essentia.js-0.1.3.tgz",
+      "overridden": false
+    },
+    "husky": {
+      "version": "9.1.7",
+      "resolved": "https://registry.npmjs.org/husky/-/husky-9.1.7.tgz",
+      "overridden": false
+    },
+    "jest-environment-jsdom": {
+      "version": "29.7.0",
+      "resolved": "https://registry.npmjs.org/jest-environment-jsdom/-/jest-environment-jsdom-29.7.0.tgz",
+      "overridden": false
+    },
+    "jest": {
+      "version": "29.7.0",
+      "resolved": "https://registry.npmjs.org/jest/-/jest-29.7.0.tgz",
+      "overridden": false
+    },
+    "lint-staged": {
+      "version": "15.5.2",
+      "resolved": "https://registry.npmjs.org/lint-staged/-/lint-staged-15.5.2.tgz",
+      "overridden": false
+    },
+    "lucide-react": {
+      "version": "0.507.0",
+      "resolved": "https://registry.npmjs.org/lucide-react/-/lucide-react-0.507.0.tgz",
+      "overridden": false
+    },
+    "meyda": {
+      "version": "5.6.3",
+      "resolved": "https://registry.npmjs.org/meyda/-/meyda-5.6.3.tgz",
+      "overridden": false
+    },
+    "postcss": {
+      "version": "8.5.3",
+      "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.3.tgz",
+      "overridden": false
+    },
+    "prettier": {
+      "version": "3.5.3",
+      "resolved": "https://registry.npmjs.org/prettier/-/prettier-3.5.3.tgz",
+      "overridden": false
+    },
+    "react-dom": {
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+      "overridden": false
+    },
+    "react-dropzone": {
+      "version": "14.3.8",
+      "resolved": "https://registry.npmjs.org/react-dropzone/-/react-dropzone-14.3.8.tgz",
+      "overridden": false
+    },
+    "react-player": {
+      "version": "2.16.0",
+      "resolved": "https://registry.npmjs.org/react-player/-/react-player-2.16.0.tgz",
+      "overridden": false
+    },
+    "react-router-dom": {
+      "version": "7.5.3",
+      "resolved": "https://registry.npmjs.org/react-router-dom/-/react-router-dom-7.5.3.tgz",
+      "overridden": false
+    },
+    "react": {
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+      "overridden": false
+    },
+    "tailwindcss": {
+      "version": "3.4.17",
+      "resolved": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.17.tgz",
+      "overridden": false
+    },
+    "ts-jest": {
+      "version": "29.3.2",
+      "resolved": "https://registry.npmjs.org/ts-jest/-/ts-jest-29.3.2.tgz",
+      "overridden": false
+    },
+    "typescript": {
+      "version": "5.8.3",
+      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.8.3.tgz",
+      "overridden": false
+    },
+    "uuid": {
+      "version": "9.0.1",
+      "resolved": "https://registry.npmjs.org/uuid/-/uuid-9.0.1.tgz",
+      "overridden": false
+    },
+    "vite": {
+      "version": "5.4.19",
+      "resolved": "https://registry.npmjs.org/vite/-/vite-5.4.19.tgz",
+      "overridden": false
+    },
+    "wavesurfer.js": {
+      "version": "7.9.5",
+      "resolved": "https://registry.npmjs.org/wavesurfer.js/-/wavesurfer.js-7.9.5.tgz",
+      "overridden": false
+    },
+    "web-audio-beat-detector": {
+      "version": "8.2.27",
+      "resolved": "https://registry.npmjs.org/web-audio-beat-detector/-/web-audio-beat-detector-8.2.27.tgz",
+      "overridden": false
+    },
+    "zustand": {
+      "version": "4.5.6",
+      "resolved": "https://registry.npmjs.org/zustand/-/zustand-4.5.6.tgz",
+      "overridden": false
+    }
+  }
+}
