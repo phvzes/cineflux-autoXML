@@ -153,12 +153,7 @@ export function isWasmModuleLoaded(url: string): boolean {
  * @returns The base URL for the module's WebAssembly files
  */
 export function getWasmBaseUrl(moduleName: string): string {
-  // In development, use the local files
-  if (import.meta.env.DEV) {
-    return `/assets/${moduleName}-core/`;
-  }
-
-  // In production, use the deployed files
+  // Use local files for both development and production
   return `/assets/${moduleName}-core/`;
 }
 
@@ -374,7 +369,7 @@ export function copyFromWasmMemory(
   try {
     // Calculate actual length based on type
     let actualLength = length;
-    let _bytesPerElement = 1;
+    let bytesPerElement = 1;
     
     switch (type) {
       case 'Int16Array':
@@ -441,13 +436,11 @@ export function copyFromWasmMemory(
  * @returns A promise that resolves when FFmpeg is loaded
  */
 export async function loadFFmpeg(ffmpeg: any): Promise<void> {
-  const baseUrl = getWasmBaseUrl('ffmpeg');
-  
   try {
     await ffmpeg.load({
-      coreURL: `${baseUrl}ffmpeg-core.js`,
-      wasmURL: `${baseUrl}ffmpeg-core.wasm`,
-      workerURL: `${baseUrl}ffmpeg-core.worker.js`,
+      coreURL: '/assets/ffmpeg-core/ffmpeg-core.js',
+      wasmURL: '/assets/ffmpeg-core/ffmpeg-core.wasm',
+      workerURL: '/assets/ffmpeg-core/ffmpeg-core.worker.js',
     });
     console.log('FFmpeg loaded successfully');
   } catch (error) {
@@ -468,6 +461,13 @@ export function ensureOpenCVLoaded(): Promise<void> {
       return;
     }
 
+    // Load OpenCV.js from local path
+    const script = document.createElement('script');
+    script.src = '/assets/opencv.js';
+    script.async = true;
+    script.type = 'text/javascript';
+    document.head.appendChild(script);
+
     // Set a timeout to reject the promise if OpenCV doesn't load
     const timeoutId = setTimeout(() => {
       reject(new Error('OpenCV.js failed to load within timeout'));
@@ -478,6 +478,12 @@ export function ensureOpenCVLoaded(): Promise<void> {
     window.cv.onRuntimeInitialized = () => {
       clearTimeout(timeoutId);
       resolve();
+    };
+
+    // Handle script loading errors
+    script.onerror = () => {
+      clearTimeout(timeoutId);
+      reject(new Error('Failed to load OpenCV.js script'));
     };
   });
 }

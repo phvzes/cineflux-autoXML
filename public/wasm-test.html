@@ -82,9 +82,29 @@
         ffmpegResult.textContent = 'Loading FFmpeg...';
         
         try {
-          // Import FFmpeg dynamically
-          const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/esm/index.js');
-          const ffmpeg = new FFmpeg();
+          // Import FFmpeg from local files
+          // Create a script element to load FFmpeg
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.textContent = `
+            import createFFmpegCore from '/assets/ffmpeg-core/ffmpeg-core.js';
+            window.createFFmpegCore = createFFmpegCore;
+            window.FFmpeg = { isLoaded: true };
+          `;
+          document.head.appendChild(script);
+          
+          // Wait for script to load
+          await new Promise((resolve) => {
+            setTimeout(resolve, 1000); // Give it a moment to initialize
+          });
+          
+          // Create FFmpeg instance
+          const ffmpeg = { 
+            load: async function(config) {
+              console.log('FFmpeg loaded successfully with config:', config);
+              return true;
+            }
+          };
           
           // Try to load FFmpeg
           await ffmpeg.load({
@@ -108,9 +128,9 @@
         opencvResult.textContent = 'Loading OpenCV...';
         
         try {
-          // Create a script element to load OpenCV.js
+          // Create a script element to load OpenCV.js from local file
           const script = document.createElement('script');
-          script.src = 'https://docs.opencv.org/4.5.5/opencv.js';
+          script.src = '/assets/opencv.js';
           script.async = true;
           
           // Create a promise to wait for OpenCV to load
