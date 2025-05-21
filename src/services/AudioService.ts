@@ -109,11 +109,11 @@ class AudioService {
       progressCallback?.(80, 'Decoding audio data...');
       
       // Use a promise to handle the decodeAudioData callback
-      const audioBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+      const audioBuffer = await new Promise<AudioBuffer>((resolve: any, reject: any) => {
         audioContext.decodeAudioData(
           arrayBuffer,
-          (buffer) => resolve(buffer),
-          (error) => reject(new AudioProcessingError(`Failed to decode audio: ${error}`, 'DECODE_ERROR'))
+          (buffer: any) => resolve(buffer),
+          (error: any) => reject(new AudioProcessingError(`Failed to decode audio: ${error}`, 'DECODE_ERROR'))
         );
       });
       
@@ -150,7 +150,7 @@ class AudioService {
     try {
       // Load the audio file
       progressCallback(0, 'Loading audio file...');
-      const audioBuffer = await this.loadAudio(audioFile, (progress, step) => {
+      const audioBuffer = await this.loadAudio(audioFile, (progress: any, step: any) => {
         // Map the loading progress to 0-30% of the total progress
         progressCallback(Math.floor(progress * 0.3), step);
       });
@@ -158,21 +158,21 @@ class AudioService {
       progressCallback(30, 'Analyzing audio...');
       
       // Extract waveform data
-      const waveform = await this.extractWaveform(audioBuffer, (progress) => {
+      const waveform = await this.extractWaveform(audioBuffer, (progress: any) => {
         // Map waveform extraction to 30-40% of total progress
         progressCallback(30 + Math.floor(progress * 0.1), 'Extracting waveform...');
       });
       
       // Detect beats
       progressCallback(40, 'Detecting beats...');
-      const beatAnalysis = await this.detectBeats(audioBuffer, (progress) => {
+      const beatAnalysis = await this.detectBeats(audioBuffer, (progress: any) => {
         // Map beat detection to 40-60% of total progress
         progressCallback(40 + Math.floor(progress * 0.2), 'Detecting beats...');
       });
       
       // Analyze energy levels
       progressCallback(60, 'Analyzing energy levels...');
-      const energyAnalysis = await this.analyzeEnergy(audioBuffer, (progress) => {
+      const energyAnalysis = await this.analyzeEnergy(audioBuffer, (progress: any) => {
         // Map energy analysis to 60-80% of total progress
         progressCallback(60 + Math.floor(progress * 0.2), 'Analyzing energy levels...');
       });
@@ -344,7 +344,7 @@ class AudioService {
       }
       
       // Calculate the average energy of recent windows
-      const averageEnergy = recentEnergy.reduce((sum, e) => sum + e, 0) / recentEnergy.length;
+      const averageEnergy = recentEnergy.reduce((sum: any, e: any) => sum + e, 0) / recentEnergy.length;
       
       // Check if this window contains a beat
       if (
@@ -365,7 +365,7 @@ class AudioService {
     
     // Calculate average confidence
     const averageConfidence = beats.length > 0
-      ? beats.reduce((sum, beat) => sum + beat.confidence, 0) / beats.length
+      ? beats.reduce((sum: any, beat: any) => sum + beat.confidence, 0) / beats.length
       : 0;
     
     // Final progress update
@@ -493,7 +493,7 @@ class AudioService {
     }
     
     // Filter out outliers (intervals that are too short or too long)
-    const filteredIntervals = intervals.filter(interval => 
+    const filteredIntervals = intervals.filter((interval: any) => 
       interval >= 0.2 && interval <= 2.0 // Between 30 BPM and 300 BPM
     );
     
@@ -508,7 +508,7 @@ class AudioService {
     }
     
     // Calculate the median interval
-    filteredIntervals.sort((a, b) => a - b);
+    filteredIntervals.sort((a: any, b: any) => a - b);
     const medianInterval = filteredIntervals[Math.floor(filteredIntervals.length / 2)];
     
     // Convert to BPM
@@ -518,8 +518,8 @@ class AudioService {
     const roundedBpm = Math.max(60, Math.min(200, Math.round(bpm)));
     
     // Calculate the standard deviation of intervals to determine stability
-    const mean = filteredIntervals.reduce((sum, interval) => sum + interval, 0) / filteredIntervals.length;
-    const variance = filteredIntervals.reduce((sum, interval) => sum + Math.pow(interval - mean, 2), 0) / filteredIntervals.length;
+    const mean = filteredIntervals.reduce((sum: any, interval: any) => sum + interval, 0) / filteredIntervals.length;
+    const variance = filteredIntervals.reduce((sum: any, interval: any) => sum + Math.pow(interval - mean, 2), 0) / filteredIntervals.length;
     const stdDev = Math.sqrt(variance);
     
     // Calculate coefficient of variation (CV) to determine stability
@@ -545,7 +545,7 @@ class AudioService {
         const endTime = Math.min((i + 1) * segmentDuration, duration);
         
         // Get beats in this segment
-        const segmentBeats = beats.filter(beat => beat.time >= startTime && beat.time < endTime);
+        const segmentBeats = beats.filter((beat: any) => beat.time >= startTime && beat.time < endTime);
         
         if (segmentBeats.length >= 4) {
           // Calculate intervals for this segment
@@ -555,13 +555,13 @@ class AudioService {
           }
           
           // Filter out outliers
-          const filteredSegmentIntervals = segmentIntervals.filter(interval => 
+          const filteredSegmentIntervals = segmentIntervals.filter((interval: any) => 
             interval >= 0.2 && interval <= 2.0
           );
           
           if (filteredSegmentIntervals.length >= 3) {
             // Calculate the median interval for this segment
-            filteredSegmentIntervals.sort((a, b) => a - b);
+            filteredSegmentIntervals.sort((a: any, b: any) => a - b);
             const segmentMedianInterval = filteredSegmentIntervals[Math.floor(filteredSegmentIntervals.length / 2)];
             
             // Convert to BPM
@@ -651,7 +651,7 @@ class AudioService {
     }
     
     // Sort energy changes by magnitude
-    energyChanges.sort((a, b) => b.change - a.change);
+    energyChanges.sort((a: any, b: any) => b.change - a.change);
     
     // Take the top changes as section boundaries
     // The number of sections depends on the duration of the audio
@@ -664,7 +664,7 @@ class AudioService {
     const topChanges = energyChanges.slice(0, numSections - 1);
     
     // Sort by time
-    topChanges.sort((a, b) => a.time - b.time);
+    topChanges.sort((a: any, b: any) => a.time - b.time);
     
     // Create sections
     let sectionStart = 0;
@@ -717,7 +717,7 @@ class AudioService {
       const tempo = await this.estimateTempo(beatAnalysis.beats, audioBuffer.duration);
       
       // Extract beat times
-      const beatTimes = beatAnalysis.beats.map(beat => beat.time);
+      const beatTimes = beatAnalysis.beats.map((beat: any) => beat.time);
       
       return {
         bpm: tempo.bpm,
@@ -729,7 +729,7 @@ class AudioService {
       // Fallback to a default value
       return {
         bpm: 120,
-        beats: Array.from({ length: 100 }, (_, i) => i * (60 / 120)) // Generate beats at 120 BPM
+        beats: Array.from({ length: 100 }, (_: any, i: any) => i * (60 / 120)) // Generate beats at 120 BPM
       };
     }
   }
@@ -824,7 +824,7 @@ class AudioService {
     }
     
     // Scale the waveform to the new height
-    return waveform.map(amplitude => {
+    return waveform.map((amplitude: any) => {
       // Scale to -1 to 1
       const normalized = amplitude / maxAmplitude;
       

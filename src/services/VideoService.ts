@@ -10,7 +10,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 import * as cv from '@techstark/opencv-js';
-import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'events';
 
 // Types
@@ -205,7 +204,7 @@ export class VideoService extends EventEmitter {
       // Convert to base64
       const base64 = btoa(
         Array.from(new Uint8Array(data.buffer))
-          .map(b => String.fromCharCode(b))
+          .map((b: any) => String.fromCharCode(b))
           .join('')
       );
       
@@ -266,7 +265,7 @@ export class VideoService extends EventEmitter {
       });
       
       const contentAnalysis = await Promise.all(
-        scenes.map(scene => this.analyzeContent(frames[scene.startFrame]))
+        scenes.map((scene: any) => this.analyzeContent(frames[scene.startFrame]))
       );
       
       // Analyze motion
@@ -361,14 +360,14 @@ export class VideoService extends EventEmitter {
           const img = new Image();
           const base64 = btoa(
             Array.from(new Uint8Array(frameData.buffer))
-              .map(b => String.fromCharCode(b))
+              .map((b: any) => String.fromCharCode(b))
               .join('')
           );
           
           img.src = `data:image/jpeg;base64,${base64}`;
           
           // Wait for image to load
-          await new Promise<void>(resolve => {
+          await new Promise<void>((resolve: any) => {
             img.onload = () => resolve();
             img.onerror = () => resolve(); // Continue even if image fails to load
           });
@@ -470,7 +469,7 @@ export class VideoService extends EventEmitter {
         diff.delete();
         
         // Check if difference exceeds threshold
-        if (difference > options.threshold) {
+        if (difference > options?.threshold) {
           // End previous scene
           const lastScene = scenes[scenes.length - 1];
           lastScene.endFrame = i - 1;
@@ -761,7 +760,7 @@ export class VideoService extends EventEmitter {
       }
       
       // Check for faces (likely performance clip)
-      const hasFaces = contentAnalysis.some(content => content.hasFaces);
+      const hasFaces = contentAnalysis.some((content: any) => content.hasFaces);
       
       // Check for high motion
       const hasHighMotion = motionData.hasHighMotion;
