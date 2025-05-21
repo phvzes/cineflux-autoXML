@@ -5,6 +5,9 @@ import AudioProcessingProgress from './AudioProcessingProgress';
 import { Beat, AudioAnalysis } from '../../types/AudioAnalysis';
 import { safeStringify } from '../../utils/safeStringify';
 
+// Create an instance of AudioService
+const audioServiceInstance = new AudioService();
+
 interface BeatDetectionDemoProps {
   /**
    * Initial audio file URL (optional)
@@ -176,7 +179,7 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
       setIsProcessingComplete(false);
       
       // Analyze the audio file
-      const analysis = await AudioService.analyzeAudio(file, (progress, step) => {
+      const analysis = await audioServiceInstance.analyzeAudio(file, (progress, step) => {
         setProgress(progress);
         setProcessingStep(step);
       });
@@ -194,7 +197,7 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
       setWaveformData(analysis.waveform.data);
       
       // Load the audio buffer for visualization
-      const buffer = await AudioService.loadAudio(file);
+      const buffer = await audioServiceInstance.loadAudio(file);
       setAudioBuffer(buffer);
       
       setIsProcessingComplete(true);

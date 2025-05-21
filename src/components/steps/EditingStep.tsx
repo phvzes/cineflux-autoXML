@@ -7,11 +7,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { EditDecision, TransitionType } from '../../types/workflow';
+import { TransitionType } from '../../types/edit-types';
+import { EditDecision } from '../../types/workflow-types';
+import { AppState } from '../../types/workflow-types';
 import useAudioService from '../../hooks/useAudioService';
 import { useVideoService } from '../../hooks/useVideoService';
 import VideoTimeline from '../timeline/VideoTimeline';
-import { TimelineMarker, MarkerType } from '../../types/video-types';
+import { TimelineMarker, MarkerType, VideoFile } from '../../types/video-types';
 import AccessibleDialog from '../AccessibleDialog';
 
 // Import icons 
@@ -28,6 +30,16 @@ import {
 
 interface EditingStepProps {
   audioElement?: HTMLAudioElement | null;
+}
+
+// Define a custom interface for our edit decisions until we update all references
+interface LegacyEditDecision {
+  id?: string;
+  time: number;
+  clipIndex: number;
+  videoTime: number;
+  duration: number;
+  transition: string;
 }
 
 const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
@@ -56,7 +68,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   
   // Local state
   const [selectedEditIndex, setSelectedEditIndex] = useState<number | null>(null);
-  const [editingDecision, setEditingDecision] = useState<EditDecision | null>(null);
+  const [editingDecision, setEditingDecision] = useState<LegacyEditDecision | null>(null);
   const [timelineMarkers, setTimelineMarkers] = useState<TimelineMarker[]>([]);
   
   // Load audio file when component mounts
@@ -77,7 +89,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   useEffect(() => {
     if (!data.edit.decisions || data.edit.decisions.length === 0) {
       // Create mock edit decisions
-      const mockDecisions: EditDecision[] = [
+      const mockDecisions: LegacyEditDecision[] = [
         { time: 0, clipIndex: 0, videoTime: 0, duration: 4, transition: 'none' },
         { time: 4, clipIndex: 1, videoTime: 2, duration: 4, transition: 'cut' },
         { time: 8, clipIndex: 2, videoTime: 0, duration: 4, transition: 'dissolve' },
@@ -86,11 +98,11 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
         { time: 20, clipIndex: 2, videoTime: 4, duration: 4, transition: 'wipe' }
       ];
       
-      setData(prev => ({
+      setData((prev: AppState) => ({
         ...prev,
         edit: {
           ...prev.edit,
-          decisions: mockDecisions
+          decisions: mockDecisions as unknown as EditDecision[]
         }
       }));
     }
@@ -99,7 +111,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   // Convert edit decisions to timeline markers
   useEffect(() => {
     if (data.edit.decisions && data.edit.decisions.length > 0) {
-      const markers: TimelineMarker[] = data.edit.decisions.map((decision, index) => ({
+      const markers: TimelineMarker[] = data.edit.decisions.map((decision: any, index: number) => ({
         id: `edit-${index}`,
         time: decision.time,
         type: MarkerType.EDIT_POINT,
@@ -116,11 +128,13 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
     if (!data.edit.decisions || data.edit.decisions.length === 0) return null;
     
     for (let i = data.edit.decisions.length - 1; i >= 0; i--) {
-      if (currentTime >= data.edit.decisions[i].time) {
-        return { ...data.edit.decisions[i], index: i };
+      const decision = data.edit.decisions[i] as unknown as LegacyEditDecision;
+      if (currentTime >= decision.time) {
+        return { ...decision, index: i };
       }
     }
-    return { ...data.edit.decisions[0], index: 0 };
+    const firstDecision = data.edit.decisions[0] as unknown as LegacyEditDecision;
+    return { ...firstDecision, index: 0 };
   };
   
   // Current edit
@@ -149,7 +163,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   const handleNextEdit = () => {
     if (!currentEdit || currentEdit.index >= (data.edit.decisions.length - 1)) return;
     
-    const nextEdit = data.edit.decisions[currentEdit.index + 1];
+    const nextEdit = data.edit.decisions[currentEdit.index + 1] as unknown as LegacyEditDecision;
     handleSeek(nextEdit.time);
   };
   
@@ -157,13 +171,13 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   const handlePrevEdit = () => {
     if (!currentEdit || currentEdit.index <= 0) return;
     
-    const prevEdit = data.edit.decisions[currentEdit.index - 1];
+    const prevEdit = data.edit.decisions[currentEdit.index - 1] as unknown as LegacyEditDecision;
     handleSeek(prevEdit.time);
   };
   
   // Handle showing preview
   const handleShowPreview = () => {
-    goToStep('preview');
+    goToStep('PREVIEW' as any); // Using 'any' temporarily until we fix the WorkflowStep enum
   };
   
   // Handle regenerating edit
@@ -175,16 +189,16 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   // Handle editing a decision
   const handleEditDecision = (index: number) => {
     setSelectedEditIndex(index);
-    setEditingDecision({ ...data.edit.decisions[index] });
+    setEditingDecision({ ...(data.edit.decisions[index] as unknown as LegacyEditDecision) });
   };
   
   // Handle saving edit changes
   const handleSaveEdit = () => {
     if (editingDecision === null || selectedEditIndex === null) return;
     
-    setData(prev => {
+    setData((prev: AppState) => {
       const newDecisions = [...prev.edit.decisions];
-      newDecisions[selectedEditIndex] = editingDecision;
+      newDecisions[selectedEditIndex] = editingDecision as unknown as EditDecision;
       
       return {
         ...prev,
@@ -199,7 +213,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   };
   
   // Handle transition change
-  const handleTransitionChange = (transition: TransitionType) => {
+  const handleTransitionChange = (transition: string) => {
     if (editingDecision === null) return;
     
     setEditingDecision({
@@ -216,12 +230,66 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   };
   
   // Simulate video files if none exist
-  const videoFiles = data.project.videoFiles.length > 0 
+  const videoFiles: VideoFile[] = data.project.videoFiles.length > 0 
     ? data.project.videoFiles 
     : [
-        { name: 'video1.mp4', size: 1000000, duration: 30, type: 'video/mp4', url: '' },
-        { name: 'video2.mp4', size: 2000000, duration: 45, type: 'video/mp4', url: '' },
-        { name: 'video3.mp4', size: 1500000, duration: 60, type: 'video/mp4', url: '' }
+        { 
+          id: '1',
+          file: new File([], 'video1.mp4'),
+          name: 'video1.mp4', 
+          size: 1000000, 
+          duration: 30, 
+          type: 'video/mp4', 
+          blobUrl: '',
+          width: 1280,
+          height: 720,
+          fps: 30,
+          thumbnail: '',
+          metadata: {
+            width: 1280,
+            height: 720,
+            duration: 30,
+            fps: 30
+          }
+        },
+        { 
+          id: '2',
+          file: new File([], 'video2.mp4'),
+          name: 'video2.mp4', 
+          size: 2000000, 
+          duration: 45, 
+          type: 'video/mp4', 
+          blobUrl: '',
+          width: 1280,
+          height: 720,
+          fps: 30,
+          thumbnail: '',
+          metadata: {
+            width: 1280,
+            height: 720,
+            duration: 45,
+            fps: 30
+          }
+        },
+        { 
+          id: '3',
+          file: new File([], 'video3.mp4'),
+          name: 'video3.mp4', 
+          size: 1500000, 
+          duration: 60, 
+          type: 'video/mp4', 
+          blobUrl: '',
+          width: 1280,
+          height: 720,
+          fps: 30,
+          thumbnail: '',
+          metadata: {
+            width: 1280,
+            height: 720,
+            duration: 60,
+            fps: 30
+          }
+        }
       ];
   
   return (
@@ -347,7 +415,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
           
           {/* Edit decision list */}
           <div className="mb-4 max-h-96 overflow-y-auto pr-2">
-            {data.edit.decisions.map((decision, index) => (
+            {data.edit.decisions.map((decision: any, index: number) => (
               <div 
                 key={index}
                 className={`p-3 rounded mb-2 cursor-pointer ${
@@ -435,7 +503,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
               }}
               aria-label="Select clip"
             >
-              {videoFiles.map((file, index) => (
+              {videoFiles.map((file: VideoFile, index: number) => (
                 <option key={index} value={index}>
                   {file.name}
                 </option>
@@ -452,7 +520,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
               role="radiogroup"
               aria-labelledby="transition-group-label"
             >
-              {(['none', 'cut', 'dissolve', 'fade', 'wipe'] as TransitionType[]).map(type => (
+              {(['none', 'cut', 'dissolve', 'fade', 'wipe'] as string[]).map(type => (
                 <button
                   key={type}
                   className={`p-2 rounded border ${

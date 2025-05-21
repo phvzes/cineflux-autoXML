@@ -9,9 +9,16 @@
 /* ---------- Media analysis ---------- */
 export * from './AudioAnalysis';
 export * from './VideoAnalysis';
+export * from './audio-types';
+export * from './video-types';
 
 /* ---------- Editing & decisions ----- */
 export * from './EditDecision';
+export * from './edit-types';
+
+/* ---------- Workflow ---------- */
+export * from './workflow-types';
+export * from './workflow';
 
 /* ---------- Configuration ----------- */
 export * from './ProjectSettings';

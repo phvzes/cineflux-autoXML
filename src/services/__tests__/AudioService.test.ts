@@ -1,7 +1,10 @@
-// src/services/__tests__/AudioService.test.ts
+// src/services/__tests__/audioService.test.ts
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AudioService, { AudioProcessingError } from '../AudioService';
 import { AudioAnalysis, Beat, BeatAnalysis, EnergyAnalysis, EnergySample } from '../../types/AudioAnalysis';
+
+// Create an instance of AudioService for testing
+const audioService = new AudioService();
 
 // Mock the Web Audio API
 class MockAudioContext {
@@ -102,7 +105,7 @@ describe('AudioService', () => {
       const progressCallback = vi.fn();
       
       // Call loadAudio
-      const result = await AudioService.loadAudio(mockFile as unknown as File, progressCallback);
+      const result = await audioService.loadAudio(mockFile as unknown as File, progressCallback);
       
       // Verify the result
       expect(result).toBe(mockAudioBuffer);
@@ -122,7 +125,7 @@ describe('AudioService', () => {
       const progressCallback = vi.fn();
       
       // Call loadAudio with a URL
-      const result = await AudioService.loadAudio('https://example.com/audio.mp3', progressCallback);
+      const result = await audioService.loadAudio('https://example.com/audio.mp3', progressCallback);
       
       // Verify the result
       expect(result).toBe(mockAudioBuffer);
@@ -146,12 +149,12 @@ describe('AudioService', () => {
       });
       
       // Call loadAudio with a URL and expect it to throw
-      await expect(AudioService.loadAudio('https://example.com/not-found.mp3'))
+      await expect(audioService.loadAudio('https://example.com/not-found.mp3'))
         .rejects.toThrow(AudioProcessingError);
       
       // Verify the error has the correct code
       try {
-        await AudioService.loadAudio('https://example.com/not-found.mp3');
+        await audioService.loadAudio('https://example.com/not-found.mp3');
       } catch (error) {
         expect(error).toBeInstanceOf(AudioProcessingError);
         expect((error as AudioProcessingError).code).toBe('FETCH_ERROR');
@@ -171,12 +174,12 @@ describe('AudioService', () => {
       global.AudioContext = vi.fn(() => mockErrorContext) as any;
       
       // Call loadAudio and expect it to throw
-      await expect(AudioService.loadAudio('https://example.com/invalid-audio.mp3'))
+      await expect(audioService.loadAudio('https://example.com/invalid-audio.mp3'))
         .rejects.toThrow(AudioProcessingError);
       
       // Verify the error has the correct code
       try {
-        await AudioService.loadAudio('https://example.com/invalid-audio.mp3');
+        await audioService.loadAudio('https://example.com/invalid-audio.mp3');
       } catch (error) {
         expect(error).toBeInstanceOf(AudioProcessingError);
         expect((error as AudioProcessingError).code).toBe('DECODE_ERROR');
@@ -190,7 +193,7 @@ describe('AudioService', () => {
       const progressCallback = vi.fn();
       
       // Call extractWaveform
-      const result = await AudioService.extractWaveform(mockAudioBuffer, progressCallback);
+      const result = await audioService.extractWaveform(mockAudioBuffer, progressCallback);
       
       // Verify the result structure
       expect(result).toHaveProperty('duration', 10);
@@ -216,7 +219,7 @@ describe('AudioService', () => {
       const progressCallback = vi.fn();
       
       // Call detectBeats
-      const result = await AudioService.detectBeats(mockAudioBuffer, progressCallback);
+      const result = await audioService.detectBeats(mockAudioBuffer, progressCallback);
       
       // Verify the result structure
       expect(result).toHaveProperty('beats');
@@ -249,7 +252,7 @@ describe('AudioService', () => {
       const progressCallback = vi.fn();
       
       // Call analyzeEnergy
-      const result = await AudioService.analyzeEnergy(mockAudioBuffer, progressCallback);
+      const result = await audioService.analyzeEnergy(mockAudioBuffer, progressCallback);
       
       // Verify the result structure
       expect(result).toHaveProperty('samples');
@@ -284,7 +287,7 @@ describe('AudioService', () => {
       }));
       
       // Call estimateTempo
-      const result = await AudioService.estimateTempo(beats, 10);
+      const result = await audioService.estimateTempo(beats, 10);
       
       // Verify the result structure
       expect(result).toHaveProperty('bpm');
@@ -304,7 +307,7 @@ describe('AudioService', () => {
     
     it('should handle insufficient beat data', async () => {
       // Call estimateTempo with too few beats
-      const result = await AudioService.estimateTempo([], 10);
+      const result = await audioService.estimateTempo([], 10);
       
       // Verify it returns a default tempo
       expect(result.bpm).toBe(120);
@@ -328,7 +331,7 @@ describe('AudioService', () => {
       }
       
       // Call estimateTempo
-      const result = await AudioService.estimateTempo(beats, 10);
+      const result = await audioService.estimateTempo(beats, 10);
       
       // Verify the result has variations
       expect(result.isStable).toBe(false);
@@ -366,7 +369,7 @@ describe('AudioService', () => {
       };
       
       // Call detectSections
-      const result = await AudioService.detectSections(energyAnalysis, beatAnalysis, 10);
+      const result = await audioService.detectSections(energyAnalysis, beatAnalysis, 10);
       
       // Verify the result structure
       expect(result).toHaveProperty('sections');
@@ -403,7 +406,7 @@ describe('AudioService', () => {
       };
       
       // Call detectSections
-      const result = await AudioService.detectSections(energyAnalysis, beatAnalysis, 10);
+      const result = await audioService.detectSections(energyAnalysis, beatAnalysis, 10);
       
       // Verify it returns a single section
       expect(result.sections.length).toBe(1);
@@ -422,8 +425,8 @@ describe('AudioService', () => {
       const progressCallback = vi.fn();
       
       // Mock the individual analysis methods
-      const loadAudioSpy = vi.spyOn(AudioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
-      const extractWaveformSpy = vi.spyOn(AudioService, 'extractWaveform').mockResolvedValue({
+      const loadAudioSpy = vi.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
+      const extractWaveformSpy = vi.spyOn(audioService, 'extractWaveform').mockResolvedValue({
         duration: 10,
         sampleRate: 48000,
         channels: 2,
@@ -431,28 +434,28 @@ describe('AudioService', () => {
         maxAmplitude: 0.7,
         minAmplitude: 0.5
       });
-      const detectBeatsSpy = vi.spyOn(AudioService, 'detectBeats').mockResolvedValue({
+      const detectBeatsSpy = vi.spyOn(audioService, 'detectBeats').mockResolvedValue({
         beats: [{ time: 1, confidence: 0.8 }, { time: 2, confidence: 0.9 }],
         averageConfidence: 0.85
       });
-      const analyzeEnergySpy = vi.spyOn(AudioService, 'analyzeEnergy').mockResolvedValue({
+      const analyzeEnergySpy = vi.spyOn(audioService, 'analyzeEnergy').mockResolvedValue({
         samples: [{ time: 0, level: 0.5 }, { time: 1, level: 0.6 }],
         averageEnergy: 0.55,
         peakEnergy: 0.6,
         peakEnergyTime: 1
       });
-      const estimateTempoSpy = vi.spyOn(AudioService, 'estimateTempo').mockResolvedValue({
+      const estimateTempoSpy = vi.spyOn(audioService, 'estimateTempo').mockResolvedValue({
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
         confidence: 0.9,
         isStable: true
       });
-      const detectSectionsSpy = vi.spyOn(AudioService, 'detectSections').mockResolvedValue({
+      const detectSectionsSpy = vi.spyOn(audioService, 'detectSections').mockResolvedValue({
         sections: [{ start: 0, duration: 10, label: 'Section 1', confidence: 0.8 }]
       });
       
       // Call analyzeAudio
-      const result = await AudioService.analyzeAudio(mockFile, progressCallback);
+      const result = await audioService.analyzeAudio(mockFile, progressCallback);
       
       // Verify the result structure
       expect(result).toHaveProperty('metadata');
@@ -485,17 +488,17 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock loadAudio to throw an error
-      vi.spyOn(AudioService, 'loadAudio').mockRejectedValue(
+      vi.spyOn(audioService, 'loadAudio').mockRejectedValue(
         new AudioProcessingError('Failed to load audio', 'LOAD_ERROR')
       );
       
       // Call analyzeAudio and expect it to throw
-      await expect(AudioService.analyzeAudio(mockFile, vi.fn()))
+      await expect(audioService.analyzeAudio(mockFile, vi.fn()))
         .rejects.toThrow(AudioProcessingError);
       
       // Verify the error has the correct code
       try {
-        await AudioService.analyzeAudio(mockFile, vi.fn());
+        await audioService.analyzeAudio(mockFile, vi.fn());
       } catch (error) {
         expect(error).toBeInstanceOf(AudioProcessingError);
         expect((error as AudioProcessingError).code).toBe('ANALYSIS_ERROR');
@@ -509,12 +512,12 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock the individual analysis methods
-      vi.spyOn(AudioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
-      vi.spyOn(AudioService, 'detectBeats').mockResolvedValue({
+      vi.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
+      vi.spyOn(audioService, 'detectBeats').mockResolvedValue({
         beats: [{ time: 1, confidence: 0.8 }, { time: 2, confidence: 0.9 }],
         averageConfidence: 0.85
       });
-      vi.spyOn(AudioService, 'estimateTempo').mockResolvedValue({
+      vi.spyOn(audioService, 'estimateTempo').mockResolvedValue({
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
         confidence: 0.9,
@@ -522,7 +525,7 @@ describe('AudioService', () => {
       });
       
       // Call extractBPM
-      const result = await AudioService.extractBPM(mockFile);
+      const result = await audioService.extractBPM(mockFile);
       
       // Verify the result structure
       expect(result).toHaveProperty('bpm');
@@ -541,7 +544,7 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock loadAudio to throw an error
-      vi.spyOn(AudioService, 'loadAudio').mockRejectedValue(
+      vi.spyOn(audioService, 'loadAudio').mockRejectedValue(
         new AudioProcessingError('Failed to load audio', 'LOAD_ERROR')
       );
       
@@ -549,7 +552,7 @@ describe('AudioService', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
       // Call extractBPM
-      const result = await AudioService.extractBPM(mockFile);
+      const result = await audioService.extractBPM(mockFile);
       
       // Verify the result has fallback values
       expect(result.bpm).toBe(120);
@@ -567,8 +570,8 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock the individual analysis methods
-      vi.spyOn(AudioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
-      vi.spyOn(AudioService, 'extractWaveform').mockResolvedValue({
+      vi.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
+      vi.spyOn(audioService, 'extractWaveform').mockResolvedValue({
         duration: 10,
         sampleRate: 48000,
         channels: 2,
@@ -578,7 +581,7 @@ describe('AudioService', () => {
       });
       
       // Call createWaveform
-      const result = await AudioService.createWaveform(mockFile, 500, 200);
+      const result = await audioService.createWaveform(mockFile, 500, 200);
       
       // Verify the result is an array of the correct length
       expect(Array.isArray(result)).toBe(true);
@@ -596,7 +599,7 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock loadAudio to throw an error
-      vi.spyOn(AudioService, 'loadAudio').mockRejectedValue(
+      vi.spyOn(audioService, 'loadAudio').mockRejectedValue(
         new AudioProcessingError('Failed to load audio', 'LOAD_ERROR')
       );
       
@@ -604,7 +607,7 @@ describe('AudioService', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
       // Call createWaveform
-      const result = await AudioService.createWaveform(mockFile, 500, 200);
+      const result = await audioService.createWaveform(mockFile, 500, 200);
       
       // Verify the result is a fallback waveform
       expect(Array.isArray(result)).toBe(true);

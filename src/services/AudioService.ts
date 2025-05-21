@@ -23,13 +23,17 @@ export class AudioProcessingError extends Error {
  * Service for audio analysis and processing
  */
 class AudioService {
+  constructor() {
+    // Initialize any required properties here
+  }
+
   /**
    * Load an audio file and return an AudioBuffer
    * @param source Audio file or URL to load
    * @param progressCallback Optional callback for loading progress
    * @returns Promise resolving to an AudioBuffer
    */
-  static async loadAudio(
+  async loadAudio(
     source: File | string,
     progressCallback?: (progress: number, step: string) => void
   ): Promise<AudioBuffer> {
@@ -139,7 +143,7 @@ class AudioService {
    * @param progressCallback Callback function to report progress
    * @returns Promise resolving to the analysis results
    */
-  static async analyzeAudio(
+  async analyzeAudio(
     audioFile: File,
     progressCallback: (progress: number, step: string) => void
   ): Promise<AudioAnalysis> {
@@ -213,7 +217,7 @@ class AudioService {
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to waveform data
    */
-  static async extractWaveform(
+  async extractWaveform(
     audioBuffer: AudioBuffer,
     progressCallback?: (progress: number) => void
   ): Promise<Waveform> {
@@ -290,7 +294,7 @@ class AudioService {
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to beat analysis data
    */
-  static async detectBeats(
+  async detectBeats(
     audioBuffer: AudioBuffer,
     progressCallback?: (progress: number) => void
   ): Promise<BeatAnalysis> {
@@ -379,7 +383,7 @@ class AudioService {
    * @param progressCallback Optional callback for progress updates
    * @returns Promise resolving to energy analysis data
    */
-  static async analyzeEnergy(
+  async analyzeEnergy(
     audioBuffer: AudioBuffer,
     progressCallback?: (progress: number) => void
   ): Promise<EnergyAnalysis> {
@@ -471,7 +475,7 @@ class AudioService {
    * @param duration Duration of the audio in seconds
    * @returns Promise resolving to tempo information
    */
-  static async estimateTempo(beats: Beat[], duration: number): Promise<Tempo> {
+  async estimateTempo(beats: Beat[], duration: number): Promise<Tempo> {
     // If we don't have enough beats, return a default tempo
     if (beats.length < 4) {
       return {
@@ -593,7 +597,7 @@ class AudioService {
    * @param duration Duration of the audio in seconds
    * @returns Promise resolving to section analysis data
    */
-  static async detectSections(
+  async detectSections(
     energyAnalysis: EnergyAnalysis,
     beatAnalysis: BeatAnalysis,
     duration: number
@@ -701,7 +705,7 @@ class AudioService {
    * @param audioFile The audio file to analyze
    * @returns Promise resolving to the BPM and beat times
    */
-  static async extractBPM(audioFile: File): Promise<{ bpm: number; beats: number[] }> {
+  async extractBPM(audioFile: File): Promise<{ bpm: number; beats: number[] }> {
     try {
       // Load the audio file
       const audioBuffer = await this.loadAudio(audioFile);
@@ -737,7 +741,7 @@ class AudioService {
    * @param height The height of the visualization in pixels
    * @returns Promise resolving to an array of amplitude values
    */
-  static async createWaveform(audioFile: File, width: number, height: number): Promise<number[]> {
+  async createWaveform(audioFile: File, width: number, height: number): Promise<number[]> {
     try {
       // Load the audio file
       const audioBuffer = await this.loadAudio(audioFile);
@@ -766,7 +770,7 @@ class AudioService {
    * @param newLength The new length
    * @returns Resampled waveform data
    */
-  private static resampleWaveform(waveform: number[], newLength: number): number[] {
+  private resampleWaveform(waveform: number[], newLength: number): number[] {
     const result = new Array(newLength).fill(0);
     
     // If the waveform is empty, return the empty result
@@ -810,7 +814,7 @@ class AudioService {
    * @param height The new height
    * @returns Scaled waveform data
    */
-  private static scaleWaveform(waveform: number[], height: number): number[] {
+  private scaleWaveform(waveform: number[], height: number): number[] {
     // Find the maximum amplitude
     const maxAmplitude = Math.max(...waveform.map(Math.abs));
     

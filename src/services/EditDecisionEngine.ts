@@ -37,11 +37,11 @@ import VideoService from './VideoService';
 export class EditDecisionEngine {
   private eventListeners: Map<EditDecisionEngineEvents, Function[]> = new Map();
   private editCache: Map<string, EditDecision[]> = new Map();
-  private audioService: typeof AudioService;
-  private videoService: typeof VideoService;
+  private audioService: AudioService;
+  private videoService: VideoService;
   
   constructor(
-    audioService = AudioService,
+    audioService = new AudioService(),
     videoService = VideoService
   ) {
     // Initialize event listener collections

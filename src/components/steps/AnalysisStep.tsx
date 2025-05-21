@@ -10,17 +10,13 @@ import { useWorkflow } from '../../context/WorkflowContext';
 import { Beat, AudioSegment } from '../../types/workflow';
 import useAudioService from '../../hooks/useAudioService';
 import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
+import { AppState } from '../../types/workflow-types';
 
 // Import icons 
 import { 
-  Music, 
-  Video, 
-  Waveform, 
   RefreshCw,
   Play,
   Pause,
-  SkipForward,
-  Clock,
   Check,
   AlertTriangle
 } from 'lucide-react';
@@ -58,9 +54,9 @@ const AnalysisStep: React.FC = () => {
   // Load audio file
   const handleLoadAudio = async (file: File) => {
     try {
-      await loadAudio(file, (progress, step) => {
+      await loadAudio(file, (progress: number, step: string) => {
         // Update loading progress
-        setData(prev => ({
+        setData((prev: AppState) => ({
           ...prev,
           workflow: {
             ...prev.workflow,
@@ -88,7 +84,7 @@ const AnalysisStep: React.FC = () => {
     if (!data.project.musicFile || isAnalyzing) return;
     
     setIsAnalyzing(true);
-    setData(prev => ({
+    setData((prev: AppState) => ({
       ...prev,
       analysis: {
         ...prev.analysis,
@@ -98,10 +94,10 @@ const AnalysisStep: React.FC = () => {
     
     try {
       // Analyze the audio file
-      const analysis = await analyzeAudio(data.project.musicFile, (progress, step) => {
+      const analysis = await analyzeAudio(data.project.musicFile, (progress: number, step: string) => {
         // Map the analysis progress to 30-100% of the total progress
         const totalProgress = 30 + Math.floor(progress * 0.7);
-        setData(prev => ({
+        setData((prev: AppState) => ({
           ...prev,
           workflow: {
             ...prev.workflow,
@@ -114,7 +110,7 @@ const AnalysisStep: React.FC = () => {
       });
       
       // Update the analysis results
-      setData(prev => ({
+      setData((prev: AppState) => ({
         ...prev,
         analysis: {
           ...prev.analysis,
@@ -149,15 +145,6 @@ const AnalysisStep: React.FC = () => {
     }
   };
   
-  // Get analysis step description based on progress
-  const getAnalysisStepDescription = (progress: number): string => {
-    if (progress < 20) return "Detecting beats...";
-    if (progress < 40) return "Analyzing music structure...";
-    if (progress < 60) return "Analyzing video content...";
-    if (progress < 80) return "Creating edit decisions...";
-    return "Generating preview...";
-  };
-  
   // Simulate analysis completion with mock data
   const simulateAnalysisCompletion = () => {
     // Create mock analysis results
@@ -173,7 +160,7 @@ const AnalysisStep: React.FC = () => {
       waveformData: waveformData || new Float32Array(1000).fill(0).map(() => Math.random() * 2 - 1)
     };
     
-    setData(prev => ({
+    setData((prev: AppState) => ({
       ...prev,
       analysis: {
         ...prev.analysis,
@@ -196,7 +183,7 @@ const AnalysisStep: React.FC = () => {
   
   // Handle regenerate analysis
   const handleRegenerate = () => {
-    setData(prev => ({
+    setData((prev: AppState) => ({
       ...prev,
       analysis: {
         ...prev.analysis,
@@ -225,7 +212,7 @@ const AnalysisStep: React.FC = () => {
   const renderAnalysisProgress = () => (
     <div className="flex flex-col items-center justify-center p-8">
       <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-6">
-        <Waveform size={36} className="text-purple-500 animate-pulse" />
+        <div className="text-purple-500 animate-pulse">⚡</div>
       </div>
       
       <h2 className="text-xl font-bold mb-2">Analyzing Media</h2>
@@ -378,7 +365,7 @@ const AnalysisStep: React.FC = () => {
         <div>
           <h3 className="font-medium mb-2">Audio Segments</h3>
           <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-            {data.analysis.audio?.segments.map((segment, index) => (
+            {data.analysis.audio?.segments.map((segment: AudioSegment, index: number) => (
               <div 
                 key={index} 
                 className={`p-3 rounded flex justify-between ${

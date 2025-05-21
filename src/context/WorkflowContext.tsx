@@ -8,15 +8,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  AppState, 
   WorkflowStep,
-  ProjectSettings,
-  VideoFile
+  ProjectSettings
 } from '../types/workflow';
+import { 
+  AppState, 
+  WorkflowContextType 
+} from '../types/workflow-types';
 
 // Import services
-// We'll need to create or import the AudioService
-import { AudioService } from '../services/AudioService';
+import AudioService from '../services/AudioService';
 
 // Default state for the application
 const defaultState: AppState = {
@@ -125,27 +126,12 @@ const getPreviousRoute = (currentStep: WorkflowStep): WorkflowStep | null => {
   }
 };
 
-// Create the context with a default value
-interface WorkflowContextType {
-  state: AppState;
-  navigation: {
-    goToNextStep: () => void;
-    goToPreviousStep: () => void;
-    goToStep: (step: WorkflowStep) => void;
-  };
-  actions: {
-    updateProjectSettings: (settings: Partial<ProjectSettings>) => void;
-    setMusicFile: (file: File | null) => Promise<void>;
-    addVideoFile: (file: File) => void;
-    removeVideoFile: (index: number) => void;
-    addRawVideoFile: (file: File) => void; // New method for raw video files
-    removeRawVideoFile: (index: number) => void; // New method for raw video files
-    startAnalysis: () => Promise<void>;
-  };
-}
-
 const WorkflowContext = createContext<WorkflowContextType>({
   state: defaultState,
+  currentStep: WorkflowStep.INPUT,
+  goToStep: () => {},
+  data: defaultState,
+  setData: () => {},
   navigation: {
     goToNextStep: () => {},
     goToPreviousStep: () => {},
@@ -156,8 +142,8 @@ const WorkflowContext = createContext<WorkflowContextType>({
     setMusicFile: async () => {},
     addVideoFile: () => {},
     removeVideoFile: () => {},
-    addRawVideoFile: () => {}, // New method for raw video files
-    removeRawVideoFile: () => {}, // New method for raw video files
+    addRawVideoFile: () => {},
+    removeRawVideoFile: () => {},
     startAnalysis: async () => {}
   }
 });
@@ -287,7 +273,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     }
     
     try {
-      const audioFile = await audioService.loadAudioFile(file);
+      const audioFile = await audioService.loadAudio(file);
       
       setState(prev => ({
         ...prev,
@@ -320,12 +306,23 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       project: {
         ...prev.project,
         videoFiles: [...prev.project.videoFiles, {
+          id: Date.now().toString(),
           file,
           name: file.name,
           size: file.size,
           duration: 0, // This would be calculated
           type: file.type,
-          url: URL.createObjectURL(file)
+          blobUrl: URL.createObjectURL(file),
+          width: 0,
+          height: 0,
+          fps: 0,
+          thumbnail: '',
+          metadata: {
+            width: 0,
+            height: 0,
+            duration: 0,
+            fps: 0
+          }
         }]
       }
     }));
@@ -336,8 +333,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       const newFiles = [...prev.project.videoFiles];
       
       // Release the object URL to prevent memory leaks
-      if (newFiles[index]?.url) {
-        URL.revokeObjectURL(newFiles[index].url);
+      if (newFiles[index]?.blobUrl) {
+        URL.revokeObjectURL(newFiles[index].blobUrl);
       }
       
       newFiles.splice(index, 1);
@@ -375,11 +372,23 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       project: {
         ...prev.project,
         rawVideoFiles: [...prev.project.rawVideoFiles, {
+          id: Date.now().toString(),
           file,
           name: file.name,
           size: file.size,
           type: file.type,
-          url: URL.createObjectURL(file)
+          blobUrl: URL.createObjectURL(file),
+          width: 0,
+          height: 0,
+          fps: 0,
+          duration: 0,
+          thumbnail: '',
+          metadata: {
+            width: 0,
+            height: 0,
+            duration: 0,
+            fps: 0
+          }
         }]
       },
       ui: {
@@ -398,8 +407,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       const newFiles = [...prev.project.rawVideoFiles];
       
       // Release the object URL to prevent memory leaks
-      if (newFiles[index]?.url) {
-        URL.revokeObjectURL(newFiles[index].url);
+      if (newFiles[index]?.blobUrl) {
+        URL.revokeObjectURL(newFiles[index].blobUrl);
       }
       
       newFiles.splice(index, 1);
@@ -530,8 +539,12 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   };
   
   // Create a context value with state and methods
-  const contextValue = {
+  const contextValue: WorkflowContextType = {
     state,
+    currentStep: state.workflow.currentStep,
+    goToStep,
+    data: state,
+    setData: setState,
     navigation: {
       goToNextStep,
       goToPreviousStep,

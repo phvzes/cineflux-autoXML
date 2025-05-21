@@ -13,7 +13,10 @@ import {
 import { AudioAnalysis } from '../types/AudioAnalysis';
 import { VideoAnalysisResult } from '../types/VideoAnalysis';
 import AudioService from '../services/AudioService';
-import VideoService from '../services/VideoService';
+import videoService from '../services/VideoService';
+
+// Create an instance of AudioService
+const audioServiceInstance = new AudioService();
 
 /**
  * Demo page for the EditDecisionEngine
@@ -66,7 +69,7 @@ const EditDecisionDemo: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      const analysis = await AudioService.analyzeAudio(
+      const analysis = await audioServiceInstance.analyzeAudio(
         file,
         (progress, step) => console.log(`Audio analysis: ${step} (${progress}%)`)
       );
@@ -87,11 +90,8 @@ const EditDecisionDemo: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      const videoService = new VideoService();
-      const analysis = await videoService.analyzeVideo(
-        file,
-        (progress, step) => console.log(`Video analysis: ${step} (${progress}%)`)
-      );
+      // Use the singleton instance
+      const analysis = await videoService.analyzeVideo(file);
       
       // Create a URL for the video file
       const videoUrl = URL.createObjectURL(file);

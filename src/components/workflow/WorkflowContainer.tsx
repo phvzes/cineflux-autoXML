@@ -10,7 +10,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { WorkflowProvider, useWorkflow } from '../../context/WorkflowContext';
 import { AppState } from '../../types/workflow';
-import { AudioService } from '../../services/AudioService';
+import AudioService from '../../services/AudioService';
 
 // Import components
 import WorkflowStepper from './WorkflowStepper';

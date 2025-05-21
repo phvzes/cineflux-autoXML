@@ -52,12 +52,12 @@ export const useAudioService = () => {
       stopAudio();
       
       // Load the audio file
-      const buffer = await AudioService.loadAudio(file, onProgress);
+      const buffer = await serviceRef.current.loadAudio(file, onProgress);
       setAudioBuffer(buffer);
       setDuration(buffer.duration);
       
       // Extract waveform data
-      const waveform = await AudioService.extractWaveform(buffer);
+      const waveform = await serviceRef.current.extractWaveform(buffer);
       setWaveformData(new Float32Array(waveform.data));
       
       return { buffer, waveform };
@@ -77,7 +77,7 @@ export const useAudioService = () => {
     onProgress?: (progress: number, step: string) => void
   ) => {
     try {
-      const analysis = await AudioService.analyzeAudio(file, onProgress || (() => {}));
+      const analysis = await serviceRef.current.analyzeAudio(file, onProgress || (() => {}));
       return analysis;
     } catch (error) {
       console.error('Error analyzing audio:', error);

@@ -5,9 +5,13 @@
  * This follows the same patterns established in AudioService.
  */
 
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+// Import FFmpeg from the correct package
+// Note: You may need to install the correct version with: npm install @ffmpeg/ffmpeg @ffmpeg/util
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 import * as cv from '@techstark/opencv-js';
 import { v4 as uuidv4 } from 'uuid';
+import { EventEmitter } from 'events';
 
 // Types
 import {
@@ -27,24 +31,18 @@ import {
 /**
  * VideoService handles all video file processing, analysis, and manipulation.
  */
-export class VideoService {
+export class VideoService extends EventEmitter {
   private ffmpeg: any;
   private isFFmpegLoaded: boolean = false;
-  private eventListeners: Map<VideoServiceEvents, Function[]> = new Map();
   private videoCache: Map<string, VideoFile> = new Map();
   private analysisCache: Map<string, VideoAnalysis> = new Map();
   private frameCache: Map<string, VideoFrame[]> = new Map();
   
   constructor() {
-    this.ffmpeg = createFFmpeg({
-      log: false,
-      corePath: '/assets/ffmpeg-core/ffmpeg-core.js',
-    });
+    super();
     
-    // Initialize event listener collections
-    Object.values(VideoServiceEvents).forEach(event => {
-      this.eventListeners.set(event, []);
-    });
+    // Create a new FFmpeg instance
+    this.ffmpeg = new FFmpeg();
   }
   
   /**
@@ -53,7 +51,12 @@ export class VideoService {
   private async ensureFFmpegLoaded(): Promise<void> {
     if (!this.isFFmpegLoaded) {
       try {
-        await this.ffmpeg.load();
+        // Load FFmpeg with the correct core path
+        await this.ffmpeg.load({
+          coreURL: '/assets/ffmpeg-core/ffmpeg-core.js',
+          wasmURL: '/assets/ffmpeg-core/ffmpeg-core.wasm',
+          workerURL: '/assets/ffmpeg-core/ffmpeg-core.worker.js'
+        });
         this.isFFmpegLoaded = true;
       } catch (error) {
         console.error('Failed to load FFmpeg:', error);
@@ -786,7 +789,7 @@ export class VideoService {
     this.videoCache.clear();
     this.analysisCache.clear();
     this.frameCache.clear();
-    this.eventListeners.clear();
+    this.removeAllListeners();
   }
   
   /**
@@ -794,10 +797,8 @@ export class VideoService {
    * @param event The event to listen for
    * @param callback Callback function to execute when event occurs
    */
-  addEventListener(event: VideoServiceEvents, callback: Function): void {
-    const listeners = this.eventListeners.get(event) || [];
-    listeners.push(callback);
-    this.eventListeners.set(event, listeners);
+  addEventListener(event: VideoServiceEvents, callback: (...args: any[]) => void): void {
+    this.on(event, callback);
   }
   
   /**
@@ -805,10 +806,8 @@ export class VideoService {
    * @param event The event the listener was registered for
    * @param callback The callback function to remove
    */
-  removeEventListener(event: VideoServiceEvents, callback: Function): void {
-    const listeners = this.eventListeners.get(event) || [];
-    const filteredListeners = listeners.filter(listener => listener !== callback);
-    this.eventListeners.set(event, filteredListeners);
+  removeEventListener(event: VideoServiceEvents, callback: (...args: any[]) => void): void {
+    this.off(event, callback);
   }
   
   /**
@@ -817,14 +816,7 @@ export class VideoService {
    * @param data Data to pass to listeners
    */
   private emitEvent(event: VideoServiceEvents, data: any): void {
-    const listeners = this.eventListeners.get(event) || [];
-    listeners.forEach(listener => {
-      try {
-        listener(data);
-      } catch (error) {
-        console.error(`Error in event listener for ${event}:`, error);
-      }
-    });
+    this.emit(event, data);
   }
 }
 
