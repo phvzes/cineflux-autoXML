@@ -85,7 +85,7 @@ const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
   showPosition = true,
   onPositionClick,
   className = '',
-}) => {
+}: any) => {
   // Reference to the canvas element
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -284,7 +284,7 @@ function drawBeats(
   ctx.fillStyle = color;
   
   // Find the maximum time
-  const maxTime = Math.max(...beats.map(beat => beat.time), 0.01); // Avoid division by zero
+  const maxTime = Math.max(...beats.map((beat: any) => beat.time), 0.01); // Avoid division by zero
   
   // Draw each beat
   for (const beat of beats) {

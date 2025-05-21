@@ -38,9 +38,9 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
   width = 800,
   height = 200,
   className = '',
-}) => {
+}: any) => {
   // State for audio file
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [_audioFile, setAudioFile] = useState<File | null>(null);
   
   // State for audio buffer
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -179,7 +179,7 @@ const BeatDetectionDemo: React.FC<BeatDetectionDemoProps> = ({
       setIsProcessingComplete(false);
       
       // Analyze the audio file
-      const analysis = await audioServiceInstance.analyzeAudio(file, (progress, step) => {
+      const analysis = await audioServiceInstance.analyzeAudio(file, (progress: any, step: any) => {
         setProgress(progress);
         setProcessingStep(step);
       });

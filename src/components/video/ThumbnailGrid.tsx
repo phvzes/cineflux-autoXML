@@ -53,7 +53,7 @@ const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
   showTimestamps = true,
   showSceneMarkers = true,
   currentTime = 0,
-}) => {
+}: any) => {
   // Convert current time to milliseconds if it's in seconds
   const currentTimeMs = currentTime < 1000 ? currentTime * 1000 : currentTime;
 
@@ -68,7 +68,7 @@ const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
 
   // Check if a thumbnail is at a scene boundary
   const isSceneBoundary = (timestamp: number): boolean => {
-    return sceneBoundaries.some(boundary => 
+    return sceneBoundaries.some((boundary: any) => 
       Math.abs(timestamp - boundary) < 500 // Within 500ms
     );
   };
@@ -86,7 +86,7 @@ const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         }}
       >
-        {thumbnails.map((thumbnail, index) => (
+        {thumbnails.map((thumbnail: any, index: any) => (
           <div 
             key={index} 
             className="thumbnail-container relative"
@@ -97,7 +97,7 @@ const ThumbnailGrid: React.FC<ThumbnailGridProps> = ({
               <div className="absolute -top-2 left-0 right-0 flex justify-center">
                 <div className="bg-[#FF7A45] text-white px-2 py-1 rounded-md flex items-center text-xs z-10">
                   <Scissors size={12} className="mr-1" />
-                  <span>Scene {sceneBoundaries.findIndex(b => Math.abs(b - thumbnail.timestamp) < 500) + 1}</span>
+                  <span>Scene {sceneBoundaries.findIndex((b: any) => Math.abs(b - thumbnail.timestamp) < 500) + 1}</span>
                 </div>
               </div>
             )}

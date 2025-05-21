@@ -33,12 +33,12 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
   showBeats = true,
   showSceneBoundaries = true,
   showEnergy = true
-}) => {
+}: any) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Calculate the total duration of the edit
   const totalDuration = editDecisionResult.edl.clips.length > 0
-    ? Math.max(...editDecisionResult.edl.clips.map(clip => clip.timelineOutPoint as number))
+    ? Math.max(...editDecisionResult.edl.clips.map((clip: any) => clip.timelineOutPoint as number))
     : 60; // Default to 60 seconds if no clips
   
   // Draw the visualization on the canvas
@@ -72,13 +72,13 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
     }
     
     // Draw energy profile if enabled
-    if (showEnergy && editDecisionResult.timeline.some(point => point.energy !== undefined)) {
+    if (showEnergy && editDecisionResult.timeline.some((point: any) => point.energy !== undefined)) {
       ctx.beginPath();
       ctx.moveTo(0, height * 0.8);
       
       editDecisionResult.timeline
-        .filter(point => point.energy !== undefined)
-        .forEach((point, index, array) => {
+        .filter((point: any) => point.energy !== undefined)
+        .forEach((point: any, index: any, array: any) => {
           const x = (point.time / totalDuration) * width;
           const y = height * 0.8 - (point.energy || 0) * (height * 0.6);
           
@@ -102,8 +102,8 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
       // Draw energy line
       ctx.beginPath();
       editDecisionResult.timeline
-        .filter(point => point.energy !== undefined)
-        .forEach((point, index) => {
+        .filter((point: any) => point.energy !== undefined)
+        .forEach((point: any, index: any) => {
           const x = (point.time / totalDuration) * width;
           const y = height * 0.8 - (point.energy || 0) * (height * 0.6);
           
@@ -122,8 +122,8 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
     // Draw beats if enabled
     if (showBeats) {
       editDecisionResult.timeline
-        .filter(point => point.type === 'beat')
-        .forEach(beat => {
+        .filter((point: any) => point.type === 'beat')
+        .forEach((beat: any) => {
           const x = (beat.time / totalDuration) * width;
           
           ctx.fillStyle = 'rgba(0, 200, 0, 0.5)';
@@ -135,8 +135,8 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
     
     // Draw cuts
     editDecisionResult.timeline
-      .filter(point => point.type === 'cut')
-      .forEach(cut => {
+      .filter((point: any) => point.type === 'cut')
+      .forEach((cut: any) => {
         const x = (cut.time / totalDuration) * width;
         
         // Draw cut line
@@ -163,7 +163,7 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
       });
     
     // Draw transitions
-    editDecisionResult.edl.transitions.forEach(transition => {
+    editDecisionResult.edl.transitions.forEach((transition: any) => {
       const x = (transition.centerPoint as number / totalDuration) * width;
       
       // Draw transition marker
@@ -214,7 +214,7 @@ const EditDecisionVisualizer: React.FC<EditDecisionVisualizerProps> = ({
     const clickTime = (x / width) * totalDuration;
     
     // Find the nearest cut point
-    const cuts = editDecisionResult.timeline.filter(point => point.type === 'cut');
+    const cuts = editDecisionResult.timeline.filter((point: any) => point.type === 'cut');
     if (cuts.length === 0) return;
     
     let nearestCut = cuts[0];

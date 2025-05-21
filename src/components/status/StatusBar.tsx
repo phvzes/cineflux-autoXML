@@ -20,7 +20,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
   isAnalyzing,
   progress,
   statusMessage
-}) => {
+}: any) => {
   // Get step-specific status message
   const getStepStatus = (): string => {
     if (statusMessage) return statusMessage;

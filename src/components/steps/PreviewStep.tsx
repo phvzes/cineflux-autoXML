@@ -27,9 +27,9 @@ interface PreviewStepProps {
   audioElement?: HTMLAudioElement | null;
 }
 
-const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
+const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }: any) => {
   // Get workflow context
-  const { currentStep, goToStep, data, setData } = useWorkflow();
+  const { _currentStep, goToStep, data, _setData } = useWorkflow();
   
   // Local state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -118,7 +118,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
           {/* Progress bar */}
           <div 
             className="w-full h-1 bg-gray-700 rounded-full mb-4 relative cursor-pointer"
-            onClick={(e) => {
+            onClick={(e: any) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
               const percentage = x / rect.width;
@@ -131,7 +131,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
             />
             
             {/* Edit point markers */}
-            {data.edit.decisions.map((edit, i) => {
+            {data.edit.decisions.map((edit: any, i: any) => {
               const position = (edit.time / data.workflow.totalDuration) * 100;
               return (
                 <div 
@@ -181,7 +181,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
               <div className="flex items-center">
                 <Volume2 size={16} className="text-white mr-2" />
                 <div className="w-20 h-1 bg-gray-700 rounded-full relative cursor-pointer"
-                  onClick={(e) => {
+                  onClick={(e: any) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const x = e.clientX - rect.left;
                     const percentage = (x / rect.width) * 100;
@@ -229,7 +229,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
           
           {/* Clips visualization */}
           <div className="absolute inset-y-0 left-0 right-0 flex items-center">
-            {data.edit.decisions.map((edit, i) => {
+            {data.edit.decisions.map((edit: any, i: any) => {
               // Duration is until next edit or end
               const nextTime = i < data.edit.decisions.length - 1 
                 ? data.edit.decisions[i+1].time 

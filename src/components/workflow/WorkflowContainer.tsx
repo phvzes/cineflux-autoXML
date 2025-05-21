@@ -55,7 +55,7 @@ const WorkflowContainerInner: React.FC = () => {
 const WorkflowContainer: React.FC<WorkflowContainerProps> = ({ 
   initialState,
   audioService
-}) => {
+}: any) => {
   return (
     <WorkflowProvider initialState={initialState} audioService={audioService}>
       <WorkflowContainerInner />

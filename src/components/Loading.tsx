@@ -10,7 +10,7 @@ interface LoadingProps {
   message?: string;
 }
 
-const Loading: React.FC<LoadingProps> = ({ message = 'Loading...' }) => {
+const Loading: React.FC<LoadingProps> = ({ message = 'Loading...' }: any) => {
   return (
     <div className="flex items-center justify-center h-screen w-full bg-gray-900">
       <div className="flex flex-col items-center">

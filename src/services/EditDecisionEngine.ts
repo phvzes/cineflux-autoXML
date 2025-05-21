@@ -45,7 +45,7 @@ export class EditDecisionEngine {
     videoService = VideoService
   ) {
     // Initialize event listener collections
-    Object.values(EditDecisionEngineEvents).forEach(event => {
+    Object.values(EditDecisionEngineEvents).forEach((event: any) => {
       this.eventListeners.set(event, []);
     });
 
@@ -98,7 +98,7 @@ export class EditDecisionEngine {
       
       // Create video pool from all analyses
       const videoPool: { analysis: VideoAnalysis, videoId: string }[] = [];
-      Object.entries(videoAnalyses).forEach(([videoId, analysis]) => {
+      Object.entries(videoAnalyses).forEach(([videoId, analysis]: any) => {
         videoPool.push({ analysis, videoId });
       });
       
@@ -195,7 +195,7 @@ export class EditDecisionEngine {
 
       const audioAnalysis = await this.audioService.analyzeAudio(
         audioFile,
-        (progress, step) => {
+        (progress: any, step: any) => {
           // Map audio analysis progress to 10-40% of total progress
           this.emitEvent(EditDecisionEngineEvents.PROGRESS, { 
             message: step,
@@ -301,7 +301,7 @@ export class EditDecisionEngine {
     }
     
     // Sort cut points by time
-    return cutPoints.sort((a, b) => a.time - b.time);
+    return cutPoints.sort((a: any, b: any) => a.time - b.time);
   }
   
   /**
@@ -601,7 +601,7 @@ export class EditDecisionEngine {
     const beatGroupSize = this.determineBeatGroupSize(audioAnalysis.tempo);
     
     // Find beats within this segment
-    const segmentBeats = beats.filter(beat => 
+    const segmentBeats = beats.filter((beat: any) => 
       beat.time >= segment.startTime && beat.time < segment.endTime
     );
     
@@ -680,7 +680,7 @@ export class EditDecisionEngine {
   private isTooCloseToExistingCut(time: number, cutPoints: EditPoint[]): boolean {
     const minDistance = 0.5; // Minimum distance in seconds between cuts
     
-    return cutPoints.some(cut => Math.abs(cut.time - time) < minDistance);
+    return cutPoints.some((cut: any) => Math.abs(cut.time - time) < minDistance);
   }
   
   /**
@@ -691,7 +691,7 @@ export class EditDecisionEngine {
       return null;
     }
     
-    return segments.find(segment => 
+    return segments.find((segment: any) => 
       time >= segment.startTime && time < segment.endTime
     ) || null;
   }
@@ -704,7 +704,7 @@ export class EditDecisionEngine {
       return null;
     }
     
-    return beats.find(beat => Math.abs(beat.time - time) < tolerance) || null;
+    return beats.find((beat: any) => Math.abs(beat.time - time) < tolerance) || null;
   }
   
   /**
@@ -744,7 +744,7 @@ export class EditDecisionEngine {
         const sceneIndex = analysis.scenes.indexOf(scene);
         const contentAnalysis = analysis.contentAnalysis[sceneIndex];
         const sceneEnergy = analysis.motionData.motionByFrame.find(
-          mf => mf.time >= scene.startTime && mf.time < scene.endTime
+          (mf: any) => mf.time >= scene.startTime && mf.time < scene.endTime
         )?.motionAmount || 0;
         
         // Normalize scene energy to 0-1 range
@@ -791,7 +791,7 @@ export class EditDecisionEngine {
     }
     
     // Sort candidates by score (descending)
-    candidates.sort((a, b) => b.score - a.score);
+    candidates.sort((a: any, b: any) => b.score - a.score);
     
     // Return the best match, or a random one if no good matches
     if (candidates.length > 0) {
@@ -807,7 +807,7 @@ export class EditDecisionEngine {
       const { analysis, videoId } = videoPool[randomVideoIndex];
       
       // Find any scene that's long enough
-      const validScenes = analysis.scenes.filter(scene => scene.duration >= duration);
+      const validScenes = analysis.scenes.filter((scene: any) => scene.duration >= duration);
       
       if (validScenes.length > 0) {
         const randomSceneIndex = Math.floor(Math.random() * validScenes.length);
@@ -821,7 +821,7 @@ export class EditDecisionEngine {
       } else {
         // Last resort: use the longest scene from the random video
         const longestScene = analysis.scenes.reduce(
-          (longest, current) => current.duration > longest.duration ? current : longest,
+          (longest: any, current: any) => current.duration > longest.duration ? current : longest,
           analysis.scenes[0]
         );
         
@@ -951,7 +951,7 @@ export class EditDecisionEngine {
     
     // 3. Ensure consistent pacing
     // Calculate average clip duration
-    const totalDuration = optimized.reduce((sum, decision) => sum + decision.duration, 0);
+    const totalDuration = optimized.reduce((sum: any, decision: any) => sum + decision.duration, 0);
     const avgDuration = totalDuration / optimized.length;
     
     // Adjust clip durations that are very different from the average
@@ -1067,7 +1067,7 @@ export class EditDecisionEngine {
   generateTimelineMarkers(decisions: EditDecision[]): TimelineMarker[] {
     const markers: TimelineMarker[] = [];
     
-    decisions.forEach((decision, index) => {
+    decisions.forEach((decision: any, index: any) => {
       // Cut point marker
       markers.push({
         id: `cut-${decision.id}`,
@@ -1120,7 +1120,7 @@ export class EditDecisionEngine {
    */
   removeEventListener(event: EditDecisionEngineEvents, callback: Function): void {
     const listeners = this.eventListeners.get(event) || [];
-    const filteredListeners = listeners.filter(listener => listener !== callback);
+    const filteredListeners = listeners.filter((listener: any) => listener !== callback);
     this.eventListeners.set(event, filteredListeners);
   }
   
@@ -1131,7 +1131,7 @@ export class EditDecisionEngine {
    */
   private emitEvent(event: EditDecisionEngineEvents, data: any): void {
     const listeners = this.eventListeners.get(event) || [];
-    listeners.forEach(listener => {
+    listeners.forEach((listener: any) => {
       try {
         listener(data);
       } catch (error) {

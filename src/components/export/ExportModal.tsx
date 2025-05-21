@@ -19,9 +19,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   editDecisions,
   videoFiles,
   audioFile,
-  settings,
+  _settings,
   duration
-}) => {
+}: any) => {
   const [exportFormat, setExportFormat] = useState('premiere');
   const [includeAudio, setIncludeAudio] = useState(true);
   const [outputPath, setOutputPath] = useState('/User/username/Documents/Projects/My Music Video');
@@ -45,12 +45,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       const EditService = (await import('@/services/EditService')).default;
       
       // Generate the XML
-      const xml = await EditService.generateExportXML(
+      const _xml = await EditService.generateExportXML(
         editDecisions,
         videoFiles,
         includeAudio ? audioFile : null,
         exportFormat as 'premiere' | 'fcpx',
-        (progress, message) => {
+        (progress: any, message: any) => {
           setExportProgress(progress);
           setExportStatus(message);
         }
@@ -63,7 +63,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       const filePath = `${outputPath}/${fileName}`;
       
       // Simulate file saving delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve: any) => setTimeout(resolve, 500));
       
       // Set the exported file path
       setExportedFilePath(filePath);
@@ -165,7 +165,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   type="text"
                   id="output-path"
                   value={outputPath}
-                  onChange={(e) => setOutputPath(e.target.value)}
+                  onChange={(e: any) => setOutputPath(e.target.value)}
                   className="flex-grow input rounded-r-none"
                 />
                 <button 

@@ -118,14 +118,14 @@ class EditService {
     
     try {
       // Simulate processing time for larger projects
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve: any) => setTimeout(resolve, 300));
       
       if (progressCallback) {
         progressCallback(30, 'Analyzing edit decisions...');
       }
       
       // Simulate more processing
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve: any) => setTimeout(resolve, 300));
       
       if (progressCallback) {
         progressCallback(50, 'Generating XML structure...');
@@ -147,14 +147,14 @@ class EditService {
       }
       
       // Simulate final processing
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve: any) => setTimeout(resolve, 300));
       
       if (progressCallback) {
         progressCallback(90, 'Finalizing export...');
       }
       
       // Simulate saving file
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve: any) => setTimeout(resolve, 300));
       
       if (progressCallback) {
         progressCallback(100, 'Export complete!');

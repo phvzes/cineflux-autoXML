@@ -33,7 +33,7 @@ const EditPreview: React.FC<EditPreviewProps> = ({
   loop = false,
   onTimeUpdate,
   onEnded
-}) => {
+}: any) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement>>({});
   const [currentTime, setCurrentTime] = useState(0);
@@ -44,13 +44,13 @@ const EditPreview: React.FC<EditPreviewProps> = ({
   
   // Calculate the total duration of the edit
   const totalDuration = edl.clips.length > 0
-    ? Math.max(...edl.clips.map(clip => clip.timelineOutPoint as number))
+    ? Math.max(...edl.clips.map((clip: any) => clip.timelineOutPoint as number))
     : 0;
   
   // Initialize video elements for each source
   useEffect(() => {
     // Clean up previous video elements
-    Object.values(videoRefs.current).forEach(video => {
+    Object.values(videoRefs.current).forEach((video: any) => {
       video.pause();
       video.removeAttribute('src');
       video.load();
@@ -59,7 +59,7 @@ const EditPreview: React.FC<EditPreviewProps> = ({
     videoRefs.current = {};
     
     // Create new video elements for each source
-    Object.entries(videoSources).forEach(([sourceId, url]) => {
+    Object.entries(videoSources).forEach(([sourceId, url]: any) => {
       const video = document.createElement('video');
       video.src = url;
       video.crossOrigin = 'anonymous';
@@ -75,7 +75,7 @@ const EditPreview: React.FC<EditPreviewProps> = ({
     
     // Clean up on unmount
     return () => {
-      Object.values(videoRefs.current).forEach(video => {
+      Object.values(videoRefs.current).forEach((video: any) => {
         video.pause();
         video.removeAttribute('src');
         video.load();
@@ -178,8 +178,8 @@ const EditPreview: React.FC<EditPreviewProps> = ({
     
     // Handle transitions
     if (activeTransition) {
-      const outgoingClip = edl.clips.find(clip => clip.id === activeTransition.outgoingClipId);
-      const incomingClip = edl.clips.find(clip => clip.id === activeTransition.incomingClipId);
+      const outgoingClip = edl.clips.find((clip: any) => clip.id === activeTransition.outgoingClipId);
+      const incomingClip = edl.clips.find((clip: any) => clip.id === activeTransition.incomingClipId);
       
       if (outgoingClip && incomingClip) {
         // Calculate the progress of the transition (0-1)
@@ -290,7 +290,7 @@ const EditPreview: React.FC<EditPreviewProps> = ({
   
   // Find the clip that contains the given time
   const findClipAtTime = (clips: MatchedClip[], time: number): MatchedClip | undefined => {
-    return clips.find(clip => 
+    return clips.find((clip: any) => 
       time >= (clip.timelineInPoint as number) && 
       time < (clip.timelineOutPoint as number)
     );
@@ -298,7 +298,7 @@ const EditPreview: React.FC<EditPreviewProps> = ({
   
   // Find a transition that is active at the given time
   const findTransitionAtTime = (transitions: Transition[], time: number): Transition | undefined => {
-    return transitions.find(transition => {
+    return transitions.find((transition: any) => {
       const duration = transition.duration as number;
       const center = transition.centerPoint as number;
       const start = center - duration / 2;

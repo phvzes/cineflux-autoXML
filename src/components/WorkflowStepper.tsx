@@ -65,12 +65,12 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   onStepClick,
   orientation = 'horizontal',
   disabled = false,
-}) => {
+}: any) => {
   // Get the current step index
   const currentStepIndex = workflowOrder.indexOf(currentStep);
   
   // Format steps for the StyledStepper component
-  const steps = workflowOrder.map(step => ({
+  const steps = workflowOrder.map((step: any) => ({
     label: stepConfig[step].label,
     description: stepConfig[step].description,
   }));

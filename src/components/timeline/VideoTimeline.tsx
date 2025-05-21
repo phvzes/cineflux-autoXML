@@ -35,7 +35,7 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
   currentTime = 0,
   zoomLevel = 1,
   className = ''
-}) => {
+}: any) => {
   // State
   const [isPlaying, setIsPlaying] = useState(false);
   const [zoom, setZoom] = useState(zoomLevel);
@@ -60,10 +60,10 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
     videoFile: loadedVideoFile,
     videoAnalysis,
     scenes,
-    extractedFrames,
+    _extractedFrames,
     loadVideoFile,
-    getFrameAtTime,
-    getSceneAtTime
+    _getFrameAtTime,
+    _getSceneAtTime
   } = useVideoService();
   
   const {
@@ -72,8 +72,8 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
     beats,
     segments,
     loadAudioFile,
-    getBeatAtTime,
-    getSegmentAtTime
+    _getBeatAtTime,
+    _getSegmentAtTime
   } = useAudioService();
   
   // Derived values
@@ -288,7 +288,7 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
         const sceneTrackY = height * 0.75;
         const sceneTrackHeight = height * 0.15;
         
-        scenes.forEach((scene, index) => {
+        scenes.forEach((scene: any, index: any) => {
           if (scene.endTime >= visibleTimeRange.start && scene.startTime <= visibleTimeRange.end) {
             const x1 = Math.max(0, timeToX(scene.startTime));
             const x2 = Math.min(width, timeToX(scene.endTime));
@@ -318,7 +318,7 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
         
         ctx.fillStyle = '#8338ec';
         
-        beats.forEach(beat => {
+        beats.forEach((beat: any) => {
           if (beat.time >= visibleTimeRange.start && beat.time <= visibleTimeRange.end) {
             const x = timeToX(beat.time);
             ctx.fillRect(x - 1, beatY, 2, beatHeight);
@@ -331,7 +331,7 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
         const segmentY = height * 0.1;
         const segmentHeight = height * 0.15;
         
-        segments.forEach((segment, index) => {
+        segments.forEach((segment: any, index: any) => {
           if (segment.endTime >= visibleTimeRange.start && segment.startTime <= visibleTimeRange.end) {
             const x1 = Math.max(0, timeToX(segment.startTime));
             const x2 = Math.min(width, timeToX(segment.endTime));
@@ -369,7 +369,7 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
       if (markers && markers.length > 0) {
         ctx.font = '10px Arial';
         
-        markers.forEach(marker => {
+        markers.forEach((marker: any) => {
           if (marker.time >= visibleTimeRange.start && marker.time <= visibleTimeRange.end) {
             const x = timeToX(marker.time);
             let color;

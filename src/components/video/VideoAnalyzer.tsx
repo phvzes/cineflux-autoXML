@@ -35,9 +35,9 @@ const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
   showThumbnails = true,
   thumbnailsPerRow = 4,
   className = ''
-}) => {
+}: any) => {
   // State
-  const [currentFrame, setCurrentFrame] = useState<number>(0);
+  const [_currentFrame, _setCurrentFrame] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [selectedScene, setSelectedScene] = useState<Scene | null>(null);
   
@@ -57,7 +57,7 @@ const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
     scenes,
     loadVideoFile,
     analyzeVideo,
-    getFrameAtTime,
+    _getFrameAtTime,
     getSceneAtTime
   } = useVideoService();
   
@@ -112,7 +112,7 @@ const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
       if (scenes.length > 0) {
         const pixelsPerSecond = canvas.width / videoAnalysis.duration;
         
-        scenes.forEach((scene, index) => {
+        scenes.forEach((scene: any, index: any) => {
           const x = scene.startTime * pixelsPerSecond;
           const width = scene.duration * pixelsPerSecond;
           
@@ -236,7 +236,7 @@ const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
           className="grid gap-2"
           style={{ gridTemplateColumns }}
         >
-          {extractedFrames.map((frame) => (
+          {extractedFrames.map((frame: any) => (
             <div
               key={frame.index}
               className="relative cursor-pointer transition-transform hover:scale-105"
@@ -265,7 +265,7 @@ const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
       <div className="mt-4">
         <h3 className="text-lg font-semibold mb-2">Detected Scenes</h3>
         <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-          {scenes.map((scene) => (
+          {scenes.map((scene: any) => (
             <div
               key={scene.id}
               className={`p-2 rounded cursor-pointer ${
@@ -327,7 +327,7 @@ const VideoAnalyzer: React.FC<VideoAnalyzerProps> = ({
           <div className="mt-4">
             <p className="text-gray-400">Motion</p>
             <div className="h-24 bg-gray-900 rounded mt-1 relative overflow-hidden">
-              {videoAnalysis.motionData.motionByFrame.map((motion, index) => {
+              {videoAnalysis.motionData.motionByFrame.map((motion: any, index: any) => {
                 const height = Math.min(Math.max(motion.motionAmount * 5, 2), 100);
                 const x = (index / videoAnalysis.motionData.motionByFrame.length) * 100;
                 return (

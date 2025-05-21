@@ -123,7 +123,7 @@ export class EditDecisionEngine {
     }
     
     // Convert milliseconds to seconds for scene times
-    const scenes = videoAnalysis.sceneDetection.scenes.map(scene => ({
+    const scenes = videoAnalysis.sceneDetection.scenes.map((scene: any) => ({
       ...scene,
       startTime: scene.startTime / 1000,
       endTime: scene.endTime / 1000,
@@ -154,7 +154,7 @@ export class EditDecisionEngine {
     const timeline: { time: number; type: string; sourceId?: string }[] = [];
     
     // Add all beats to the timeline
-    this.beatMap.forEach(beat => {
+    this.beatMap.forEach((beat: any) => {
       timeline.push({
         time: beat.time,
         type: 'beat'
@@ -162,8 +162,8 @@ export class EditDecisionEngine {
     });
     
     // Add all scene boundaries to the timeline
-    this.scenes.forEach((scenes, videoId) => {
-      scenes.forEach(scene => {
+    this.scenes.forEach((scenes: any, videoId: any) => {
+      scenes.forEach((scene: any) => {
         timeline.push({
           time: scene.startTime,
           type: 'scene',
@@ -179,7 +179,7 @@ export class EditDecisionEngine {
     });
     
     // Sort the timeline by time
-    timeline.sort((a, b) => a.time - b.time);
+    timeline.sort((a: any, b: any) => a.time - b.time);
     
     return timeline;
   }
@@ -265,7 +265,7 @@ export class EditDecisionEngine {
     const candidates: { scene: Scene; videoId: string; score: number }[] = [];
     
     // Find candidate scenes from all videos
-    this.scenes.forEach((scenes, videoId) => {
+    this.scenes.forEach((scenes: any, videoId: any) => {
       for (const scene of scenes) {
         // Check if scene duration is appropriate
         if (scene.duration / 1000 < duration * 0.8) continue; // Scene is too short
@@ -295,7 +295,7 @@ export class EditDecisionEngine {
     });
     
     // Sort candidates by score
-    candidates.sort((a, b) => b.score - a.score);
+    candidates.sort((a: any, b: any) => b.score - a.score);
     
     // Return the best candidate
     return candidates.length > 0 ? { scene: candidates[0].scene, videoId: candidates[0].videoId } : null;
@@ -352,14 +352,14 @@ export class EditDecisionEngine {
     // Filter beats based on beatCutPercentage
     const beatsToUse = Math.ceil(this.beatMap.length * (this.config.beatCutPercentage! / 100));
     const selectedBeats = this.beatMap
-      .sort((a, b) => b.confidence - a.confidence) // Sort by confidence
+      .sort((a: any, b: any) => b.confidence - a.confidence) // Sort by confidence
       .slice(0, beatsToUse); // Take the top beats
     
     // Create a set of selected beat times for quick lookup
-    const selectedBeatTimes = new Set(selectedBeats.map(beat => beat.time));
+    const selectedBeatTimes = new Set(selectedBeats.map((beat: any) => beat.time));
     
     // Filter the timeline to include only selected beats and scene boundaries
-    const filteredTimeline = rawTimeline.filter(point => {
+    const filteredTimeline = rawTimeline.filter((point: any) => {
       if (point.type === 'beat') {
         return selectedBeatTimes.has(point.time);
       }
@@ -375,7 +375,7 @@ export class EditDecisionEngine {
       energy: number;
     }[] = [];
     
-    let currentTime = 0;
+    let _currentTime = 0;
     let lastCutTime = 0;
     
     // Process each potential cut point
@@ -522,7 +522,7 @@ export class EditDecisionEngine {
     // Add cut points to the EDL
     const cutPoints: TimelineCutPoint[] = [];
     
-    cuts.forEach((cut, index) => {
+    cuts.forEach((cut: any, index: any) => {
       cutPoints.push({
         id: `cut_${index}`,
         type: MarkerType.MARKER,
@@ -540,7 +540,7 @@ export class EditDecisionEngine {
       averageSceneDuration: cuts.length > 1 
         ? (cuts[cuts.length - 1].time - cuts[0].time) / (cuts.length - 1) 
         : 0,
-      transitionTypes: transitions.reduce((acc, transition) => {
+      transitionTypes: transitions.reduce((acc: any, transition: any) => {
         acc[transition.type] = (acc[transition.type] || 0) + 1;
         return acc;
       }, {} as Record<TransitionType, number>),
@@ -549,14 +549,14 @@ export class EditDecisionEngine {
     
     // Create the final timeline for visualization
     const timeline = [
-      ...this.beatMap.map(beat => ({ time: beat.time, type: 'beat' as const })),
-      ...cuts.map(cut => ({ 
+      ...this.beatMap.map((beat: any) => ({ time: beat.time, type: 'beat' as const })),
+      ...cuts.map((cut: any) => ({ 
         time: cut.time, 
         type: 'cut' as const, 
         sourceId: cut.sourceId,
         energy: cut.energy
       }))
-    ].sort((a, b) => a.time - b.time);
+    ].sort((a: any, b: any) => a.time - b.time);
     
     return {
       edl,
@@ -622,7 +622,7 @@ export class EditDecisionEngine {
     const timelineWidth = 800;
     const duration = timeline.length > 0 ? timeline[timeline.length - 1].time : 60;
     
-    timeline.forEach(point => {
+    timeline.forEach((point: any) => {
       const position = (point.time / duration) * timelineWidth;
       const type = point.type;
       
@@ -640,7 +640,7 @@ export class EditDecisionEngine {
     `;
     
     // Add clip visualization
-    edl.clips.forEach((clip, index) => {
+    edl.clips.forEach((clip: any, index: any) => {
       const width = ((clip.timelineOutPoint - clip.timelineInPoint) / duration) * timelineWidth;
       const position = (clip.timelineInPoint / duration) * timelineWidth;
       

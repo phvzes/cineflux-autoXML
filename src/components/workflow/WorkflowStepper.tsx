@@ -19,7 +19,7 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   currentStep,
   hasAnalysisResults = false,
   hasEditDecisions = false
-}) => {
+}: any) => {
   const { navigation } = useWorkflow();
   
   // Define the steps in order
@@ -56,7 +56,7 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   return (
     <div className="workflow-stepper">
       <div className="flex justify-between items-center max-w-4xl mx-auto">
-        {steps.map((step, index) => {
+        {steps.map((step: any, index: any) => {
           // Determine if this step is the current one
           const isCurrentStep = step.id === currentStep;
           

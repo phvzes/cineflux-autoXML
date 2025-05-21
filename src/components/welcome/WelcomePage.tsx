@@ -87,7 +87,7 @@ interface FeatureCardProps {
   description: string;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }: any) => {
   return (
     <div className="feature-card">
       <div className="feature-icon-container">
@@ -110,7 +110,7 @@ interface ProjectCardProps {
   onClick: (id: string) => void;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }: any) => {
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
@@ -155,9 +155,9 @@ interface WelcomePageProps {
   onGetStarted?: () => void;
 }
 
-export const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted }) => {
+export const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted }: any) => {
   const { dispatch } = useProject();
-  const [recentProjects, setRecentProjects] = useState(MOCK_RECENT_PROJECTS);
+  const [recentProjects, _setRecentProjects] = useState(MOCK_RECENT_PROJECTS);
   const [currentDate, setCurrentDate] = useState(new Date());
   
   useEffect(() => {
@@ -246,7 +246,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted }) => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recentProjects.map(project => (
+            {recentProjects.map((project: any) => (
               <ProjectCard 
                 key={project.id} 
                 project={project} 
@@ -263,7 +263,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted }) => {
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature, index) => (
+            {FEATURES.map((feature: any, index: any) => (
               <FeatureCard 
                 key={index}
                 icon={feature.icon}

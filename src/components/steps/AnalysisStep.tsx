@@ -23,7 +23,7 @@ import {
 
 const AnalysisStep: React.FC = () => {
   // Get workflow context
-  const { currentStep, goToStep, data, setData } = useWorkflow();
+  const { _currentStep, goToStep, data, setData } = useWorkflow();
   
   // Use audio service hook
   const {
@@ -117,11 +117,11 @@ const AnalysisStep: React.FC = () => {
           isAnalyzing: false,
           audio: {
             tempo: analysis.tempo.bpm,
-            beatTimes: analysis.beats.beats.map(beat => ({ 
+            beatTimes: analysis.beats.beats.map((beat: any) => ({ 
               time: beat.time, 
               strength: beat.confidence 
             })),
-            segments: analysis.sections.sections.map(section => ({
+            segments: analysis.sections.sections.map((section: any) => ({
               start: section.start,
               end: section.start + section.duration,
               isChorus: section.label.toLowerCase().includes('chorus'),
@@ -150,7 +150,7 @@ const AnalysisStep: React.FC = () => {
     // Create mock analysis results
     const mockAudio = {
       tempo: 120,
-      beatTimes: Array.from({ length: 100 }, (_, i) => ({ time: i * 0.5, strength: Math.random() * 0.5 + 0.5 })),
+      beatTimes: Array.from({ length: 100 }, (_: any, i: any) => ({ time: i * 0.5, strength: Math.random() * 0.5 + 0.5 })),
       segments: [
         { start: 0, end: 15, isChorus: false, energyLevel: 0.6 },
         { start: 15, end: 30, isChorus: true, energyLevel: 0.9 },

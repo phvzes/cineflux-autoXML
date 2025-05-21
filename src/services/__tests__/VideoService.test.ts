@@ -46,7 +46,7 @@ const mockCanvas = {
   height: 1080
 };
 
-global.document.createElement = jest.fn().mockImplementation((tag) => {
+global.document.createElement = jest.fn().mockImplementation((tag: any) => {
   if (tag === 'canvas') {
     return mockCanvas;
   }
@@ -64,7 +64,7 @@ const createMockFile = () => {
 
 // Create mock frames for testing
 const createMockFrames = (count: number) => {
-  return Array.from({ length: count }, (_, i) => ({
+  return Array.from({ length: count }, (_: any, i: any) => ({
     index: i,
     time: i / 30, // Assuming 30fps
     imageData: {
@@ -155,7 +155,7 @@ describe('VideoService', () => {
       
       // Mock ffmpeg output with fraction frame rate
       const ffmpegFsSpy = jest.spyOn(videoService['ffmpeg'], 'FS');
-      ffmpegFsSpy.mockImplementation((cmd, fileName) => {
+      ffmpegFsSpy.mockImplementation((cmd: any, fileName: any) => {
         if (cmd === 'readFile' && fileName === 'output.json') {
           return new TextEncoder().encode(safeStringify({
             streams: [{

@@ -18,9 +18,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenProject,
   onSaveProject,
   onExport,
-  onHelpClick,
-  renderWorkflowStepper
-}) => {
+  _onHelpClick,
+  _renderWorkflowStepper
+}: any) => {
   const { state } = useProject();
   const { currentStep, isAnalyzing: _isAnalyzing, editDecisions, videoFiles: _videoFiles } = state;
   

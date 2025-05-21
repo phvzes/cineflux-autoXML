@@ -29,7 +29,7 @@ const mockAudioBuffer: AudioBuffer = {
   duration: 10, // 10 seconds
   sampleRate: 48000,
   numberOfChannels: 2,
-  getChannelData: jest.fn((channel) => {
+  getChannelData: jest.fn((channel: any) => {
     // Return a mock channel data array with sine wave data
     const data = new Float32Array(48000 * 10);
     for (let i = 0; i < data.length; i++) {
@@ -49,7 +49,7 @@ const mockAudioBuffer: AudioBuffer = {
 const mockFetchResponse = {
   ok: true,
   headers: {
-    get: jest.fn((name) => name === 'Content-Length' ? '1000000' : null)
+    get: jest.fn((name: any) => name === 'Content-Length' ? '1000000' : null)
   },
   body: {
     getReader: jest.fn(() => ({
@@ -281,7 +281,7 @@ describe('AudioService', () => {
   describe('estimateTempo', () => {
     it('should estimate tempo from beat data', async () => {
       // Create mock beats with regular intervals (120 BPM = 0.5s between beats)
-      const beats: Beat[] = Array.from({ length: 20 }, (_, i) => ({
+      const beats: Beat[] = Array.from({ length: 20 }, (_: any, i: any) => ({
         time: i * 0.5,
         confidence: 0.8
       }));
@@ -350,7 +350,7 @@ describe('AudioService', () => {
     it('should detect sections in the audio', async () => {
       // Create mock energy analysis
       const energyAnalysis: EnergyAnalysis = {
-        samples: Array.from({ length: 100 }, (_, i) => ({
+        samples: Array.from({ length: 100 }, (_: any, i: any) => ({
           time: i * 0.1,
           level: i < 50 ? 0.5 : 0.8 // Change in energy level at 5 seconds
         })),
@@ -361,7 +361,7 @@ describe('AudioService', () => {
       
       // Create mock beat analysis
       const beatAnalysis: BeatAnalysis = {
-        beats: Array.from({ length: 20 }, (_, i) => ({
+        beats: Array.from({ length: 20 }, (_: any, i: any) => ({
           time: i * 0.5,
           confidence: 0.8
         })),
@@ -390,7 +390,7 @@ describe('AudioService', () => {
     it('should handle insufficient energy samples', async () => {
       // Create mock energy analysis with few samples
       const energyAnalysis: EnergyAnalysis = {
-        samples: Array.from({ length: 5 }, (_, i) => ({
+        samples: Array.from({ length: 5 }, (_: any, i: any) => ({
           time: i * 0.1,
           level: 0.5
         })),

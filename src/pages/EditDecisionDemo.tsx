@@ -71,7 +71,7 @@ const EditDecisionDemo: React.FC = () => {
       
       const analysis = await audioServiceInstance.analyzeAudio(
         file,
-        (progress, step) => console.log(`Audio analysis: ${step} (${progress}%)`)
+        (progress: any, step: any) => console.log(`Audio analysis: ${step} (${progress}%)`)
       );
       
       setAudioAnalysis(analysis);
@@ -97,7 +97,7 @@ const EditDecisionDemo: React.FC = () => {
       const videoUrl = URL.createObjectURL(file);
       
       // Update video sources
-      setVideoSources(prev => ({
+      setVideoSources((prev: any) => ({
         ...prev,
         [file.name]: videoUrl
       }));
@@ -114,7 +114,7 @@ const EditDecisionDemo: React.FC = () => {
         },
         sceneDetection: {
           id: `scenes_${file.name}`,
-          scenes: analysis.scenes.map((scene, index) => ({
+          scenes: analysis.scenes.map((scene: any, index: any) => ({
             id: `scene_${index}`,
             startTime: scene.start * 1000, // Convert to milliseconds
             endTime: scene.end * 1000, // Convert to milliseconds
@@ -123,7 +123,7 @@ const EditDecisionDemo: React.FC = () => {
             boundaryConfidence: 0.8 // Placeholder
           })),
           sceneCount: analysis.scenes.length,
-          averageSceneDuration: analysis.scenes.reduce((sum, scene) => sum + (scene.end - scene.start), 0) * 1000 / analysis.scenes.length,
+          averageSceneDuration: analysis.scenes.reduce((sum: any, scene: any) => sum + (scene.end - scene.start), 0) * 1000 / analysis.scenes.length,
           analysisTimestamp: new Date()
         },
         analysisTimestamp: new Date(),
@@ -155,7 +155,7 @@ const EditDecisionDemo: React.FC = () => {
       engine.setAudioAnalysis(audioAnalysis);
       
       // Add video analyses
-      Object.entries(videoAnalyses).forEach(([id, analysis]) => {
+      Object.entries(videoAnalyses).forEach(([id, analysis]: any) => {
         engine.addVideoAnalysis(id, analysis);
       });
       
@@ -251,7 +251,7 @@ const EditDecisionDemo: React.FC = () => {
           />
           {videoFiles.length > 0 && (
             <div style={{ marginTop: '10px' }}>
-              <strong>Selected:</strong> {videoFiles.map(file => file.name).join(', ')}
+              <strong>Selected:</strong> {videoFiles.map((file: any) => file.name).join(', ')}
             </div>
           )}
         </div>
@@ -340,7 +340,7 @@ const EditDecisionDemo: React.FC = () => {
               <li>
                 <strong>Transition Types:</strong>
                 <ul>
-                  {Object.entries(editResult.stats.transitionTypes).map(([type, count]) => (
+                  {Object.entries(editResult.stats.transitionTypes).map(([type, count]: any) => (
                     <li key={type}>{type}: {count}</li>
                   ))}
                 </ul>

@@ -29,7 +29,7 @@ const Step: React.FC<StepProps> = ({
   index,
   onClick,
   disabled = false,
-}) => {
+}: any) => {
   // Determine step button class based on state
   const stepButtonClass = `
     step-button
@@ -82,7 +82,7 @@ const Step: React.FC<StepProps> = ({
 const StepConnector: React.FC<{
   isCompleted: boolean;
   orientation?: 'horizontal' | 'vertical';
-}> = ({ isCompleted, orientation = 'horizontal' }) => {
+}> = ({ isCompleted, orientation = 'horizontal' }: any) => {
   const connectorClass = `
     step-connector
     ${isCompleted ? 'step-connector-completed' : ''}
@@ -108,7 +108,7 @@ export const StyledStepper: React.FC<StepperProps> = ({
   onStepClick,
   orientation = 'horizontal',
   disabled = false,
-}) => {
+}: any) => {
   const isStepClickable = (index: number): boolean => {
     // Only allow clicking on completed steps or the next available step
     return !disabled && (index <= activeStep || index === activeStep + 1);
@@ -131,7 +131,7 @@ export const StyledStepper: React.FC<StepperProps> = ({
       role="list"
       aria-label="Workflow steps"
     >
-      {steps.map((step, index) => (
+      {steps.map((step: any, index: any) => (
         <React.Fragment key={index}>
           <Step
             label={step.label}

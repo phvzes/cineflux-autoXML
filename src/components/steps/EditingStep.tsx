@@ -42,17 +42,17 @@ interface LegacyEditDecision {
   transition: string;
 }
 
-const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
+const EditingStep: React.FC<EditingStepProps> = ({ audioElement }: any) => {
   // Get workflow context
-  const { currentStep, goToStep, data, setData } = useWorkflow();
+  const { _currentStep, goToStep, data, setData } = useWorkflow();
   
   // Use audio service hook
   const {
-    waveformData,
+    _waveformData,
     audioBuffer,
     isPlaying,
     currentTime,
-    duration,
+    _duration,
     loadAudio,
     togglePlayPause,
     seekTo
@@ -61,8 +61,8 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   // Use video service hook
   const {
     videoFile,
-    videoAnalysis,
-    scenes,
+    _videoAnalysis,
+    _scenes,
     loadVideoFile
   } = useVideoService();
   
@@ -441,7 +441,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
                   <span>Transition: {decision.transition}</span>
                   <button 
                     className="text-blue-400 hover:text-blue-300"
-                    onClick={(e) => {
+                    onClick={(e: any) => {
                       e.stopPropagation();
                       handleEditDecision(index);
                     }}
@@ -495,7 +495,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
               id="clip-select"
               className="w-full bg-gray-700 border border-gray-600 rounded p-2"
               value={editingDecision.clipIndex}
-              onChange={(e) => {
+              onChange={(e: any) => {
                 setEditingDecision({
                   ...editingDecision,
                   clipIndex: parseInt(e.target.value)
@@ -520,7 +520,7 @@ const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
               role="radiogroup"
               aria-labelledby="transition-group-label"
             >
-              {(['none', 'cut', 'dissolve', 'fade', 'wipe'] as string[]).map(type => (
+              {(['none', 'cut', 'dissolve', 'fade', 'wipe'] as string[]).map((type: any) => (
                 <button
                   key={type}
                   className={`p-2 rounded border ${

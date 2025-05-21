@@ -19,7 +19,7 @@ export const Loading: React.FC<LoadingProps> = ({
   message = 'Loading...',
   size = 'md',
   fullScreen = false,
-}) => {
+}: any) => {
   const getSpinnerSize = () => {
     switch (size) {
       case 'sm': return 24;
@@ -82,7 +82,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   message,
   retry,
   fullScreen = false,
-}) => {
+}: any) => {
   const containerClasses = fullScreen
     ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-opacity-90 bg-primary'
     : 'flex flex-col items-center justify-center p-lg';
@@ -138,7 +138,7 @@ export const EmptyState: React.FC<{
     label: string;
     onClick: () => void;
   };
-}> = ({ message, icon, action }) => {
+}> = ({ message, icon, action }: any) => {
   return (
     <div className="flex flex-col items-center justify-center p-xl text-center text-secondary">
       {icon || (

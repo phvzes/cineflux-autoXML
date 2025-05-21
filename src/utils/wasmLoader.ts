@@ -374,7 +374,7 @@ export function copyFromWasmMemory(
   try {
     // Calculate actual length based on type
     let actualLength = length;
-    let bytesPerElement = 1;
+    let _bytesPerElement = 1;
     
     switch (type) {
       case 'Int16Array':
@@ -461,7 +461,7 @@ export async function loadFFmpeg(ffmpeg: any): Promise<void> {
  * @returns A promise that resolves when OpenCV.js is ready
  */
 export function ensureOpenCVLoaded(): Promise<void> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve: any, reject: any) => {
     // If cv.Mat exists, OpenCV is already loaded
     if (window.cv && window.cv.Mat) {
       resolve();

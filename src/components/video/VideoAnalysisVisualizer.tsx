@@ -49,7 +49,7 @@ const VideoAnalysisVisualizer: React.FC<VideoAnalysisVisualizerProps> = ({
   currentTime = 0,
   isPlaying = false,
   onPlayPauseToggle,
-}) => {
+}: any) => {
   const [selectedScene, setSelectedScene] = useState<number | null>(null);
   
   // Update selected scene based on current time
@@ -149,7 +149,7 @@ const VideoAnalysisVisualizer: React.FC<VideoAnalysisVisualizerProps> = ({
       <div className="mb-6">
         <div className="relative h-6 bg-[#2A2A30] rounded-full overflow-hidden">
           {/* Scene markers */}
-          {sceneBoundaries.map((boundary, index) => (
+          {sceneBoundaries.map((boundary: any, index: any) => (
             <div 
               key={index}
               className="absolute top-0 bottom-0 w-0.5 bg-[#FF7A45] z-10"
@@ -168,7 +168,7 @@ const VideoAnalysisVisualizer: React.FC<VideoAnalysisVisualizerProps> = ({
           {/* Clickable area for seeking */}
           <div 
             className="absolute top-0 bottom-0 left-0 right-0 cursor-pointer"
-            onClick={(e) => {
+            onClick={(e: any) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const clickPosition = (e.clientX - rect.left) / rect.width;
               if (onSeek) {

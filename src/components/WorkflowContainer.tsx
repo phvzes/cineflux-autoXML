@@ -148,7 +148,7 @@ const WorkflowContainer: React.FC = () => {
           isProcessing={workflowState.isProcessing}
           progressPercentage={workflowState.progressPercentage}
           statusMessage={workflowState.statusMessage}
-          onStepClick={(step) => navigation.goToStep(step as unknown as WorkflowStep)}
+          onStepClick={(step: any) => navigation.goToStep(step as unknown as WorkflowStep)}
         />
       </div>
     );
@@ -156,7 +156,7 @@ const WorkflowContainer: React.FC = () => {
   
   // Create a map of video files by ID for the export modal
   const videoFilesById: Record<string, File> = {};
-  projectState.videoFiles.forEach(file => {
+  projectState.videoFiles.forEach((file: any) => {
     const analyses = projectState.videoAnalyses;
     // Find the analysis for this file
     for (const id in analyses) {
@@ -213,7 +213,7 @@ const WorkflowContainer: React.FC = () => {
               style={{ backgroundColor: colorPalette.darkGrey }}
             >
               <div className="grid grid-cols-2 gap-2" role="list">
-                {shortcuts.map((shortcut, index) => (
+                {shortcuts.map((shortcut: any, index: any) => (
                   <React.Fragment key={index}>
                     <div style={{ color: colorPalette.lightGrey }} role="listitem">{shortcut.description}</div>
                     <div style={{ color: colorPalette.offWhite }} role="listitem">{shortcut.key}</div>

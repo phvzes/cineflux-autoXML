@@ -34,7 +34,7 @@ const InputStep: React.FC = () => {
   const onAudioDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      setData(prev => ({
+      setData((prev: any) => ({
         ...prev,
         project: {
           ...prev.project,
@@ -67,7 +67,7 @@ const InputStep: React.FC = () => {
   
   // Setup dropzone for videos
   const onVideoDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach(file => {
+    acceptedFiles.forEach((file: any) => {
       addVideoFile(file);
     });
   }, [addVideoFile]);
@@ -86,14 +86,14 @@ const InputStep: React.FC = () => {
   
   // Setup dropzone for raw video files
   const onRawVideoDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach(file => {
+    acceptedFiles.forEach((file: any) => {
       // Validate video file format
       const validVideoFormats = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
       if (validVideoFormats.includes(file.type)) {
         addRawVideoFile(file);
       } else {
         // Show error for invalid format
-        setData(prev => ({
+        setData((prev: any) => ({
           ...prev,
           ui: {
             ...prev.ui,
@@ -121,7 +121,7 @@ const InputStep: React.FC = () => {
   
   // Handle settings change
   const handleSettingChange = (setting: keyof ProjectSettings, value: string) => {
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       project: {
         ...prev.project,
@@ -135,7 +135,7 @@ const InputStep: React.FC = () => {
   
   // Handle analyze button click
   const handleAnalyze = () => {
-    setData(prev => ({
+    setData((prev: any) => ({
       ...prev,
       workflow: {
         ...prev.workflow,
@@ -208,7 +208,7 @@ const InputStep: React.FC = () => {
                     <div className="font-medium">{state.project.musicFile.name}</div>
                     <button 
                       className="text-gray-400 hover:text-red-400"
-                      onClick={() => setData(prev => ({
+                      onClick={() => setData((prev: any) => ({
                         ...prev,
                         project: {
                           ...prev.project,
@@ -269,7 +269,7 @@ const InputStep: React.FC = () => {
               ) : (
                 // Display selected video files
                 <div className="bg-gray-800 border border-gray-600 rounded p-2 max-h-64 overflow-y-auto">
-                  {state.project.videoFiles.map((file, index) => (
+                  {state.project.videoFiles.map((file: any, index: any) => (
                     <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-700 rounded">
                       <div className="flex items-center gap-2">
                         <Video size={16} />
@@ -332,7 +332,7 @@ const InputStep: React.FC = () => {
               ) : (
                 // Display selected raw video files
                 <div className="bg-gray-800 border border-gray-600 rounded p-2 max-h-64 overflow-y-auto">
-                  {state.project.rawVideoFiles.map((file, index) => (
+                  {state.project.rawVideoFiles.map((file: any, index: any) => (
                     <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-700 rounded">
                       <div className="flex items-center gap-2">
                         <Film size={16} />
@@ -386,7 +386,7 @@ const InputStep: React.FC = () => {
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
                   value={state.project.settings.genre}
-                  onChange={(e) => handleSettingChange('genre', e.target.value)}
+                  onChange={(e: any) => handleSettingChange('genre', e.target.value)}
                 >
                   <option>Hip-Hop/Rap</option>
                   <option>Rock</option>
@@ -400,7 +400,7 @@ const InputStep: React.FC = () => {
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
                   value={state.project.settings.style}
-                  onChange={(e) => handleSettingChange('style', e.target.value)}
+                  onChange={(e: any) => handleSettingChange('style', e.target.value)}
                 >
                   <option>Dynamic</option>
                   <option>Minimal</option>
@@ -413,7 +413,7 @@ const InputStep: React.FC = () => {
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
                   value={state.project.settings.transitions}
-                  onChange={(e) => handleSettingChange('transitions', e.target.value)}
+                  onChange={(e: any) => handleSettingChange('transitions', e.target.value)}
                 >
                   <option>Auto (Based on Music)</option>
                   <option>Cuts Only</option>
@@ -426,7 +426,7 @@ const InputStep: React.FC = () => {
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
                   value={state.project.settings.exportFormat}
-                  onChange={(e) => handleSettingChange('exportFormat', e.target.value)}
+                  onChange={(e: any) => handleSettingChange('exportFormat', e.target.value)}
                 >
                   <option>Premiere Pro XML</option>
                   <option>Final Cut Pro XML</option>

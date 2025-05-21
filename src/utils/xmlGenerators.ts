@@ -28,7 +28,7 @@ export function generatePremiereXML(
     
     // Calculate sequence duration
     let sequenceDuration = 0;
-    editDecisions.forEach(edit => {
+    editDecisions.forEach((edit: any) => {
       const endTime = edit.time + edit.duration;
       if (endTime > sequenceDuration) {
         sequenceDuration = endTime;
@@ -51,7 +51,7 @@ export function generatePremiereXML(
         <track>`;
     
     // Add video clips
-    editDecisions.forEach((edit, index) => {
+    editDecisions.forEach((edit: any, index: any) => {
       const videoFile = videoFiles[edit.videoId];
       if (!videoFile) return;
       
@@ -163,7 +163,7 @@ export function generateFinalCutXML(
     
     // Calculate sequence duration
     let sequenceDuration = 0;
-    editDecisions.forEach(edit => {
+    editDecisions.forEach((edit: any) => {
       const endTime = edit.time + edit.duration;
       if (endTime > sequenceDuration) {
         sequenceDuration = endTime;
@@ -177,7 +177,7 @@ export function generateFinalCutXML(
   <resources>`;
     
     // Add video resources
-    Object.entries(videoFiles).forEach(([id, file], index) => {
+    Object.entries(videoFiles).forEach(([_id, file]: any, index: any) => {
       xml += `
     <asset id="asset-${index + 1}" name="${file.name}" src="file://${file.name}" />`;
     });
@@ -197,7 +197,7 @@ export function generateFinalCutXML(
           <spine>`;
     
     // Add video clips
-    editDecisions.forEach((edit, index) => {
+    editDecisions.forEach((edit: any, index: any) => {
       const videoFile = videoFiles[edit.videoId];
       if (!videoFile) return;
       
@@ -257,7 +257,7 @@ export function validateExportSettings(
     errors.push('No video files found. Please add some video files.');
   } else {
     // Check if all video IDs in edit decisions exist in videoFiles
-    editDecisions.forEach((edit, index) => {
+    editDecisions.forEach((edit: any, index: any) => {
       if (!videoFiles[edit.videoId]) {
         errors.push(`Video file for edit #${index + 1} not found.`);
       }

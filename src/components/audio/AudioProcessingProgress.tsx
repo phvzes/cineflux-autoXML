@@ -54,7 +54,7 @@ const AudioProcessingProgress: React.FC<AudioProcessingProgressProps> = ({
   progressColor = '#2196f3',
   completeColor = '#4caf50',
   errorColor = '#f44336',
-}) => {
+}: any) => {
   // Determine the color of the progress bar
   const barColor = error ? errorColor : (isComplete ? completeColor : progressColor);
   

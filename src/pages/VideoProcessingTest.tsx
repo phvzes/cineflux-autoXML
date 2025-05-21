@@ -26,7 +26,7 @@ const VideoProcessingTest: React.FC = () => {
       'video/*': ['.mp4', '.webm', '.mov', '.avi']
     },
     maxFiles: 1,
-    onDrop: (acceptedFiles) => {
+    onDrop: (acceptedFiles: any) => {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
         setVideoFile(file);
@@ -74,7 +74,7 @@ const VideoProcessingTest: React.FC = () => {
         maxFrames: 300,
         thumbnailWidth: 320,
         thumbnailHeight: 180,
-        onProgress: (progress, step) => {
+        onProgress: (progress: any, step: any) => {
           setProcessingProgress(progress);
           setProcessingStep(step);
         }
@@ -96,7 +96,7 @@ const VideoProcessingTest: React.FC = () => {
     if (isPlaying) {
       videoRef.current.pause();
     } else {
-      videoRef.current.play().catch(error => {
+      videoRef.current.play().catch((error: any) => {
         console.error('Playback failed:', error);
       });
     }
@@ -229,7 +229,7 @@ const VideoProcessingTest: React.FC = () => {
           <VideoAnalysisVisualizer
             videoFile={videoFile}
             thumbnails={processingResult.thumbnails}
-            sceneBoundaries={processingResult.scenes.map(scene => scene.startTime)}
+            sceneBoundaries={processingResult.scenes.map((scene: any) => scene.startTime)}
             duration={processingResult.metadata.duration}
             onSeek={handleSeek}
             currentTime={currentTime}

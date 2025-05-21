@@ -21,7 +21,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
   onChange,
   onRegenerate,
   disabled = false
-}) => {
+}: any) => {
   const [localConfig, setLocalConfig] = useState<EditDecisionEngineConfig>(config);
   
   // Handle slider changes
@@ -29,7 +29,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
     const value = parseFloat(e.target.value);
     
     // Update local state
-    setLocalConfig(prev => {
+    setLocalConfig((prev: any) => {
       const newConfig = { ...prev, [key]: value };
       return newConfig;
     });
@@ -40,7 +40,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
     const value = e.target.checked;
     
     // Update local state
-    setLocalConfig(prev => {
+    setLocalConfig((prev: any) => {
       const newConfig = { ...prev, [key]: value };
       return newConfig;
     });
@@ -51,7 +51,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
     const value = parseFloat(e.target.value);
     
     // Update local state
-    setLocalConfig(prev => {
+    setLocalConfig((prev: any) => {
       // Ensure energyThreshold exists with default values if not present
       const currentThreshold = prev.energyThreshold || { low: 0.3, medium: 0.6, high: 0.8 };
       
@@ -103,7 +103,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
           max="100"
           step="5"
           value={localConfig.beatCutPercentage}
-          onChange={(e) => handleSliderChange(e, 'beatCutPercentage')}
+          onChange={(e: any) => handleSliderChange(e, 'beatCutPercentage')}
           disabled={disabled}
           style={{ width: '100%' }}
         />
@@ -122,7 +122,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
           max="3"
           step="0.1"
           value={localConfig.minSceneDuration}
-          onChange={(e) => handleSliderChange(e, 'minSceneDuration')}
+          onChange={(e: any) => handleSliderChange(e, 'minSceneDuration')}
           disabled={disabled}
           style={{ width: '100%' }}
         />
@@ -141,7 +141,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
           max="10"
           step="0.5"
           value={localConfig.maxSceneDuration}
-          onChange={(e) => handleSliderChange(e, 'maxSceneDuration')}
+          onChange={(e: any) => handleSliderChange(e, 'maxSceneDuration')}
           disabled={disabled}
           style={{ width: '100%' }}
         />
@@ -155,7 +155,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
           <input
             type="checkbox"
             checked={localConfig.prioritizeSceneBoundaries}
-            onChange={(e) => handleCheckboxChange(e, 'prioritizeSceneBoundaries')}
+            onChange={(e: any) => handleCheckboxChange(e, 'prioritizeSceneBoundaries')}
             disabled={disabled}
             style={{ marginRight: '8px' }}
           />
@@ -179,7 +179,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
             max="0.5"
             step="0.05"
             value={localConfig.energyThreshold?.low}
-            onChange={(e) => handleEnergyThresholdChange(e, 'low')}
+            onChange={(e: any) => handleEnergyThresholdChange(e, 'low')}
             disabled={disabled}
             style={{ width: '100%' }}
           />
@@ -195,7 +195,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
             max="0.8"
             step="0.05"
             value={localConfig.energyThreshold?.medium}
-            onChange={(e) => handleEnergyThresholdChange(e, 'medium')}
+            onChange={(e: any) => handleEnergyThresholdChange(e, 'medium')}
             disabled={disabled}
             style={{ width: '100%' }}
           />
@@ -211,7 +211,7 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
             max="1.0"
             step="0.05"
             value={localConfig.energyThreshold?.high}
-            onChange={(e) => handleEnergyThresholdChange(e, 'high')}
+            onChange={(e: any) => handleEnergyThresholdChange(e, 'high')}
             disabled={disabled}
             style={{ width: '100%' }}
           />
@@ -228,9 +228,9 @@ const EditDecisionControls: React.FC<EditDecisionControlsProps> = ({
         </label>
         <select
           value={localConfig.framerate}
-          onChange={(e) => {
+          onChange={(e: any) => {
             const value = parseFloat(e.target.value);
-            setLocalConfig(prev => ({ ...prev, framerate: value }));
+            setLocalConfig((prev: any) => ({ ...prev, framerate: value }));
           }}
           disabled={disabled}
           style={{ width: '100%', padding: '5px' }}
