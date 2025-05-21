@@ -1,5 +1,5 @@
 // src/services/__tests__/audioService.test.ts
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import AudioService, { AudioProcessingError } from '../AudioService';
 import { AudioAnalysis, Beat, BeatAnalysis, EnergyAnalysis, EnergySample } from '../../types/AudioAnalysis';
 
@@ -29,7 +29,7 @@ const mockAudioBuffer: AudioBuffer = {
   duration: 10, // 10 seconds
   sampleRate: 48000,
   numberOfChannels: 2,
-  getChannelData: vi.fn((channel) => {
+  getChannelData: jest.fn((channel) => {
     // Return a mock channel data array with sine wave data
     const data = new Float32Array(48000 * 10);
     for (let i = 0; i < data.length; i++) {
@@ -49,11 +49,11 @@ const mockAudioBuffer: AudioBuffer = {
 const mockFetchResponse = {
   ok: true,
   headers: {
-    get: vi.fn((name) => name === 'Content-Length' ? '1000000' : null)
+    get: jest.fn((name) => name === 'Content-Length' ? '1000000' : null)
   },
   body: {
-    getReader: vi.fn(() => ({
-      read: vi.fn()
+    getReader: jest.fn(() => ({
+      read: jest.fn()
         .mockResolvedValueOnce({ done: false, value: new Uint8Array(500000) })
         .mockResolvedValueOnce({ done: false, value: new Uint8Array(500000) })
         .mockResolvedValueOnce({ done: true })
@@ -86,11 +86,11 @@ describe('AudioService', () => {
     (global as any).webkitAudioContext = MockAudioContext as any;
     
     // Mock fetch
-    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
   });
   
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
   
   describe('loadAudio', () => {
@@ -99,10 +99,10 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000);
       
       // Mock the arrayBuffer method
-      mockFile.arrayBuffer = vi.fn().mockResolvedValue(new ArrayBuffer(1000000));
+      mockFile.arrayBuffer = jest.fn().mockResolvedValue(new ArrayBuffer(1000000));
       
       // Create a progress callback spy
-      const progressCallback = vi.fn();
+      const progressCallback = jest.fn();
       
       // Call loadAudio
       const result = await audioService.loadAudio(mockFile as unknown as File, progressCallback);
@@ -122,7 +122,7 @@ describe('AudioService', () => {
     
     it('should load audio from a URL', async () => {
       // Create a progress callback spy
-      const progressCallback = vi.fn();
+      const progressCallback = jest.fn();
       
       // Call loadAudio with a URL
       const result = await audioService.loadAudio('https://example.com/audio.mp3', progressCallback);
@@ -143,7 +143,7 @@ describe('AudioService', () => {
     
     it('should handle fetch errors', async () => {
       // Mock fetch to return an error response
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         statusText: 'Not Found'
       });
@@ -171,7 +171,7 @@ describe('AudioService', () => {
         close: () => Promise.resolve()
       };
       
-      global.AudioContext = vi.fn(() => mockErrorContext) as any;
+      global.AudioContext = jest.fn(() => mockErrorContext) as any;
       
       // Call loadAudio and expect it to throw
       await expect(audioService.loadAudio('https://example.com/invalid-audio.mp3'))
@@ -190,7 +190,7 @@ describe('AudioService', () => {
   describe('extractWaveform', () => {
     it('should extract waveform data from an audio buffer', async () => {
       // Create a progress callback spy
-      const progressCallback = vi.fn();
+      const progressCallback = jest.fn();
       
       // Call extractWaveform
       const result = await audioService.extractWaveform(mockAudioBuffer, progressCallback);
@@ -216,7 +216,7 @@ describe('AudioService', () => {
   describe('detectBeats', () => {
     it('should detect beats in an audio buffer', async () => {
       // Create a progress callback spy
-      const progressCallback = vi.fn();
+      const progressCallback = jest.fn();
       
       // Call detectBeats
       const result = await audioService.detectBeats(mockAudioBuffer, progressCallback);
@@ -249,7 +249,7 @@ describe('AudioService', () => {
   describe('analyzeEnergy', () => {
     it('should analyze energy levels in an audio buffer', async () => {
       // Create a progress callback spy
-      const progressCallback = vi.fn();
+      const progressCallback = jest.fn();
       
       // Call analyzeEnergy
       const result = await audioService.analyzeEnergy(mockAudioBuffer, progressCallback);
@@ -422,11 +422,11 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Create a progress callback spy
-      const progressCallback = vi.fn();
+      const progressCallback = jest.fn();
       
       // Mock the individual analysis methods
-      const loadAudioSpy = vi.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
-      const extractWaveformSpy = vi.spyOn(audioService, 'extractWaveform').mockResolvedValue({
+      const loadAudioSpy = jest.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
+      const extractWaveformSpy = jest.spyOn(audioService, 'extractWaveform').mockResolvedValue({
         duration: 10,
         sampleRate: 48000,
         channels: 2,
@@ -434,23 +434,23 @@ describe('AudioService', () => {
         maxAmplitude: 0.7,
         minAmplitude: 0.5
       });
-      const detectBeatsSpy = vi.spyOn(audioService, 'detectBeats').mockResolvedValue({
+      const detectBeatsSpy = jest.spyOn(audioService, 'detectBeats').mockResolvedValue({
         beats: [{ time: 1, confidence: 0.8 }, { time: 2, confidence: 0.9 }],
         averageConfidence: 0.85
       });
-      const analyzeEnergySpy = vi.spyOn(audioService, 'analyzeEnergy').mockResolvedValue({
+      const analyzeEnergySpy = jest.spyOn(audioService, 'analyzeEnergy').mockResolvedValue({
         samples: [{ time: 0, level: 0.5 }, { time: 1, level: 0.6 }],
         averageEnergy: 0.55,
         peakEnergy: 0.6,
         peakEnergyTime: 1
       });
-      const estimateTempoSpy = vi.spyOn(audioService, 'estimateTempo').mockResolvedValue({
+      const estimateTempoSpy = jest.spyOn(audioService, 'estimateTempo').mockResolvedValue({
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
         confidence: 0.9,
         isStable: true
       });
-      const detectSectionsSpy = vi.spyOn(audioService, 'detectSections').mockResolvedValue({
+      const detectSectionsSpy = jest.spyOn(audioService, 'detectSections').mockResolvedValue({
         sections: [{ start: 0, duration: 10, label: 'Section 1', confidence: 0.8 }]
       });
       
@@ -488,17 +488,17 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock loadAudio to throw an error
-      vi.spyOn(audioService, 'loadAudio').mockRejectedValue(
+      jest.spyOn(audioService, 'loadAudio').mockRejectedValue(
         new AudioProcessingError('Failed to load audio', 'LOAD_ERROR')
       );
       
       // Call analyzeAudio and expect it to throw
-      await expect(audioService.analyzeAudio(mockFile, vi.fn()))
+      await expect(audioService.analyzeAudio(mockFile, jest.fn()))
         .rejects.toThrow(AudioProcessingError);
       
       // Verify the error has the correct code
       try {
-        await audioService.analyzeAudio(mockFile, vi.fn());
+        await audioService.analyzeAudio(mockFile, jest.fn());
       } catch (error) {
         expect(error).toBeInstanceOf(AudioProcessingError);
         expect((error as AudioProcessingError).code).toBe('ANALYSIS_ERROR');
@@ -512,12 +512,12 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock the individual analysis methods
-      vi.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
-      vi.spyOn(audioService, 'detectBeats').mockResolvedValue({
+      jest.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
+      jest.spyOn(audioService, 'detectBeats').mockResolvedValue({
         beats: [{ time: 1, confidence: 0.8 }, { time: 2, confidence: 0.9 }],
         averageConfidence: 0.85
       });
-      vi.spyOn(audioService, 'estimateTempo').mockResolvedValue({
+      jest.spyOn(audioService, 'estimateTempo').mockResolvedValue({
         bpm: 120,
         timeSignature: { numerator: 4, denominator: 4 },
         confidence: 0.9,
@@ -544,12 +544,12 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock loadAudio to throw an error
-      vi.spyOn(audioService, 'loadAudio').mockRejectedValue(
+      jest.spyOn(audioService, 'loadAudio').mockRejectedValue(
         new AudioProcessingError('Failed to load audio', 'LOAD_ERROR')
       );
       
       // Spy on console.error
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       
       // Call extractBPM
       const result = await audioService.extractBPM(mockFile);
@@ -570,8 +570,8 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock the individual analysis methods
-      vi.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
-      vi.spyOn(audioService, 'extractWaveform').mockResolvedValue({
+      jest.spyOn(audioService, 'loadAudio').mockResolvedValue(mockAudioBuffer);
+      jest.spyOn(audioService, 'extractWaveform').mockResolvedValue({
         duration: 10,
         sampleRate: 48000,
         channels: 2,
@@ -599,12 +599,12 @@ describe('AudioService', () => {
       const mockFile = new MockFile('test.mp3', 'audio/mp3', 1000000) as unknown as File;
       
       // Mock loadAudio to throw an error
-      vi.spyOn(audioService, 'loadAudio').mockRejectedValue(
+      jest.spyOn(audioService, 'loadAudio').mockRejectedValue(
         new AudioProcessingError('Failed to load audio', 'LOAD_ERROR')
       );
       
       // Spy on console.error
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       
       // Call createWaveform
       const result = await audioService.createWaveform(mockFile, 500, 200);

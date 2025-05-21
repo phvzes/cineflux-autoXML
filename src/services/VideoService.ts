@@ -1,3 +1,4 @@
+
 /**
  * VideoService.ts
  * 
@@ -11,6 +12,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 import * as cv from '@techstark/opencv-js';
 import { EventEmitter } from 'events';
+import { loadFFmpeg, ensureOpenCVLoaded } from '../utils/wasmLoader';
 
 // Types
 import {
@@ -33,6 +35,7 @@ import {
 export class VideoService extends EventEmitter {
   private ffmpeg: any;
   private isFFmpegLoaded: boolean = false;
+  private isOpenCVLoaded: boolean = false;
   private videoCache: Map<string, VideoFile> = new Map();
   private analysisCache: Map<string, VideoAnalysis> = new Map();
   private frameCache: Map<string, VideoFrame[]> = new Map();
@@ -50,16 +53,27 @@ export class VideoService extends EventEmitter {
   private async ensureFFmpegLoaded(): Promise<void> {
     if (!this.isFFmpegLoaded) {
       try {
-        // Load FFmpeg with the correct core path
-        await this.ffmpeg.load({
-          coreURL: '/assets/ffmpeg-core/ffmpeg-core.js',
-          wasmURL: '/assets/ffmpeg-core/ffmpeg-core.wasm',
-          workerURL: '/assets/ffmpeg-core/ffmpeg-core.worker.js'
-        });
+        // Load FFmpeg with the correct core path using the wasmLoader utility
+        await loadFFmpeg(this.ffmpeg);
         this.isFFmpegLoaded = true;
       } catch (error) {
         console.error('Failed to load FFmpeg:', error);
         throw new Error('Failed to load video processing library');
+      }
+    }
+  }
+  
+  /**
+   * Ensures OpenCV is loaded before performing operations
+   */
+  private async ensureOpenCVLoaded(): Promise<void> {
+    if (!this.isOpenCVLoaded) {
+      try {
+        await ensureOpenCVLoaded();
+        this.isOpenCVLoaded = true;
+      } catch (error) {
+        console.error('Failed to load OpenCV:', error);
+        throw new Error('Failed to load image processing library');
       }
     }
   }
@@ -317,9 +331,13 @@ export class VideoService extends EventEmitter {
     file: File, 
     options: FrameExtractionOptions = { fps: 1, maxFrames: 300 }
   ): Promise<VideoFrame[]> {
-    await this.ensureFFmpegLoaded();
-    
     try {
+      // Ensure both FFmpeg and OpenCV are loaded
+      await Promise.all([
+        this.ensureFFmpegLoaded(),
+        this.ensureOpenCVLoaded()
+      ]);
+      
       // Check cache first
       const cacheKey = `${file.name}_${options.fps}_${options.maxFrames}`;
       if (this.frameCache.has(cacheKey)) {
@@ -421,6 +439,9 @@ export class VideoService extends EventEmitter {
     options: SceneDetectionOptions = { threshold: 30 }
   ): Promise<Scene[]> {
     try {
+      // Ensure OpenCV is loaded
+      await this.ensureOpenCVLoaded();
+      
       const scenes: Scene[] = [];
       
       if (frames.length === 0) {
@@ -510,6 +531,9 @@ export class VideoService extends EventEmitter {
    */
   async analyzeContent(frame: VideoFrame): Promise<ContentData> {
     try {
+      // Ensure OpenCV is loaded
+      await this.ensureOpenCVLoaded();
+      
       // Convert to OpenCV format
       const mat = cv.matFromImageData(frame.imageData);
       
@@ -633,6 +657,9 @@ export class VideoService extends EventEmitter {
    */
   async analyzeMotion(frames: VideoFrame[]): Promise<MotionData> {
     try {
+      // Ensure OpenCV is loaded
+      await this.ensureOpenCVLoaded();
+      
       // Default motion data
       const motionData: MotionData = {
         averageMotion: 0,

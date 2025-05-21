@@ -8,6 +8,9 @@
  * @module utils/wasmLoader
  */
 
+// Track loaded modules to prevent duplicate loading
+const loadedModules: Record<string, boolean> = {};
+
 /**
  * Represents a WebAssembly module instance with its exports and memory
  */
@@ -86,6 +89,16 @@ export async function loadWasmModule(
   importObject?: WebAssembly.Imports
 ): Promise<WasmModuleInstance> {
   try {
+    // Check if the browser supports WebAssembly
+    if (typeof WebAssembly === 'undefined') {
+      throw new WasmLoadError('WebAssembly is not supported in this browser');
+    }
+
+    // Check if module is already loaded
+    if (loadedModules[path]) {
+      console.log(`WebAssembly module ${path} already loaded`);
+    }
+    
     const response = await fetch(path);
     if (!response.ok) {
       throw new WasmLoadError(`Failed to fetch WebAssembly module: ${response.statusText}`);
@@ -108,6 +121,9 @@ export async function loadWasmModule(
     
     const instance = await WebAssembly.instantiate(module, imports);
     
+    // Mark the module as loaded
+    loadedModules[path] = true;
+    
     return {
       instance,
       module,
@@ -120,6 +136,30 @@ export async function loadWasmModule(
     }
     throw new WasmLoadError(`Failed to load WebAssembly module: ${error.message}`);
   }
+}
+
+/**
+ * Checks if a WebAssembly module is loaded
+ * @param url The URL of the WebAssembly module
+ * @returns True if the module is loaded, false otherwise
+ */
+export function isWasmModuleLoaded(url: string): boolean {
+  return !!loadedModules[url];
+}
+
+/**
+ * Gets the base URL for WebAssembly modules based on the current environment
+ * @param moduleName The name of the module (e.g., 'ffmpeg', 'opencv')
+ * @returns The base URL for the module's WebAssembly files
+ */
+export function getWasmBaseUrl(moduleName: string): string {
+  // In development, use the local files
+  if (import.meta.env.DEV) {
+    return `/assets/${moduleName}-core/`;
+  }
+
+  // In production, use the deployed files
+  return `/assets/${moduleName}-core/`;
 }
 
 /**
@@ -393,4 +433,51 @@ export function copyFromWasmMemory(
     }
     throw new WasmMemoryError(`Failed to copy data from WebAssembly memory: ${error.message}`);
   }
+}
+
+/**
+ * Loads FFmpeg WebAssembly module
+ * @param ffmpeg The FFmpeg instance to load
+ * @returns A promise that resolves when FFmpeg is loaded
+ */
+export async function loadFFmpeg(ffmpeg: any): Promise<void> {
+  const baseUrl = getWasmBaseUrl('ffmpeg');
+  
+  try {
+    await ffmpeg.load({
+      coreURL: `${baseUrl}ffmpeg-core.js`,
+      wasmURL: `${baseUrl}ffmpeg-core.wasm`,
+      workerURL: `${baseUrl}ffmpeg-core.worker.js`,
+    });
+    console.log('FFmpeg loaded successfully');
+  } catch (error) {
+    console.error('Failed to load FFmpeg:', error);
+    throw new Error('Failed to load video processing library');
+  }
+}
+
+/**
+ * Ensures OpenCV.js is loaded and ready to use
+ * @returns A promise that resolves when OpenCV.js is ready
+ */
+export function ensureOpenCVLoaded(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // If cv.Mat exists, OpenCV is already loaded
+    if (window.cv && window.cv.Mat) {
+      resolve();
+      return;
+    }
+
+    // Set a timeout to reject the promise if OpenCV doesn't load
+    const timeoutId = setTimeout(() => {
+      reject(new Error('OpenCV.js failed to load within timeout'));
+    }, 30000);
+
+    // Set the callback for when OpenCV is ready
+    window.cv = window.cv || {};
+    window.cv.onRuntimeInitialized = () => {
+      clearTimeout(timeoutId);
+      resolve();
+    };
+  });
 }
