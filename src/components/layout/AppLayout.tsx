@@ -8,6 +8,8 @@ interface AppLayoutProps {
   onOpenProject: () => void;
   onSaveProject: () => void;
   onExport: () => void;
+  onHelpClick?: () => void;
+  renderWorkflowStepper?: () => ReactNode;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -15,13 +17,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onNewProject,
   onOpenProject,
   onSaveProject,
-  onExport
+  onExport,
+  onHelpClick,
+  renderWorkflowStepper
 }) => {
   const { state } = useProject();
-  const { currentStep, isAnalyzing, editDecisions } = state;
+  const { currentStep, isAnalyzing: _isAnalyzing, editDecisions, videoFiles: _videoFiles } = state;
   
   // Determine if export should be enabled
-  const exportEnabled = currentStep !== 'input' && !isAnalyzing && editDecisions.length > 0;
+  const exportEnabled = currentStep !== 'input' && !_isAnalyzing && editDecisions.length > 0;
   
   // Check if we're on the welcome page
   const isWelcomePage = currentStep === 'welcome';
@@ -34,26 +38,26 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           <button 
             className="toolbar-button"
             onClick={onNewProject}
-            disabled={isAnalyzing}
+            disabled={_isAnalyzing}
             aria-label="New Project"
           >
-            <FileText size={24} className={isAnalyzing ? 'text-secondary' : ''} />
+            <FileText size={24} className={_isAnalyzing ? 'text-secondary' : ''} />
           </button>
           <button 
             className="toolbar-button"
             onClick={onOpenProject}
-            disabled={isAnalyzing}
+            disabled={_isAnalyzing}
             aria-label="Open Project"
           >
-            <FolderOpen size={24} className={isAnalyzing ? 'text-secondary' : ''} />
+            <FolderOpen size={24} className={_isAnalyzing ? 'text-secondary' : ''} />
           </button>
           <button 
             className="toolbar-button"
             onClick={onSaveProject}
-            disabled={isAnalyzing || currentStep === 'input'}
+            disabled={_isAnalyzing || currentStep === 'input'}
             aria-label="Save Project"
           >
-            <Save size={24} className={isAnalyzing || currentStep === 'input' ? 'text-secondary' : ''} />
+            <Save size={24} className={_isAnalyzing || currentStep === 'input' ? 'text-secondary' : ''} />
           </button>
           <div className="ml-md text-xl font-semibold">Auto-Editor</div>
           <div className="flex-grow"></div>
@@ -100,7 +104,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
 // Helper function to render status text
 function renderStatusText(state: any) {
-  const { currentStep, isAnalyzing, editDecisions, videoFiles, currentTime } = state;
+  const { currentStep, isAnalyzing: _isAnalyzing, editDecisions, videoFiles: _videoFiles, currentTime } = state;
   
   switch (currentStep) {
     case 'welcome':

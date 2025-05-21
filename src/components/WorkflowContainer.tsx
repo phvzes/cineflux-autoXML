@@ -14,7 +14,7 @@ import { AccessibleDialog } from './AccessibleDialog';
 import { useProject } from '../context/ProjectContext';
 import { useWorkflow } from '../context/WorkflowContext';
 import { colorPalette } from '../theme';
-import { ApplicationStep } from '../types/UITypes';
+// import { ApplicationStep } from '../types/UITypes';
 import { WorkflowStep } from '../types/workflow';
 import useKeyboardNavigation from '../hooks/useKeyboardNavigation';
 import ErrorBoundary from './ErrorBoundary';
@@ -144,11 +144,11 @@ const WorkflowContainer: React.FC = () => {
     return (
       <div className="mb-8">
         <WorkflowStepper
-          currentStep={workflowState.currentStep}
+          currentStep={workflowState.currentStep as any}
           isProcessing={workflowState.isProcessing}
           progressPercentage={workflowState.progressPercentage}
           statusMessage={workflowState.statusMessage}
-          onStepClick={(step) => navigation.goToStep(step as WorkflowStep)}
+          onStepClick={(step) => navigation.goToStep(step as unknown as WorkflowStep)}
         />
       </div>
     );

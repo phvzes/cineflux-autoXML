@@ -151,7 +151,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   );
 };
 
-export const WelcomePage: React.FC = () => {
+interface WelcomePageProps {
+  onGetStarted?: () => void;
+}
+
+export const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted }) => {
   const { dispatch } = useProject();
   const [recentProjects, setRecentProjects] = useState(MOCK_RECENT_PROJECTS);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -166,8 +170,13 @@ export const WelcomePage: React.FC = () => {
   }, []);
   
   const handleCreateNewProject = () => {
-    // Navigate to the input step
-    dispatch({ type: 'SET_STEP', payload: 'input' });
+    // Use onGetStarted prop if provided, otherwise use dispatch
+    if (onGetStarted) {
+      onGetStarted();
+    } else {
+      // Navigate to the input step
+      dispatch({ type: 'SET_STEP', payload: 'input' });
+    }
   };
   
   const handleOpenProject = (projectId: string) => {

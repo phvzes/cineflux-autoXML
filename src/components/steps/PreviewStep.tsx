@@ -23,7 +23,11 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const PreviewStep: React.FC = () => {
+interface PreviewStepProps {
+  audioElement?: HTMLAudioElement | null;
+}
+
+const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }) => {
   // Get workflow context
   const { currentStep, goToStep, data, setData } = useWorkflow();
   

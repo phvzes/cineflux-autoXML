@@ -25,7 +25,7 @@ const ExportStep = lazy(() => import('./components/steps/ExportStep'));
 
 export default function App() {
   const { state: projectState, dispatch } = useProject();
-  const { state: analysisState } = useAnalysis();
+  const { state: _analysisState } = useAnalysis();
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   
   // Set up global error handlers
@@ -51,7 +51,7 @@ export default function App() {
       const audioElement = audioElementRef.current;
       const fileUrl = URL.createObjectURL(projectState.musicFile);
       
-      audioElement.src = fileUrl;
+      audioElement.src = fileUrl || '';
       audioElement.load();
       
       // Get duration when metadata is loaded

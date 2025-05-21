@@ -26,7 +26,11 @@ import {
   Save
 } from 'lucide-react';
 
-const EditingStep: React.FC = () => {
+interface EditingStepProps {
+  audioElement?: HTMLAudioElement | null;
+}
+
+const EditingStep: React.FC<EditingStepProps> = ({ audioElement }) => {
   // Get workflow context
   const { currentStep, goToStep, data, setData } = useWorkflow();
   
