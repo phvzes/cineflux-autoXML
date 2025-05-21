@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebAssembly Loading Test</title>
+    <!-- CORS headers for WebAssembly -->
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .test-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      button {
+        padding: 8px 16px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebAssembly Loading Test</h1>
+    
+    <div class="test-section">
+      <h2>1. Browser WebAssembly Support</h2>
+      <div id="wasm-support-result">Testing...</div>
+    </div>
+    
+    <div class="test-section">
+      <h2>2. FFmpeg WebAssembly Loading</h2>
+      <button id="test-ffmpeg">Test FFmpeg Loading</button>
+      <div id="ffmpeg-result">Click the button to test</div>
+    </div>
+    
+    <div class="test-section">
+      <h2>3. OpenCV.js Loading</h2>
+      <button id="test-opencv">Test OpenCV Loading</button>
+      <div id="opencv-result">Click the button to test</div>
+    </div>
+    
+    <div class="test-section">
+      <h2>4. CORS Policy Check</h2>
+      <div id="cors-result">Testing...</div>
+    </div>
+    
+    <script>
+      // Test WebAssembly support
+      const wasmSupportResult = document.getElementById('wasm-support-result');
+      if (typeof WebAssembly === 'object') {
+        wasmSupportResult.textContent = '✅ WebAssembly is supported in this browser';
+        wasmSupportResult.className = 'success';
+      } else {
+        wasmSupportResult.textContent = '❌ WebAssembly is NOT supported in this browser';
+        wasmSupportResult.className = 'error';
+      }
+      
+      // Test FFmpeg loading
+      document.getElementById('test-ffmpeg').addEventListener('click', async () => {
+        const ffmpegResult = document.getElementById('ffmpeg-result');
+        ffmpegResult.textContent = 'Loading FFmpeg...';
+        
+        try {
+          // Import FFmpeg dynamically
+          const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/esm/index.js');
+          const ffmpeg = new FFmpeg();
+          
+          // Try to load FFmpeg
+          await ffmpeg.load({
+            coreURL: '/assets/ffmpeg-core/ffmpeg-core.js',
+            wasmURL: '/assets/ffmpeg-core/ffmpeg-core.wasm',
+            workerURL: '/assets/ffmpeg-core/ffmpeg-core.worker.js'
+          });
+          
+          ffmpegResult.textContent = '✅ FFmpeg loaded successfully';
+          ffmpegResult.className = 'success';
+        } catch (error) {
+          ffmpegResult.textContent = `❌ Error loading FFmpeg: ${error.message}`;
+          ffmpegResult.className = 'error';
+          console.error('FFmpeg loading error:', error);
+        }
+      });
+      
+      // Test OpenCV loading
+      document.getElementById('test-opencv').addEventListener('click', async () => {
+        const opencvResult = document.getElementById('opencv-result');
+        opencvResult.textContent = 'Loading OpenCV...';
+        
+        try {
+          // Create a script element to load OpenCV.js
+          const script = document.createElement('script');
+          script.src = 'https://docs.opencv.org/4.5.5/opencv.js';
+          script.async = true;
+          
+          // Create a promise to wait for OpenCV to load
+          const opencvLoaded = new Promise((resolve, reject) => {
+            script.onload = () => {
+              // Wait for OpenCV to initialize
+              if (window.cv && window.cv.Mat) {
+                resolve();
+              } else {
+                window.cv = window.cv || {};
+                window.cv.onRuntimeInitialized = () => {
+                  resolve();
+                };
+              }
+            };
+            script.onerror = () => reject(new Error('Failed to load OpenCV.js'));
+            
+            // Set a timeout
+            setTimeout(() => reject(new Error('OpenCV.js loading timeout')), 30000);
+          });
+          
+          // Add the script to the document
+          document.head.appendChild(script);
+          
+          // Wait for OpenCV to load
+          await opencvLoaded;
+          
+          // Test a simple OpenCV operation
+          const mat = new window.cv.Mat(10, 10, window.cv.CV_8UC1);
+          mat.delete();
+          
+          opencvResult.textContent = '✅ OpenCV loaded successfully';
+          opencvResult.className = 'success';
+        } catch (error) {
+          opencvResult.textContent = `❌ Error loading OpenCV: ${error.message}`;
+          opencvResult.className = 'error';
+          console.error('OpenCV loading error:', error);
+        }
+      });
+      
+      // Test CORS policy
+      const corsResult = document.getElementById('cors-result');
+      fetch(window.location.href)
+        .then(response => {
+          const coep = response.headers.get('Cross-Origin-Embedder-Policy');
+          const coop = response.headers.get('Cross-Origin-Opener-Policy');
+          
+          if (coep === 'require-corp' && coop === 'same-origin') {
+            corsResult.textContent = '✅ CORS headers are correctly set';
+            corsResult.className = 'success';
+          } else {
+            corsResult.textContent = `❌ CORS headers are not correctly set. COEP: ${coep}, COOP: ${coop}`;
+            corsResult.className = 'error';
+          }
+        })
+        .catch(error => {
+          corsResult.textContent = `❌ Error checking CORS headers: ${error.message}`;
+          corsResult.className = 'error';
+        });
+    </script>
+  </body>
+</html>

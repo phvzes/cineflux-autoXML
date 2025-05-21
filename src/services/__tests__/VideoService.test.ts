@@ -4,93 +4,16 @@
  * Unit tests for the VideoService
  */
 
-import { vi, describe, it, expect, beforeEach, afterEach, MockInstance } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+type MockInstance = jest.Mock;
 import { VideoService } from '../VideoService';
 import { ClipType, VideoServiceEvents } from '../../types/video-types';
 import { safeStringify } from '../../utils/safeStringify';
+import * as cv from '@techstark/opencv-js';
 
-// Mock dependencies
-vi.mock('@ffmpeg/ffmpeg', () => {
-  return {
-    createFFmpeg: () => ({
-      load: vi.fn().mockResolvedValue(undefined),
-      run: vi.fn().mockResolvedValue(undefined),
-      FS: vi.fn().mockImplementation((cmd, fileName, data) => {
-        if (cmd === 'readFile') {
-          if (fileName === 'output.json') {
-            return new TextEncoder().encode(safeStringify({
-              streams: [{
-                width: 1920,
-                height: 1080,
-                duration: '60.0',
-                r_frame_rate: '30/1',
-                codec_name: 'h264',
-                bit_rate: '5000000'
-              }]
-            }));
-          } else if (fileName === 'thumbnail.jpg') {
-            return new Uint8Array([1, 2, 3]); // Mock image data
-          }
-        }
-        return undefined;
-      })
-    }),
-    fetchFile: vi.fn().mockResolvedValue(new Uint8Array())
-  };
-});
+// Mock dependencies are now in the __mocks__ directory
 
-vi.mock('@techstark/opencv-js', () => {
-  return {
-    Mat: function() {
-      return {
-        delete: vi.fn()
-      };
-    },
-    matFromImageData: vi.fn().mockReturnValue({
-      delete: vi.fn()
-    }),
-    cvtColor: vi.fn(),
-    absdiff: vi.fn(),
-    mean: vi.fn().mockReturnValue([10]),
-    meanStdDev: vi.fn().mockReturnValue({
-      mean: { data64F: [128, 128, 128] },
-      stddev: { data64F: [40, 40, 40] }
-    }),
-    CascadeClassifier: function() {
-      return {
-        load: vi.fn(),
-        detectMultiScale: vi.fn()
-      };
-    },
-    RectVector: function() {
-      return {
-        size: vi.fn().mockReturnValue(0),
-        delete: vi.fn()
-      };
-    },
-    split: vi.fn(),
-    magnitude: vi.fn(),
-    calcOpticalFlowFarneback: vi.fn(),
-    MatVector: function() {
-      return {
-        get: vi.fn().mockReturnValue({
-          delete: vi.fn()
-        }),
-        delete: vi.fn()
-      };
-    },
-    CV_32F: 0,
-    TermCriteria: function() {
-      return {};
-    },
-    TermCriteria_EPS: 1,
-    TermCriteria_MAX_ITER: 2,
-    KMEANS_PP_CENTERS: 0,
-    kmeans: vi.fn(),
-    COLOR_RGBA2GRAY: 0,
-    COLOR_RGBA2RGB: 0
-  };
-});
+// @techstark/opencv-js mock is now in the __mocks__ directory
 
 // Mock the global Image constructor
 class MockImage {
@@ -109,8 +32,8 @@ global.Image = MockImage as any;
 
 // Mock canvas
 const mockCanvasContext = {
-  drawImage: vi.fn(),
-  getImageData: vi.fn().mockReturnValue({
+  drawImage: jest.fn(),
+  getImageData: jest.fn().mockReturnValue({
     data: new Uint8ClampedArray(1920 * 1080 * 4),
     width: 1920,
     height: 1080
@@ -118,12 +41,12 @@ const mockCanvasContext = {
 };
 
 const mockCanvas = {
-  getContext: vi.fn().mockReturnValue(mockCanvasContext),
+  getContext: jest.fn().mockReturnValue(mockCanvasContext),
   width: 1920,
   height: 1080
 };
 
-global.document.createElement = vi.fn().mockImplementation((tag) => {
+global.document.createElement = jest.fn().mockImplementation((tag) => {
   if (tag === 'canvas') {
     return mockCanvas;
   }
@@ -161,17 +84,17 @@ describe('VideoService', () => {
   
   beforeEach(() => {
     videoService = new VideoService();
-    mockEventListener = vi.fn();
+    mockEventListener = jest.fn();
     
     // Reset URL.createObjectURL
-    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+    global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-url');
     
     // Clear all mocks
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
   
   afterEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
   
   describe('loadVideoFile', () => {
@@ -195,7 +118,7 @@ describe('VideoService', () => {
       const file = createMockFile();
       
       await videoService.loadVideoFile(file);
-      const extractMetadataSpy = vi.spyOn(videoService, 'extractMetadata');
+      const extractMetadataSpy = jest.spyOn(videoService, 'extractMetadata');
       await videoService.loadVideoFile(file);
       
       expect(extractMetadataSpy).not.toHaveBeenCalled();
@@ -204,7 +127,7 @@ describe('VideoService', () => {
     it('should handle errors during video loading', async () => {
       const file = createMockFile();
       
-      vi.spyOn(URL, 'createObjectURL').mockImplementation(() => {
+      jest.spyOn(URL, 'createObjectURL').mockImplementation(() => {
         throw new Error('Mock error');
       });
       
@@ -231,7 +154,7 @@ describe('VideoService', () => {
       const file = createMockFile();
       
       // Mock ffmpeg output with fraction frame rate
-      const ffmpegFsSpy = vi.spyOn(videoService['ffmpeg'], 'FS');
+      const ffmpegFsSpy = jest.spyOn(videoService['ffmpeg'], 'FS');
       ffmpegFsSpy.mockImplementation((cmd, fileName) => {
         if (cmd === 'readFile' && fileName === 'output.json') {
           return new TextEncoder().encode(safeStringify({
@@ -257,7 +180,7 @@ describe('VideoService', () => {
       const file = createMockFile();
       
       // Mock ffmpeg run to throw an error
-      vi.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
+      jest.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
       
       const metadata = await videoService.extractMetadata(file);
       
@@ -308,7 +231,7 @@ describe('VideoService', () => {
       const file = createMockFile();
       
       // Mock ffmpeg run to throw an error
-      vi.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
+      jest.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
       
       const thumbnail = await videoService.generateThumbnail(file);
       
@@ -324,7 +247,7 @@ describe('VideoService', () => {
       videoService.addEventListener(VideoServiceEvents.ANALYSIS_COMPLETE, mockEventListener);
       
       // Mock dependencies
-      vi.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
+      jest.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
         id: 'mock-id',
         file,
         name: 'test-video.mp4',
@@ -346,8 +269,8 @@ describe('VideoService', () => {
         }
       });
       
-      vi.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
-      vi.spyOn(videoService, 'detectScenes').mockResolvedValue([
+      jest.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
+      jest.spyOn(videoService, 'detectScenes').mockResolvedValue([
         {
           id: 'scene-1',
           startFrame: 0,
@@ -368,7 +291,7 @@ describe('VideoService', () => {
         }
       ]);
       
-      vi.spyOn(videoService, 'analyzeContent').mockResolvedValue({
+      jest.spyOn(videoService, 'analyzeContent').mockResolvedValue({
         hasFaces: false,
         faceCount: 0,
         dominantColors: [
@@ -382,7 +305,7 @@ describe('VideoService', () => {
         hasMotion: false
       });
       
-      vi.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
+      jest.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
         averageMotion: 5,
         motionByFrame: [
           { frameIndex: 1, time: 1 / 30, motionAmount: 5 },
@@ -392,7 +315,7 @@ describe('VideoService', () => {
         hasCameraMovement: false
       });
       
-      vi.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.B_ROLL_STATIC);
+      jest.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.B_ROLL_STATIC);
       
       const analysis = await videoService.analyzeVideo(file);
       
@@ -411,13 +334,13 @@ describe('VideoService', () => {
     
     it('should emit progress events during analysis', async () => {
       const file = createMockFile();
-      const progressListener = vi.fn();
+      const progressListener = jest.fn();
       
       // Register event listener
       videoService.addEventListener(VideoServiceEvents.PROGRESS, progressListener);
       
       // Mock dependencies as in the previous test
-      vi.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
+      jest.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
         id: 'mock-id',
         file,
         name: 'test-video.mp4',
@@ -439,9 +362,9 @@ describe('VideoService', () => {
         }
       });
       
-      vi.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
-      vi.spyOn(videoService, 'detectScenes').mockResolvedValue([]);
-      vi.spyOn(videoService, 'analyzeContent').mockResolvedValue({
+      jest.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
+      jest.spyOn(videoService, 'detectScenes').mockResolvedValue([]);
+      jest.spyOn(videoService, 'analyzeContent').mockResolvedValue({
         hasFaces: false,
         faceCount: 0,
         dominantColors: [],
@@ -451,13 +374,13 @@ describe('VideoService', () => {
         isOutdoor: false,
         hasMotion: false
       });
-      vi.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
+      jest.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
         averageMotion: 0,
         motionByFrame: [],
         hasHighMotion: false,
         hasCameraMovement: false
       });
-      vi.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.UNKNOWN);
+      jest.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.UNKNOWN);
       
       await videoService.analyzeVideo(file);
       
@@ -478,7 +401,7 @@ describe('VideoService', () => {
       const file = createMockFile();
       
       // Mock dependencies
-      vi.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
+      jest.spyOn(videoService, 'loadVideoFile').mockResolvedValue({
         id: 'mock-id',
         file,
         name: 'test-video.mp4',
@@ -499,9 +422,9 @@ describe('VideoService', () => {
           bitrate: 5000000
         }
       });
-      vi.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
-      vi.spyOn(videoService, 'detectScenes').mockResolvedValue([]);
-      vi.spyOn(videoService, 'analyzeContent').mockResolvedValue({
+      jest.spyOn(videoService, 'extractFrames').mockResolvedValue(createMockFrames(10));
+      jest.spyOn(videoService, 'detectScenes').mockResolvedValue([]);
+      jest.spyOn(videoService, 'analyzeContent').mockResolvedValue({
         hasFaces: false,
         faceCount: 0,
         dominantColors: [],
@@ -511,18 +434,18 @@ describe('VideoService', () => {
         isOutdoor: false,
         hasMotion: false
       });
-      vi.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
+      jest.spyOn(videoService, 'analyzeMotion').mockResolvedValue({
         averageMotion: 0,
         motionByFrame: [],
         hasHighMotion: false,
         hasCameraMovement: false
       });
-      vi.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.UNKNOWN);
+      jest.spyOn(videoService, 'classifyClipType').mockResolvedValue(ClipType.UNKNOWN);
       
       await videoService.analyzeVideo(file);
       
       // Clear mocks and call again
-      vi.clearAllMocks();
+      jest.clearAllMocks();
       
       await videoService.analyzeVideo(file);
       
@@ -536,13 +459,13 @@ describe('VideoService', () => {
     
     it('should handle errors during analysis', async () => {
       const file = createMockFile();
-      const errorListener = vi.fn();
+      const errorListener = jest.fn();
       
       // Register event listener
       videoService.addEventListener(VideoServiceEvents.ERROR, errorListener);
       
       // Mock loadVideoFile to throw
-      vi.spyOn(videoService, 'loadVideoFile').mockRejectedValue(new Error('Mock error'));
+      jest.spyOn(videoService, 'loadVideoFile').mockRejectedValue(new Error('Mock error'));
       
       await expect(videoService.analyzeVideo(file)).rejects.toThrow('Failed to analyze video');
       
@@ -592,7 +515,7 @@ describe('VideoService', () => {
       await videoService.extractFrames(file, options);
       
       // Clear mocks and call again with same parameters
-      vi.clearAllMocks();
+      jest.clearAllMocks();
       
       await videoService.extractFrames(file, options);
       
@@ -604,7 +527,7 @@ describe('VideoService', () => {
       const file = createMockFile();
       
       // Mock ffmpeg run to throw
-      vi.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
+      jest.spyOn(videoService['ffmpeg'], 'run').mockRejectedValue(new Error('Mock error'));
       
       await expect(videoService.extractFrames(file)).rejects.toThrow('Failed to extract frames');
     });
@@ -627,7 +550,7 @@ describe('VideoService', () => {
       const frames = createMockFrames(10);
       
       // Mock the difference calculation to create a scene change
-      vi.spyOn(require('@techstark/opencv-js'), 'mean')
+      jest.spyOn(cv, 'mean')
         .mockReturnValueOnce([5]) // Below threshold
         .mockReturnValueOnce([5]) // Below threshold
         .mockReturnValueOnce([40]) // Above threshold (new scene)
@@ -652,7 +575,7 @@ describe('VideoService', () => {
       const frames = createMockFrames(10);
       
       // Mock matFromImageData to throw
-      vi.spyOn(require('@techstark/opencv-js'), 'matFromImageData')
+      jest.spyOn(cv, 'matFromImageData')
         .mockImplementation(() => {
           throw new Error('Mock error');
         });
@@ -678,7 +601,7 @@ describe('VideoService', () => {
       const frame = createMockFrames(1)[0];
       
       // Mock matFromImageData to throw
-      vi.spyOn(require('@techstark/opencv-js'), 'matFromImageData')
+      jest.spyOn(cv, 'matFromImageData')
         .mockImplementation(() => {
           throw new Error('Mock error');
         });
@@ -729,7 +652,7 @@ describe('VideoService', () => {
       const frames = createMockFrames(5);
       
       // Mock matFromImageData to throw
-      vi.spyOn(require('@techstark/opencv-js'), 'matFromImageData')
+      jest.spyOn(cv, 'matFromImageData')
         .mockImplementation(() => {
           throw new Error('Mock error');
         });
@@ -840,7 +763,7 @@ describe('VideoService', () => {
       };
       
       // Mock implementation to throw
-      vi.spyOn(analysis.contentAnalysis, 'some').mockImplementation(() => {
+      jest.spyOn(analysis.contentAnalysis, 'some').mockImplementation(() => {
         throw new Error('Mock error');
       });
       
@@ -852,7 +775,7 @@ describe('VideoService', () => {
   
   describe('event listeners', () => {
     it('should add and remove event listeners', () => {
-      const listener = vi.fn();
+      const listener = jest.fn();
       
       videoService.addEventListener(VideoServiceEvents.ANALYSIS_START, listener);
       
@@ -872,8 +795,8 @@ describe('VideoService', () => {
     });
     
     it('should handle errors in event listeners', () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const listener = vi.fn().mockImplementation(() => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const listener = jest.fn().mockImplementation(() => {
         throw new Error('Mock error in listener');
       });
       
@@ -892,7 +815,7 @@ describe('VideoService', () => {
   
   describe('dispose', () => {
     it('should clear all caches and event listeners', () => {
-      const listener = vi.fn();
+      const listener = jest.fn();
       videoService.addEventListener(VideoServiceEvents.ANALYSIS_START, listener);
       
       // Add items to caches
