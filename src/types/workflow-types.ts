@@ -6,8 +6,8 @@
 
 import { VideoFile } from './video-types';
 import { AudioAnalysis } from './audio-types';
-import { ProjectSettings } from './ProjectSettings';
-import { WorkflowStep } from './workflow/WorkflowStep';
+import { ProjectSettings } from './ProjectSettingsFix';
+import { WorkflowStep } from './workflow/WorkflowStepFix';
 
 /**
  * Represents an edit decision for the timeline

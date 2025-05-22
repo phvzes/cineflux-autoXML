@@ -7,9 +7,9 @@
 import { VideoFile } from './video-types';
 
 /**
- * Re-export ProjectSettings from ProjectSettings.ts
+ * Re-export ProjectSettings from ProjectSettingsFix.ts
  */
-export { ProjectSettings } from './ProjectSettings';
+export { ProjectSettings } from './ProjectSettingsFix';
 
 /**
  * Raw video file interface

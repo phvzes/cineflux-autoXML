@@ -9,14 +9,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  WorkflowStep,
-  ProjectSettings,
   AppState,
-  WorkflowContextType,
+  WorkflowContextType
+} from '@/types/consolidated';
+import { 
+  ProjectSettings,
   VideoResolution,
   VideoCodec,
   AudioCodec
-} from '@/types/consolidated';
+} from '@/types/ProjectSettingsFix';
+import { WorkflowStep, WorkflowStepUtils } from '@/types/workflow/WorkflowStepFix';
 
 // Import services
 import AudioService from '@/services/AudioService';
@@ -24,7 +26,7 @@ import AudioService from '@/services/AudioService';
 // Default state for the application
 const defaultState: AppState = {
   workflow: {
-    currentStep: 'input' as WorkflowStep, // Use string literal with type assertion
+    currentStep: 'input' as WorkflowStep,
     analysisProgress: {
       percentage: 0,
       currentStep: '',
@@ -36,10 +38,14 @@ const defaultState: AppState = {
   },
   project: {
     settings: {
-      projectName: 'New Music Video Project', // Add required projectName
+      projectName: 'New Music Video Project',
+      projectDescription: 'Auto-generated music video project',
       genre: 'Hip-Hop/Rap',
       style: 'Dynamic',
       transitions: 'Auto (Based on Music)',
+      createdAt: new Date(),
+      lastModifiedAt: new Date(),
+      tags: ['music', 'video', 'auto-generated'],
       exportFormat: {
         resolution: '1080p' as VideoResolution,
         videoCodec: 'h264' as VideoCodec,
@@ -55,11 +61,62 @@ const defaultState: AppState = {
         includeChapters: true,
         embedMetadata: true,
         optimizeForWeb: true
+      },
+      audioSync: {
+        enabled: true,
+        method: 'waveform_peak',
+        confidenceThreshold: 0.8,
+        maxTimeOffset: 5000,
+        driftCompensation: true,
+        prioritizeSync: true,
+        applyNoiseReduction: false,
+        useReferenceTrack: false
+      },
+      clipLength: {
+        minDuration: 1.5,
+        maxDuration: 8.0,
+        targetDuration: 3.5,
+        enforceHardLimits: true,
+        dynamicAdjustment: true,
+        minTransitionDuration: 0.5,
+        maxTransitionDuration: 2.0,
+        preservePhrases: true
+      },
+      editingMode: {
+        mode: 'dynamic',
+        pacingFactor: 1.0,
+        prioritizeVisualQuality: true,
+        prioritizeAudioQuality: true,
+        maintainChronology: true,
+        useB_Roll: true,
+        cutOnAction: true,
+        cutOnAudioCues: true
+      },
+      preferences: {
+        defaultTransition: 'crossfade',
+        defaultTransitionDuration: 0.5,
+        autoAddTransitions: true,
+        colorGradingPreset: 'cinematic',
+        normalizeAudio: true,
+        targetAudioLevel: -14,
+        addBackgroundMusic: false,
+        backgroundMusicVolume: 0.2,
+        autoGenerateTitles: false,
+        addWatermark: false,
+        watermarkOpacity: 0.7,
+        watermarkPosition: 'bottom-right'
       }
     },
     musicFile: null,
     videoFiles: [],
-    rawVideoFiles: [] // Added for storing raw video files
+    rawVideoFiles: [],
+    currentStep: 'input',
+    isAnalyzing: false,
+    audioAnalysis: null,
+    videoAnalyses: {},
+    editDecisions: [],
+    showExportModal: false,
+    duration: 0
   },
   analysis: {
     audio: null,
@@ -102,54 +159,28 @@ const canAccessRoute = (
 ): boolean => {
   // Logic to determine if a step can be accessed
   switch (targetStep) {
-    case 'input' as WorkflowStep:
+    case 'input':
       return true; // Always accessible
-    case 'analysis' as WorkflowStep:
+    case 'analysis':
       return true; // Accessible if we have a music file (would be checked in component)
-    case 'edit' as WorkflowStep:
+    case 'edit':
       return hasAnalysisResults; // Need analysis results
-    case 'export' as WorkflowStep:
+    case 'export':
       return hasAnalysisResults && hasEditDecisions; // Need both analysis and edit decisions
     default:
       return false;
   }
 };
 
-const getNextRoute = (currentStep: WorkflowStep): WorkflowStep => {
-  switch (currentStep) {
-    case 'input' as WorkflowStep:
-      return 'analysis' as WorkflowStep;
-    case 'analysis' as WorkflowStep:
-      return 'edit' as WorkflowStep;
-    case 'edit' as WorkflowStep:
-      return 'export' as WorkflowStep;
-    case 'export' as WorkflowStep:
-    default:
-      return 'export' as WorkflowStep; // No next step after export
-  }
-};
-
-const getPreviousRoute = (currentStep: WorkflowStep): WorkflowStep | null => {
-  switch (currentStep) {
-    case 'input' as WorkflowStep:
-      return null; // No previous step
-    case 'analysis' as WorkflowStep:
-      return 'input' as WorkflowStep;
-    case 'edit' as WorkflowStep:
-      return 'analysis' as WorkflowStep;
-    case 'export' as WorkflowStep:
-      return 'edit' as WorkflowStep;
-    default:
-      return null;
-  }
-};
+// Use the utility functions from our WorkflowStepFix
+const getNextRoute = WorkflowStepUtils.getNextStep;
+const getPreviousRoute = WorkflowStepUtils.getPreviousStep;
 
 // Create the context with default values
 const WorkflowContext = createContext<WorkflowContextType>({
   state: defaultState,
-  currentStep: 'input' as WorkflowStep,
+  currentStep: 'input',
   goToStep: () => {},
-  // @ts-ignore - Using any temporarily for data
   data: defaultState,
   setData: () => {},
   navigation: {
@@ -223,7 +254,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     const hasAnalysisResults = Boolean(state.analysis.audio && state.analysis.video);
     const hasEditDecisions = state.edit.decisions.length > 0;
     
-    if (canAccessRoute(nextRoute, state.workflow.currentStep, hasAnalysisResults, hasEditDecisions)) {
+    if (nextRoute && canAccessRoute(nextRoute, state.workflow.currentStep, hasAnalysisResults, hasEditDecisions)) {
       navigate(`/${nextRoute}`);
     } else {
       // Handle case where next step is not accessible

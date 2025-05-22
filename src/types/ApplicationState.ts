@@ -1,7 +1,7 @@
 import { AudioAnalysis } from './AudioAnalysis';
 import { VideoAnalysisResult } from './VideoAnalysis';
 import { EditDecisionList } from './EditDecision';
-import { ProjectSettings } from './ProjectSettings';
+import { ProjectSettings } from './ProjectSettingsFix';
 
 /**
  * Represents the status of a file being processed

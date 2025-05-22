@@ -174,9 +174,21 @@ export async function loadWasmModule(
   } catch (error) {
     if (error instanceof WasmLoadError) {
       console.error(`WebAssembly load error: ${error.message}`);
+      console.error('WASM load failed with WasmLoadError', error);
       throw error;
     }
     console.error(`Unexpected error loading WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
+    console.error('WASM load failed with unexpected error', error);
+    
+    // Log browser capabilities for debugging
+    console.error('Browser WebAssembly support details:', {
+      hasWebAssembly: typeof WebAssembly !== 'undefined',
+      hasInstantiate: typeof WebAssembly?.instantiate === 'function',
+      hasCompile: typeof WebAssembly?.compile === 'function',
+      hasMemory: typeof WebAssembly?.Memory === 'function',
+      userAgent: navigator.userAgent
+    });
+    
     throw new WasmLoadError(`Failed to load WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -555,7 +567,11 @@ export function ensureOpenCVLoaded(): Promise<void> {
     try {
       // Check if WebAssembly is supported
       if (typeof WebAssembly === 'undefined') {
-        throw new Error('WebAssembly is not supported in this browser');
+        const error = new Error('WebAssembly is not supported in this browser');
+        console.error('OpenCV.js loading failed:', error);
+        console.error('Browser does not support WebAssembly, which is required for OpenCV.js');
+        reject(error);
+        return;
       }
       
       // If cv.Mat exists, OpenCV is already loaded
@@ -571,7 +587,15 @@ export function ensureOpenCVLoaded(): Promise<void> {
       fetch('/assets/opencv.js', { method: 'HEAD' })
         .then(response => {
           if (!response.ok) {
-            throw new Error(`OpenCV.js file not found at /assets/opencv.js`);
+            const error = new Error(`OpenCV.js file not found at /assets/opencv.js: ${response.status} ${response.statusText}`);
+            console.error('OpenCV.js loading failed:', error);
+            console.error('File check response:', {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Array.from(response.headers.entries())
+            });
+            reject(error);
+            return;
           }
           
           // Load OpenCV.js from local path
@@ -579,11 +603,13 @@ export function ensureOpenCVLoaded(): Promise<void> {
           script.src = '/assets/opencv.js';
           script.async = true;
           script.type = 'text/javascript';
-          document.head.appendChild(script);
-
+          
           // Set a timeout to reject the promise if OpenCV doesn't load
           const timeoutId = setTimeout(() => {
-            reject(new Error('OpenCV.js failed to load within timeout'));
+            const error = new Error('OpenCV.js failed to load within timeout (30s)');
+            console.error('OpenCV.js loading failed:', error);
+            console.error('Possible reasons: script execution error, WASM compilation failure, or network issues');
+            reject(error);
           }, 30000);
 
           // Set the callback for when OpenCV is ready
@@ -591,6 +617,14 @@ export function ensureOpenCVLoaded(): Promise<void> {
           (window as any).cv.onRuntimeInitialized = () => {
             clearTimeout(timeoutId);
             console.log('OpenCV.js loaded successfully');
+            
+            // Log successful initialization details
+            console.log('OpenCV.js initialization details:', {
+              version: (window as any).cv.version,
+              buildInformation: (window as any).cv.getBuildInformation?.() || 'Not available',
+              hasWasm: typeof (window as any).cv.WASM !== 'undefined'
+            });
+            
             resolve();
           };
 
@@ -598,15 +632,34 @@ export function ensureOpenCVLoaded(): Promise<void> {
           script.onerror = (error) => {
             clearTimeout(timeoutId);
             console.error('Failed to load OpenCV.js script:', error);
+            console.error('Script loading error details:', {
+              src: script.src,
+              crossOrigin: script.crossOrigin,
+              integrity: script.integrity,
+              referrerPolicy: script.referrerPolicy
+            });
             reject(new Error('Failed to load OpenCV.js script'));
           };
+          
+          // Add the script to the document to start loading
+          document.head.appendChild(script);
         })
         .catch(error => {
           console.error('Error checking OpenCV.js file:', error);
+          console.error('Network error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
           reject(error);
         });
     } catch (error) {
       console.error('Error in ensureOpenCVLoaded:', error);
+      console.error('Unexpected error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        name: error instanceof Error ? error.name : 'Unknown error type'
+      });
       reject(error);
     }
   });

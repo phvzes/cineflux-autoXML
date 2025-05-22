@@ -15,5 +15,3 @@ export enum WorkflowStep {
   PREVIEW = 'preview',
   EXPORT = 'export'
 }
-
-export default WorkflowStep;

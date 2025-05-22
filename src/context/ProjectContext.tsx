@@ -4,12 +4,14 @@ import {
   AudioAnalysis, 
   VideoAnalysis, 
   EditDecision, 
-  WorkflowStep, 
+  WorkflowStep
+} from '@/types/consolidated';
+import {
   ProjectSettings,
   VideoResolution,
   VideoCodec,
   AudioCodec
-} from '@/types/consolidated';
+} from '@/types/ProjectSettingsFix';
 
 // Define the project state interface
 interface ProjectState {

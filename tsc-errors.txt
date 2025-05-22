@@ -1,0 +1,194 @@
+src/App.tsx(115,33): error TS2345: Argument of type 'string | null | undefined' is not assignable to parameter of type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/App.tsx(123,105): error TS2322: Type '"input"' is not assignable to type 'number | boolean | AudioAnalysis | EditDecision[] | ProjectSettings | File | Record<string, VideoAnalysis> | WorkflowStep | File[] | { ...; } | null'.
+src/components/WorkflowContainer.tsx(109,38): error TS2322: Type '"input"' is not assignable to type 'number | boolean | AudioAnalysis | EditDecision[] | ProjectSettings | File | Record<string, VideoAnalysis> | WorkflowStep | File[] | { ...; } | null'.
+src/components/WorkflowContainer.tsx(140,9): error TS2367: This comparison appears to be unintentional because the types 'WorkflowStep' and '"welcome"' have no overlap.
+src/components/WorkflowStepper.tsx(74,12): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ welcome: { label: string; description: string; }; file_upload: { label: string; description: string; }; media_analysis: { label: string; description: string; }; edit_configuration: { label: string; description: string; }; preview: { ...; }; export: { ...; }; settings: { ...; }; }'.
+src/components/WorkflowStepper.tsx(75,18): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ welcome: { label: string; description: string; }; file_upload: { label: string; description: string; }; media_analysis: { label: string; description: string; }; edit_configuration: { label: string; description: string; }; preview: { ...; }; export: { ...; }; settings: { ...; }; }'.
+src/components/WorkflowStepper.tsx(120,47): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ welcome: { label: string; description: string; }; file_upload: { label: string; description: string; }; media_analysis: { label: string; description: string; }; edit_configuration: { label: string; description: string; }; preview: { ...; }; export: { ...; }; settings: { ...; }; }'.
+src/components/export/ExportModal.tsx(4,1): error TS6133: 'useFocusTrap' is declared but its value is never read.
+src/components/export/ExportModal.tsx(22,3): error TS6133: '_settings' is declared but its value is never read.
+src/components/export/ExportModal.tsx(48,13): error TS6133: '_xml' is declared but its value is never read.
+src/components/layout/AppLayout.tsx(21,3): error TS6133: '_onHelpClick' is declared but its value is never read.
+src/components/layout/AppLayout.tsx(22,3): error TS6133: '_renderWorkflowStepper' is declared but its value is never read.
+src/components/layout/AppLayout.tsx(28,25): error TS2367: This comparison appears to be unintentional because the types 'WorkflowStep' and '"input"' have no overlap.
+src/components/layout/AppLayout.tsx(31,25): error TS2367: This comparison appears to be unintentional because the types 'WorkflowStep' and '"welcome"' have no overlap.
+src/components/layout/AppLayout.tsx(57,39): error TS2367: This comparison appears to be unintentional because the types 'WorkflowStep' and '"input"' have no overlap.
+src/components/layout/AppLayout.tsx(60,56): error TS2367: This comparison appears to be unintentional because the types 'WorkflowStep' and '"input"' have no overlap.
+src/components/layout/AppLayout.tsx(89,12): error TS2367: This comparison appears to be unintentional because the types 'WorkflowStep' and '"analyzing"' have no overlap.
+src/components/steps/AnalysisStep.tsx(27,11): error TS2339: Property '_currentStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/AnalysisStep.tsx(27,11): error TS6133: '_currentStep' is declared but its value is never read.
+src/components/steps/AnalysisStep.tsx(329,19): error TS2740: Type 'Float32Array<ArrayBufferLike>' is missing the following properties from type 'number[]': pop, push, concat, shift, and 5 more.
+src/components/steps/EditingStep.tsx(44,50): error TS6133: 'audioElement' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(46,11): error TS2339: Property '_currentStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/EditingStep.tsx(46,11): error TS6133: '_currentStep' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(50,5): error TS2339: Property '_waveformData' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/steps/EditingStep.tsx(50,5): error TS6133: '_waveformData' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(54,5): error TS2339: Property '_duration' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/steps/EditingStep.tsx(54,5): error TS6133: '_duration' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(63,5): error TS2339: Property '_videoAnalysis' does not exist on type '{ videoFile: VideoFile | null; videoAnalysis: VideoAnalysis | null; isAnalyzing: boolean; error: string | null; progress: VideoProcessingProgress | null; ... 9 more ...; clearAnalysis: () => void; }'.
+src/components/steps/EditingStep.tsx(63,5): error TS6133: '_videoAnalysis' is declared but its value is never read.
+src/components/steps/EditingStep.tsx(64,5): error TS2339: Property '_scenes' does not exist on type '{ videoFile: VideoFile | null; videoAnalysis: VideoAnalysis | null; isAnalyzing: boolean; error: string | null; progress: VideoProcessingProgress | null; ... 9 more ...; clearAnalysis: () => void; }'.
+src/components/steps/EditingStep.tsx(64,5): error TS6133: '_scenes' is declared but its value is never read.
+src/components/steps/ExportStep.tsx(14,9): error TS6133: 'workflowState' is declared but its value is never read.
+src/components/steps/InputStep.tsx(20,7): error TS2339: Property 'setData' does not exist on type '{ updateProjectSettings: (settings: Partial<ProjectSettings>) => void; setMusicFile: (file: File | null) => Promise<void>; addVideoFile: (file: File) => void; removeVideoFile: (index: number) => void; addRawVideoFile: (file: File) => void; removeRawVideoFile: (index: number) => void; startAnalysis: () => Promise<......'.
+src/components/steps/InputStep.tsx(208,75): error TS2339: Property 'name' does not exist on type '{ file: File; duration: number; }'.
+src/components/steps/InputStep.tsx(223,67): error TS2339: Property 'size' does not exist on type '{ file: File; duration: number; }'.
+src/components/steps/InputStep.tsx(225,52): error TS2339: Property 'type' does not exist on type '{ file: File; duration: number; }'.
+src/components/steps/InputStep.tsx(367,12): error TS18048: 'state.ui.errors' is possibly 'undefined'.
+src/components/steps/InputStep.tsx(369,16): error TS18048: 'state.ui.errors' is possibly 'undefined'.
+src/components/steps/InputStep.tsx(429,79): error TS2345: Argument of type '{ exportFormatType: any; }' is not assignable to parameter of type 'string'.
+src/components/steps/PreviewStep.tsx(29,50): error TS6133: 'audioElement' is declared but its value is never read.
+src/components/steps/PreviewStep.tsx(31,11): error TS2339: Property '_currentStep' does not exist on type 'WorkflowContextType'.
+src/components/steps/PreviewStep.tsx(31,11): error TS6133: '_currentStep' is declared but its value is never read.
+src/components/steps/PreviewStep.tsx(31,41): error TS2339: Property '_setData' does not exist on type 'WorkflowContextType'.
+src/components/steps/PreviewStep.tsx(31,41): error TS6133: '_setData' is declared but its value is never read.
+src/components/steps/PreviewStep.tsx(98,9): error TS6133: '_videoFiles' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(62,5): error TS2339: Property '_extractedFrames' does not exist on type '{ videoFile: VideoFile | null; videoAnalysis: VideoAnalysis | null; isAnalyzing: boolean; error: string | null; progress: VideoProcessingProgress | null; ... 9 more ...; clearAnalysis: () => void; }'.
+src/components/timeline/VideoTimeline.tsx(62,5): error TS6133: '_extractedFrames' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(64,5): error TS2339: Property '_getFrameAtTime' does not exist on type '{ videoFile: VideoFile | null; videoAnalysis: VideoAnalysis | null; isAnalyzing: boolean; error: string | null; progress: VideoProcessingProgress | null; ... 9 more ...; clearAnalysis: () => void; }'.
+src/components/timeline/VideoTimeline.tsx(64,5): error TS6133: '_getFrameAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(65,5): error TS2339: Property '_getSceneAtTime' does not exist on type '{ videoFile: VideoFile | null; videoAnalysis: VideoAnalysis | null; isAnalyzing: boolean; error: string | null; progress: VideoProcessingProgress | null; ... 9 more ...; clearAnalysis: () => void; }'.
+src/components/timeline/VideoTimeline.tsx(65,5): error TS6133: '_getSceneAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(69,5): error TS2339: Property 'audioFile' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/timeline/VideoTimeline.tsx(71,5): error TS2339: Property 'beats' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/timeline/VideoTimeline.tsx(72,5): error TS2339: Property 'segments' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/timeline/VideoTimeline.tsx(73,5): error TS2339: Property 'loadAudioFile' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/timeline/VideoTimeline.tsx(74,5): error TS2339: Property '_getBeatAtTime' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/timeline/VideoTimeline.tsx(74,5): error TS6133: '_getBeatAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(75,5): error TS2339: Property '_getSegmentAtTime' does not exist on type '{ service: AudioService; audioBuffer: AudioBuffer | null; waveformData: Float32Array<ArrayBufferLike> | null; isPlaying: boolean; ... 9 more ...; getAudioContext: () => AudioContext; }'.
+src/components/timeline/VideoTimeline.tsx(75,5): error TS6133: '_getSegmentAtTime' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(81,9): error TS6133: '_pixelsPerSecond' is declared but its value is never read.
+src/components/timeline/VideoTimeline.tsx(333,41): error TS6133: 'index' is declared but its value is never read.
+src/components/video/VideoAnalyzer.tsx(53,5): error TS2339: Property '_getFrameAtTime' does not exist on type '{ videoFile: VideoFile | null; videoAnalysis: VideoAnalysis | null; isAnalyzing: boolean; error: string | null; progress: VideoProcessingProgress | null; ... 9 more ...; clearAnalysis: () => void; }'.
+src/components/video/VideoAnalyzer.tsx(53,5): error TS6133: '_getFrameAtTime' is declared but its value is never read.
+src/components/welcome/WelcomePage.tsx(177,36): error TS2322: Type '"input"' is not assignable to type 'number | boolean | AudioAnalysis | EditDecision[] | ProjectSettings | File | Record<string, VideoAnalysis> | WorkflowStep | File[] | { ...; } | null'.
+src/components/welcome/WelcomePage.tsx(185,34): error TS2322: Type '"input"' is not assignable to type 'number | boolean | AudioAnalysis | EditDecision[] | ProjectSettings | File | Record<string, VideoAnalysis> | WorkflowStep | File[] | { ...; } | null'.
+src/context/WorkflowContext.tsx(37,3): error TS2740: Type '{ settings: { projectName: string; genre: string; style: string; transitions: string; exportFormat: { resolution: VideoResolution; videoCodec: VideoCodec; audioCodec: AudioCodec; ... 10 more ...; optimizeForWeb: true; }; }; musicFile: null; videoFiles: never[]; rawVideoFiles: never[]; }' is missing the following properties from type 'ProjectState': currentStep, isAnalyzing, audioAnalysis, videoAnalyses, and 3 more.
+src/context/WorkflowContext.tsx(99,3): error TS6133: 'currentStep' is declared but its value is never read.
+src/core/PluginRegistry.ts(257,48): error TS6133: 'options' is declared but its value is never read.
+src/core/PluginRegistry.ts(300,28): error TS6133: 'initOptions' is declared but its value is never read.
+src/core/PluginRegistry.ts(309,25): error TS6133: 'processOptions' is declared but its value is never read.
+src/engine/EditDecisionEngine.ts(281,71): error TS2339: Property 'ACTION' does not exist on type 'typeof SceneType'.
+src/engine/EditDecisionEngine.ts(372,9): error TS6133: '_currentTime' is declared but its value is never read.
+src/examples/pluginUsageExample.ts(109,50): error TS18048: 'frameResult.data' is possibly 'undefined'.
+src/examples/pluginUsageExample.ts(149,21): error TS18048: 'convertResult.data' is possibly 'undefined'.
+src/hooks/useAudioService.ts(55,28): error TS18047: 'serviceRef.current' is possibly 'null'.
+src/hooks/useAudioService.ts(60,30): error TS18047: 'serviceRef.current' is possibly 'null'.
+src/hooks/useAudioService.ts(80,30): error TS18047: 'serviceRef.current' is possibly 'null'.
+src/pages/EditDecisionDemo.tsx(105,14): error TS2352: Conversion of type '{ id: string; clipMetadata: { title: string; duration: number; width: number; height: number; frameRate: number; filePath: string; }; sceneDetection: { id: string; scenes: { id: string; startTime: number; endTime: number; duration: number; sceneTypes: never[]; boundaryConfidence: number; }[]; sceneCount: number; ave...' to type 'VideoAnalysisResult' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Types of property 'clipMetadata' are incompatible.
+    Property 'id' is missing in type '{ title: string; duration: number; width: number; height: number; frameRate: number; filePath: string; }' but required in type 'ClipMetadata'.
+src/pages/EditDecisionDemo.tsx(109,30): error TS2339: Property 'clip' does not exist on type 'VideoAnalysis'.
+src/pages/VideoProcessingTest.tsx(4,24): error TS2614: Module '"../services/VideoService"' has no exported member 'VideoProcessingResult'. Did you mean to use 'import VideoProcessingResult from "../services/VideoService"' instead?
+src/pages/VideoProcessingTest.tsx(71,41): error TS2339: Property 'processVideo' does not exist on type 'VideoService'.
+src/plugins/audio/BasicAudioAnalyzer.ts(47,27): error TS6133: 'options' is declared but its value is never read.
+src/plugins/audio/BasicAudioAnalyzer.ts(135,5): error TS6133: 'audioData' is declared but its value is never read.
+src/plugins/audio/BasicAudioAnalyzer.ts(136,5): error TS6133: 'options' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(45,27): error TS6133: 'options' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(127,5): error TS6133: 'subtitleData' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(140,13): error TS6133: '_subtitleText' is declared but its value is never read.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(140,29): error TS2448: Block-scoped variable 'subtitleData' used before its declaration.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(140,29): error TS2454: Variable 'subtitleData' is used before being assigned.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(141,36): error TS2448: Block-scoped variable 'subtitleData' used before its declaration.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(142,11): error TS2448: Block-scoped variable 'subtitleData' used before its declaration.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(142,11): error TS2454: Variable 'subtitleData' is used before being assigned.
+src/plugins/subtitle/BasicSubtitleAnalyzer.ts(324,47): error TS6133: 'index' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(50,27): error TS6133: 'options' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(149,5): error TS6133: 'videoData' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(150,5): error TS6133: 'options' is declared but its value is never read.
+src/plugins/video/BasicVideoAnalyzer.ts(198,5): error TS6133: 'videoData' is declared but its value is never read.
+src/services/AudioService.ts(602,5): error TS6133: 'beatAnalysis' is declared but its value is never read.
+src/services/BaseService.ts(126,54): error TS18046: 'error' is of type 'unknown'.
+src/services/BaseService.ts(192,51): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(9,3): error TS2305: Module '"../types/edit-types"' has no exported member 'EditPoint'.
+src/services/EditDecisionEngine.ts(11,3): error TS2305: Module '"../types/edit-types"' has no exported member 'EditStyle'.
+src/services/EditDecisionEngine.ts(12,3): error TS2305: Module '"../types/edit-types"' has no exported member 'ProjectSettings'.
+src/services/EditDecisionEngine.ts(13,3): error TS2305: Module '"../types/edit-types"' has no exported member 'VideoClipAssignment'.
+src/services/EditDecisionEngine.ts(14,3): error TS2305: Module '"../types/edit-types"' has no exported member 'EditDecisionEngineEvents'.
+src/services/EditDecisionEngine.ts(28,25): error TS2749: 'VideoService' refers to a value, but is being used as a type here. Did you mean 'typeof VideoService'?
+src/services/EditDecisionEngine.ts(112,15): error TS2304: Cannot find name 'uuidv4'.
+src/services/EditDecisionEngine.ts(115,11): error TS2353: Object literal may only specify known properties, and 'videoId' does not exist in type 'EditDecision'.
+src/services/EditDecisionEngine.ts(156,56): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(160,61): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(220,41): error TS2345: Argument of type 'import("/home/ubuntu/cineflux-autoXML/src/types/AudioAnalysis").AudioAnalysis' is not assignable to parameter of type 'import("/home/ubuntu/cineflux-autoXML/src/types/audio-types").AudioAnalysis'.
+  Property 'duration' is missing in type 'import("/home/ubuntu/cineflux-autoXML/src/types/AudioAnalysis").AudioAnalysis' but required in type 'import("/home/ubuntu/cineflux-autoXML/src/types/audio-types").AudioAnalysis'.
+src/services/EditDecisionEngine.ts(226,63): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(230,68): error TS18046: 'error' is of type 'unknown'.
+src/services/EditDecisionEngine.ts(305,55): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditDecisionEngine.ts(475,57): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditDecisionEngine.ts(588,55): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditDecisionEngine.ts(629,55): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/services/EditDecisionEngine.ts(902,19): error TS2339: Property 'videoId' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(902,36): error TS2339: Property 'videoId' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(902,55): error TS2339: Property 'sceneId' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(902,72): error TS2339: Property 'sceneId' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(927,85): error TS2339: Property 'onBeat' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(949,19): error TS2339: Property 'importance' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(993,26): error TS2339: Property 'beat' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(994,29): error TS2339: Property 'segment' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(996,26): error TS2339: Property 'segment' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(1000,30): error TS2339: Property 'importance' does not exist on type 'EditDecision'.
+src/services/EditDecisionEngine.ts(1001,26): error TS2339: Property 'energy' does not exist on type 'EditDecision'.
+src/services/EditService.ts(17,5): error TS6133: 'settings' is declared but its value is never read.
+src/services/EditService.ts(74,5): error TS6133: 'audioAnalysis' is declared but its value is never read.
+src/services/EditService.ts(75,5): error TS6133: 'videoAnalyses' is declared but its value is never read.
+src/services/EditService.ts(76,5): error TS6133: 'settings' is declared but its value is never read.
+src/services/PreviewGenerator.ts(47,5): error TS6133: 'editDecisions' is declared but its value is never read.
+src/services/PreviewGenerator.ts(48,5): error TS6133: 'videoFiles' is declared but its value is never read.
+src/services/PreviewGenerator.ts(49,5): error TS6133: 'audioFile' is declared but its value is never read.
+src/services/VideoService.ts(104,13): error TS2304: Cannot find name 'uuidv4'.
+src/services/VideoService.ts(124,53): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(316,46): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(320,51): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(427,52): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(453,13): error TS2304: Cannot find name 'uuidv4'.
+src/services/VideoService.ts(493,26): error TS18048: 'options.threshold' is possibly 'undefined'.
+src/services/VideoService.ts(502,17): error TS2304: Cannot find name 'uuidv4'.
+src/services/VideoService.ts(523,51): error TS18046: 'error' is of type 'unknown'.
+src/services/VideoService.ts(556,29): error TS2554: Expected 3-4 arguments, but got 1.
+src/services/VideoService.ts(557,44): error TS2339: Property 'mean' does not exist on type 'void'.
+src/services/VideoService.ts(558,40): error TS2339: Property 'mean' does not exist on type 'void'.
+src/services/VideoService.ts(559,40): error TS2339: Property 'mean' does not exist on type 'void'.
+src/services/VideoService.ts(560,42): error TS2339: Property 'stddev' does not exist on type 'void'.
+src/services/VideoService.ts(561,39): error TS2339: Property 'stddev' does not exist on type 'void'.
+src/services/VideoService.ts(562,39): error TS2339: Property 'stddev' does not exist on type 'void'.
+src/services/VideoService.ts(611,14): error TS2339: Property 'KMEANS_PP_CENTERS' does not exist on type 'typeof import("/home/ubuntu/cineflux-autoXML/node_modules/@techstark/opencv-js/dist/src/index")'.
+src/services/__tests__/AudioService.test.ts(15,19): error TS6133: 'buffer' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(15,82): error TS6133: 'onError' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(27,7): error TS2739: Type '{ length: number; duration: number; sampleRate: number; numberOfChannels: number; getChannelData: Mock<(channel: any) => Float32Array<ArrayBuffer>>; }' is missing the following properties from type 'AudioBuffer': copyFromChannel, copyToChannel
+src/services/__tests__/AudioService.test.ts(32,28): error TS6133: 'channel' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(57,32): error TS2345: Argument of type '{ done: boolean; value: Uint8Array<ArrayBuffer>; }' is not assignable to parameter of type 'never'.
+src/services/__tests__/AudioService.test.ts(58,32): error TS2345: Argument of type '{ done: boolean; value: Uint8Array<ArrayBuffer>; }' is not assignable to parameter of type 'never'.
+src/services/__tests__/AudioService.test.ts(59,32): error TS2345: Argument of type '{ done: boolean; }' is not assignable to parameter of type 'never'.
+src/services/__tests__/AudioService.test.ts(89,5): error TS2322: Type 'Mock<UnknownFunction>' is not assignable to type '{ (input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>; (input: string | URL | Request, init?: RequestInit | undefined): Promise<...>; }'.
+  Type 'unknown' is not assignable to type 'Promise<Response>'.
+src/services/__tests__/AudioService.test.ts(89,48): error TS2345: Argument of type '{ ok: boolean; headers: { get: Mock<(name: any) => "1000000" | null>; }; body: { getReader: Mock<() => { read: Mock<UnknownFunction>; }>; }; }' is not assignable to parameter of type 'never'.
+src/services/__tests__/AudioService.test.ts(102,7): error TS2322: Type 'Mock<UnknownFunction>' is not assignable to type '() => Promise<ArrayBuffer>'.
+  Type 'unknown' is not assignable to type 'Promise<ArrayBuffer>'.
+src/services/__tests__/AudioService.test.ts(102,58): error TS2345: Argument of type 'ArrayBuffer' is not assignable to parameter of type 'never'.
+src/services/__tests__/AudioService.test.ts(146,7): error TS2322: Type 'Mock<UnknownFunction>' is not assignable to type '{ (input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>; (input: string | URL | Request, init?: RequestInit | undefined): Promise<...>; }'.
+  Type 'unknown' is not assignable to type 'Promise<Response>'.
+src/services/__tests__/AudioService.test.ts(146,50): error TS2345: Argument of type '{ ok: boolean; statusText: string; }' is not assignable to parameter of type 'never'.
+src/services/__tests__/AudioService.test.ts(168,27): error TS6133: 'buffer' is declared but its value is never read.
+src/services/__tests__/AudioService.test.ts(168,48): error TS6133: 'onSuccess' is declared but its value is never read.
+src/services/__tests__/VideoService.test.ts(49,1): error TS2322: Type 'Mock<UnknownFunction>' is not assignable to type '{ <K extends keyof HTMLElementTagNameMap>(tagName: K, options?: ElementCreationOptions | undefined): HTMLElementTagNameMap[K]; <K extends keyof HTMLElementDeprecatedTagNameMap>(tagName: K, options?: ElementCreationOptions | undefined): HTMLElementDeprecatedTagNameMap[K]; (tagName: string, options?: ElementCreationOp...'.
+  Type 'unknown' is not assignable to type 'HTMLElement'.
+src/services/__tests__/VideoService.test.ts(90,5): error TS2322: Type 'Mock<UnknownFunction>' is not assignable to type '(obj: Blob | MediaSource) => string'.
+  Type 'unknown' is not assignable to type 'string'.
+src/types/EditDecision.ts(10,1): error TS6133: 'AudioAnalysis' is declared but its value is never read.
+src/types/EditDecision.ts(108,22): error TS2552: Cannot find name 'AudioAnalysisResult'. Did you mean 'AudioAnalysis'?
+src/types/ProjectState.ts(12,10): error TS1205: Re-exporting a type when 'isolatedModules' is enabled requires using 'export type'.
+src/types/ProjectState.ts(35,13): error TS2304: Cannot find name 'ProjectSettings'.
+src/types/consolidated/application.types.ts(228,13): error TS2552: Cannot find name 'WorkflowState'. Did you mean 'WorkflowStep'?
+src/types/wasm/flow/Wast.ts(162,27): error TS6133: 'text' is declared but its value is never read.
+src/types/wasm/flow/Wast.ts(173,30): error TS6133: 'module' is declared but its value is never read.
+src/types/workflow/index.ts(13,10): error TS1205: Re-exporting a type when 'isolatedModules' is enabled requires using 'export type'.
+src/utils/safeStringify.ts(15,31): error TS6133: 'key' is declared but its value is never read.
+src/utils/xmlGenerators.ts(15,3): error TS6133: 'settings' is declared but its value is never read.
+src/utils/xmlGenerators.ts(150,3): error TS6133: 'settings' is declared but its value is never read.
+src/utils/xmlGenerators.ts(243,3): error TS6133: 'audioFile' is declared but its value is never read.
