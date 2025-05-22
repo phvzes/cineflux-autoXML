@@ -6,14 +6,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useVideoService } from '../hooks/useVideoService';
-import {
-  VideoFile,
-  VideoAnalysis,
-  Scene,
-  VideoFrame,
-  ClipType,
-  VideoProcessingProgress
-} from '../types/video-types';
+import { VideoAnalysis, Scene, ClipType, VideoProcessingProgress } from '../types/video-types';
 
 interface VideoAnalyzerProps {
   videoFile?: File;

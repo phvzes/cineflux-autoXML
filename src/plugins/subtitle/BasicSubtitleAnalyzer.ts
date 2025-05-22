@@ -137,7 +137,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
     
     try {
       // Convert ArrayBuffer to string if needed
-      const subtitleText = subtitleData instanceof ArrayBuffer 
+      const _subtitleText = subtitleData instanceof ArrayBuffer 
         ? new TextDecoder().decode(subtitleData)
         : subtitleData;
       
@@ -154,7 +154,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
       // For this stub, we'll return mock data based on the format
       
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve: any) => setTimeout(resolve, 300));
       
       // Create mock subtitle data
       const subtitleData: SubtitleData = {
@@ -212,7 +212,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
       // For this stub, we'll generate mock output based on the format
       
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve: any) => setTimeout(resolve, 200));
       
       let result = '';
       
@@ -302,7 +302,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
   private mockConvertToSRT(subtitleData: SubtitleData): string {
     let srt = '';
     
-    subtitleData.entries.forEach((entry, index) => {
+    subtitleData.entries.forEach((entry: any, index: any) => {
       // Format: index + newline + start time --> end time + newline + text + double newline
       const startTime = this.formatSRTTime(entry.startTime);
       const endTime = this.formatSRTTime(entry.endTime);
@@ -321,7 +321,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
   private mockConvertToVTT(subtitleData: SubtitleData): string {
     let vtt = 'WEBVTT\n\n';
     
-    subtitleData.entries.forEach((entry, index) => {
+    subtitleData.entries.forEach((entry: any, index: any) => {
       // Format: optional cue identifier + start time --> end time + optional settings + newline + text + newline
       const startTime = this.formatVTTTime(entry.startTime);
       const endTime = this.formatVTTTime(entry.endTime);
@@ -352,7 +352,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
     // Add metadata
     if (subtitleData.metadata) {
       xml += '  <metadata>\n';
-      Object.entries(subtitleData.metadata).forEach(([key, value]) => {
+      Object.entries(subtitleData.metadata).forEach(([key, value]: any) => {
         xml += `    <${key}>${value}</${key}>\n`;
       });
       xml += '  </metadata>\n';
@@ -360,7 +360,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
     
     // Add entries
     xml += '  <entries>\n';
-    subtitleData.entries.forEach(entry => {
+    subtitleData.entries.forEach((entry: any) => {
       xml += `    <entry id="${entry.id}">\n`;
       xml += `      <start>${entry.startTime}</start>\n`;
       xml += `      <end>${entry.endTime}</end>\n`;
@@ -369,7 +369,7 @@ export class BasicSubtitleAnalyzer implements SubtitleAnalysisPlugin {
       // Add style if available
       if (entry.style) {
         xml += '      <style>\n';
-        Object.entries(entry.style).forEach(([key, value]) => {
+        Object.entries(entry.style).forEach(([key, value]: any) => {
           xml += `        <${key}>${value}</${key}>\n`;
         });
         xml += '      </style>\n';

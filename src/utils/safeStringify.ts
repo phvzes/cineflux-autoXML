@@ -12,7 +12,7 @@
 export function safeStringify(obj: any, space?: number): string {
   const seen = new WeakSet();
   
-  return JSON.stringify(obj, (key, value) => {
+  return JSON.stringify(obj, (key: any, value: any) => {
     // Handle non-object values normally
     if (typeof value !== 'object' || value === null) {
       return value;

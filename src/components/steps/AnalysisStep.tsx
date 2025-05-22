@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { Beat, AudioSegment } from '../../types/workflow';
+import { Beat, AudioSegment, WorkflowStep } from '../../types/workflow';
 import useAudioService from '../../hooks/useAudioService';
 import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
 import { AppState } from '../../types/workflow-types';
@@ -177,7 +177,7 @@ const AnalysisStep: React.FC = () => {
   // Handle continue to next step
   const handleContinue = () => {
     if (hasAnalysisResults) {
-      goToStep('editing');
+      goToStep(WorkflowStep.EDIT);
     }
   };
   
@@ -369,21 +369,21 @@ const AnalysisStep: React.FC = () => {
               <div 
                 key={index} 
                 className={`p-3 rounded flex justify-between ${
-                  segment.isChorus 
+                  segment.type === 'chorus' 
                     ? 'bg-blue-900 bg-opacity-30 border border-blue-800' 
                     : 'bg-gray-700'
                 }`}
-                onClick={() => handleSeek(segment.start)}
+                onClick={() => handleSeek(segment.startTime)}
               >
                 <span className="font-medium">
-                  {segment.isChorus ? 'Chorus' : 'Verse'} {index + 1}
+                  {segment.type === 'chorus' ? 'Chorus' : 'Verse'} {index + 1}
                 </span>
                 <span className="text-sm text-gray-400">
-                  {formatTime(segment.start)} - {formatTime(segment.end)}
-                  ({formatTime(segment.end - segment.start)})
+                  {formatTime(segment.startTime)} - {formatTime(segment.endTime)}
+                  ({formatTime(segment.duration)})
                 </span>
                 <span className="text-sm">
-                  Energy: {segment.energyLevel.toFixed(2)}
+                  Energy: {(segment.energy || 0).toFixed(2)}
                 </span>
               </div>
             ))}

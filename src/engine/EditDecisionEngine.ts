@@ -1,11 +1,5 @@
 // src/engine/EditDecisionEngine.ts
-import { 
-  AudioAnalysis, 
-  Beat, 
-  BeatAnalysis, 
-  EnergyAnalysis, 
-  EnergySample 
-} from '../types/AudioAnalysis';
+import { AudioAnalysis, Beat, EnergySample } from '../types/AudioAnalysis';
 import { 
   Scene, 
   VideoAnalysisResult, 

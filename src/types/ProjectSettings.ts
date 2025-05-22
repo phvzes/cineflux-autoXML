@@ -272,8 +272,14 @@ export interface ProjectSettings {
   isTemplate: boolean;
   /** Tags associated with the project */
   tags: string[];
-  /** Custom user-defined settings */
-  customSettings?: Record<string, any>;
+  /** Custom user-defined settings including export format type */
+  customSettings?: { exportFormatType?: string } & Record<string, any>;
+  /** Music genre for the project */
+  genre?: string;
+  /** Editing style preference */
+  style?: string;
+  /** Transition preference */
+  transitions?: string;
 }
 
 /**

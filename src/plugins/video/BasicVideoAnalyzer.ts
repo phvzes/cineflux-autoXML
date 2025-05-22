@@ -162,7 +162,7 @@ export class BasicVideoAnalyzer implements VideoAnalysisPlugin {
       // For this stub, we'll return mock data
       
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve: any) => setTimeout(resolve, 1000));
       
       // Create mock analysis result
       const result: VideoAnalysisResult = {
@@ -211,7 +211,7 @@ export class BasicVideoAnalyzer implements VideoAnalysisPlugin {
       // and extract the frame. For this stub, we'll return a mock frame.
       
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve: any) => setTimeout(resolve, 300));
       
       // Create a mock frame (just a colored rectangle)
       this.canvas.width = 1920;
@@ -234,8 +234,8 @@ export class BasicVideoAnalyzer implements VideoAnalysisPlugin {
       );
       
       // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        this.canvas!.toBlob((b) => resolve(b!), 'image/jpeg', 0.95);
+      const blob = await new Promise<Blob>((resolve: any) => {
+        this.canvas!.toBlob((b: any) => resolve(b!), 'image/jpeg', 0.95);
       });
       
       // Convert blob to ArrayBuffer

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, FileUp, Check, Folder } from 'lucide-react';
+import { FileUp, Check, Folder } from 'lucide-react';
 import AccessibleDialog from '../AccessibleDialog';
 import useFocusTrap from '../../hooks/useFocusTrap';
 

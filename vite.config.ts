@@ -30,6 +30,12 @@ export default defineConfig({
             res.setHeader('Content-Type', 'application/wasm');
           } else if (url?.endsWith('.json')) {
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          } else if (url === '/' || url === '') {
+            // Handle root URL as HTML
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          } else if (url?.includes('/src/types/wasm/flow/')) {
+            // Handle WASM type files
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
           }
           
           next();

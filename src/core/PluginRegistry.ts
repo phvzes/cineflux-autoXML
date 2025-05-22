@@ -39,12 +39,12 @@ export class PluginRegistry {
    */
   private constructor() {
     // Initialize plugin type maps
-    Object.values(PluginType).forEach(type => {
+    Object.values(PluginType).forEach((type: any) => {
       this.pluginsByType.set(type as PluginType, new Set<string>());
     });
     
     // Initialize event listener maps
-    Object.values(PluginEventType).forEach(type => {
+    Object.values(PluginEventType).forEach((type: any) => {
       this.eventListeners.set(type as PluginEventType, new Set<PluginEventListener>());
     });
   }
@@ -174,8 +174,8 @@ export class PluginRegistry {
     }
     
     return Array.from(pluginIds)
-      .map(id => this.plugins.get(id))
-      .filter((plugin): plugin is BasePlugin => plugin !== undefined);
+      .map((id: any) => this.plugins.get(id))
+      .filter((plugin: any): plugin is BasePlugin => plugin !== undefined);
   }
   
   /**
@@ -191,7 +191,7 @@ export class PluginRegistry {
    * @returns Array of plugin metadata
    */
   public getAllPluginMetadata(): PluginMetadata[] {
-    return Array.from(this.plugins.values()).map(plugin => plugin.metadata);
+    return Array.from(this.plugins.values()).map((plugin: any) => plugin.metadata);
   }
   
   /**
@@ -306,7 +306,7 @@ export class PluginRegistry {
           return true;
         },
         
-        process: async (processOptions) => {
+        process: async (processOptions: any) => {
           // Process data with the WASM plugin
           // This would need to be implemented based on the specific WASM plugin
           return {
@@ -381,7 +381,7 @@ export class PluginRegistry {
   private emitEvent(event: PluginEvent): void {
     const listeners = this.eventListeners.get(event.type);
     if (listeners) {
-      listeners.forEach(listener => {
+      listeners.forEach((listener: any) => {
         try {
           listener(event);
         } catch (error) {

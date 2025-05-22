@@ -8,8 +8,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useVideoService } from '../hooks/useVideoService';
 import { useAudioService } from '../hooks/useAudioService';
-import { Scene, VideoFrame, TimelineMarker, MarkerType } from '../types/video-types';
-import { Beat, AudioSegment } from '../types/audio-types'; // You may need to create or update this file
+import { TimelineMarker, MarkerType } from '../types/video-types';
 
 interface VideoTimelineProps {
   videoFile?: File;
@@ -79,7 +78,7 @@ const VideoTimeline: React.FC<VideoTimelineProps> = ({
   // Derived values
   const duration = (videoAnalysis?.duration || loadedVideoFile?.duration || 
                    loadedAudioFile?.duration || 0);
-  const pixelsPerSecond = timelineWidth / (duration / zoom);
+  const _pixelsPerSecond = timelineWidth / (duration / zoom);
   const visibleSeconds = duration / zoom;
   
   // Load files when provided

@@ -148,7 +148,7 @@ export class BasicAudioAnalyzer implements AudioAnalysisPlugin {
       // For this stub, we'll return mock data
       
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve: any) => setTimeout(resolve, 500));
       
       // Create mock analysis result
       const result: AudioAnalysisResult = {
@@ -242,7 +242,7 @@ export class BasicAudioAnalyzer implements AudioAnalysisPlugin {
     }
     
     // Sort by time
-    markers.sort((a, b) => a.time - b.time);
+    markers.sort((a: any, b: any) => a.time - b.time);
     
     return markers;
   }

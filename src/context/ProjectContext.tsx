@@ -142,7 +142,7 @@ interface ProjectProviderProps {
   children: ReactNode;
 }
 
-export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
+export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }: any) => {
   const [state, dispatch] = useReducer(projectReducer, initialState);
 
   return (

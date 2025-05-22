@@ -159,7 +159,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   children, 
   initialState,
   audioService
-}) => {
+}: any) => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -184,7 +184,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     const currentRouteStep = getCurrentStep();
     
     if (state.workflow.currentStep !== currentRouteStep) {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         workflow: {
           ...prev.workflow,
@@ -206,7 +206,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       navigate(`/${nextRoute}`);
     } else {
       // Handle case where next step is not accessible
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         ui: {
           ...prev.ui,
@@ -233,7 +233,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     if (canAccessRoute(step, state.workflow.currentStep, hasAnalysisResults, hasEditDecisions)) {
       navigate(`/${step}`);
     } else {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         ui: {
           ...prev.ui,
@@ -248,7 +248,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   
   // State update methods
   const updateProjectSettings = (settings: Partial<ProjectSettings>) => {
-    setState(prev => ({
+    setState((prev: any) => ({
       ...prev,
       project: {
         ...prev.project,
@@ -262,7 +262,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   
   const setMusicFile = async (file: File | null) => {
     if (!file) {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         project: {
           ...prev.project,
@@ -275,7 +275,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     try {
       const audioFile = await audioService.loadAudio(file);
       
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         project: {
           ...prev.project,
@@ -287,7 +287,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
         }
       }));
     } catch (error) {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         ui: {
           ...prev.ui,
@@ -301,7 +301,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   };
   
   const addVideoFile = (file: File) => {
-    setState(prev => ({
+    setState((prev: any) => ({
       ...prev,
       project: {
         ...prev.project,
@@ -329,7 +329,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   };
   
   const removeVideoFile = (index: number) => {
-    setState(prev => {
+    setState((prev: any) => {
       const newFiles = [...prev.project.videoFiles];
       
       // Release the object URL to prevent memory leaks
@@ -354,7 +354,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     // Validate file type
     const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
     if (!validVideoTypes.includes(file.type)) {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         ui: {
           ...prev.ui,
@@ -367,7 +367,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       return;
     }
 
-    setState(prev => ({
+    setState((prev: any) => ({
       ...prev,
       project: {
         ...prev.project,
@@ -403,7 +403,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
 
   // New method for removing raw video files
   const removeRawVideoFile = (index: number) => {
-    setState(prev => {
+    setState((prev: any) => {
       const newFiles = [...prev.project.rawVideoFiles];
       
       // Release the object URL to prevent memory leaks
@@ -425,7 +425,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
   
   const startAnalysis = async () => {
     if (!state.project.musicFile?.file) {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         ui: {
           ...prev.ui,
@@ -440,7 +440,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
 
     // Check if we have raw video files
     if (state.project.rawVideoFiles.length === 0) {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         ui: {
           ...prev.ui,
@@ -453,7 +453,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       return;
     }
     
-    setState(prev => ({
+    setState((prev: any) => ({
       ...prev,
       analysis: {
         ...prev.analysis,
@@ -471,7 +471,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
     
     try {
       // Update progress state (this would normally happen throughout analysis)
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         workflow: {
           ...prev.workflow,
@@ -487,7 +487,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       const audioAnalysis = await audioService.analyzeAudio(state.project.musicFile.file);
       
       // Update progress
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         workflow: {
           ...prev.workflow,
@@ -500,7 +500,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       }));
       
       // Save analysis results
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         analysis: {
           ...prev.analysis,
@@ -521,7 +521,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({
       goToNextStep();
       
     } catch (error) {
-      setState(prev => ({
+      setState((prev: any) => ({
         ...prev,
         analysis: {
           ...prev.analysis,

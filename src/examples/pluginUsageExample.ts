@@ -1,16 +1,4 @@
-/**
- * CineFlux-AutoXML Plugin Usage Example
- * Demonstrates how to use the plugin system
- */
-
-import { 
-  initializePluginSystem, 
-  getPluginsByType, 
-  getPluginById, 
-  loadPluginFromModule,
-  loadWasmPlugin,
-  getPluginInfo 
-} from '../core/pluginLoader';
+import { initializePluginSystem, getPluginsByType, getPluginInfo } from '../core/pluginLoader';
 import { 
   PluginType, 
   PluginProcessOptions 
@@ -37,7 +25,7 @@ export async function runPluginExample(): Promise<void> {
   // List all registered plugins
   console.log('Registered plugins:');
   const pluginInfo = getPluginInfo();
-  pluginInfo.forEach(info => {
+  pluginInfo.forEach((info: any) => {
     console.log(`- ${info.name} (${info.id}): ${info.type}, v${info.version}`);
   });
   
@@ -118,7 +106,7 @@ export async function runPluginExample(): Promise<void> {
     console.log('\nExtracting frame from video:');
     const frameResult = await videoPlugin.extractFrame(mockVideoBuffer, 10.5);
     if (frameResult.success) {
-      console.log(`- Frame extracted at 10.5s (${frameResult.data.byteLength} bytes)`);
+      console.log(`- Frame extracted at 10.5s (${frameResult?.data.byteLength} bytes)`);
     }
   } else {
     console.log('No video analysis plugins found');

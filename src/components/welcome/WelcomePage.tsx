@@ -12,7 +12,6 @@ import {
   Edit3
 } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
-import { colorPalette } from '@/theme';
 import './WelcomePage.css';
 
 // Mock data for recent projects

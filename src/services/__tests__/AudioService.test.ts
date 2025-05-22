@@ -1,7 +1,7 @@
 // src/services/__tests__/audioService.test.ts
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import AudioService, { AudioProcessingError } from '../AudioService';
-import { AudioAnalysis, Beat, BeatAnalysis, EnergyAnalysis, EnergySample } from '../../types/AudioAnalysis';
+import { Beat, BeatAnalysis, EnergyAnalysis } from '../../types/AudioAnalysis';
 
 // Create an instance of AudioService for testing
 const audioService = new AudioService();

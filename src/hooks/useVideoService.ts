@@ -6,15 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import videoService from '../services/VideoService';
-import { 
-  VideoFile, 
-  VideoAnalysis, 
-  VideoFrame, 
-  Scene,
-  VideoServiceEvents,
-  ThumbnailOptions,
-  VideoProcessingProgress
-} from '../types/video-types';
+import { VideoFile, VideoAnalysis, VideoFrame, Scene, VideoServiceEvents, VideoProcessingProgress } from '../types/video-types';
 
 /**
  * Custom hook for video file processing and analysis
@@ -163,7 +155,7 @@ export const useVideoService = () => {
    */
   const extractFrames = useCallback(async (
     file: File,
-    options = { fps: 1, maxFrames: 300 }
+    options: any = { fps: 1, maxFrames: 300 }
   ): Promise<VideoFrame[]> => {
     try {
       setError(null);
@@ -195,7 +187,7 @@ export const useVideoService = () => {
    */
   const detectScenes = useCallback(async (
     frames: VideoFrame[],
-    options = { threshold: 30 }
+    options: any = { threshold: 30 }
   ): Promise<Scene[]> => {
     try {
       setError(null);
@@ -247,7 +239,7 @@ export const useVideoService = () => {
     if (!extractedFrames.length) return null;
     
     // Find the frame closest to the requested time
-    const closestFrame = extractedFrames.reduce((prev, curr) => {
+    const closestFrame = extractedFrames.reduce((prev: any, curr: any) => {
       return Math.abs(curr.time - time) < Math.abs(prev.time - time) ? curr : prev;
     });
     
@@ -263,7 +255,7 @@ export const useVideoService = () => {
     if (!scenes.length) return null;
     
     // Find the scene that contains the time
-    return scenes.find(scene => time >= scene.startTime && time <= scene.endTime) || null;
+    return scenes.find((scene: any) => time >= scene.startTime && time <= scene.endTime) || null;
   }, [scenes]);
 
   /**

@@ -120,7 +120,7 @@ interface AnalysisProviderProps {
   children: ReactNode;
 }
 
-export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({ children }) => {
+export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({ children }: any) => {
   const [state, dispatch] = useReducer(analysisReducer, initialState);
   
   return (

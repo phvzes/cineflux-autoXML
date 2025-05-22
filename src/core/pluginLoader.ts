@@ -16,11 +16,11 @@ export async function initializePluginSystem(): Promise<boolean> {
     console.log('Initializing plugin system...');
     
     // Register event listeners
-    pluginRegistry.addEventListener(PluginEventType.Registered, (event) => {
+    pluginRegistry.addEventListener(PluginEventType.Registered, (event: any) => {
       console.log(`Plugin registered: ${event.pluginId}`);
     });
     
-    pluginRegistry.addEventListener(PluginEventType.Error, (event) => {
+    pluginRegistry.addEventListener(PluginEventType.Error, (event: any) => {
       console.error(`Plugin error: ${event.pluginId}`, event.data);
     });
     
@@ -102,7 +102,7 @@ export async function unloadPlugin(pluginId: string): Promise<boolean> {
  * Get information about all registered plugins
  */
 export function getPluginInfo(): any[] {
-  return pluginRegistry.getAllPluginMetadata().map(metadata => ({
+  return pluginRegistry.getAllPluginMetadata().map((metadata: any) => ({
     id: metadata.id,
     name: metadata.name,
     version: metadata.version,

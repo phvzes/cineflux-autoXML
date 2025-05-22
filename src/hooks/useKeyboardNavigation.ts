@@ -41,7 +41,7 @@ export function useKeyboardNavigation(
       
       // Find matching shortcut
       const matchingShortcut = shortcuts.find(
-        (shortcut) =>
+        (shortcut: any) =>
           shortcut.key.toLowerCase() === event.key.toLowerCase() &&
           !!shortcut.ctrlKey === event.ctrlKey &&
           !!shortcut.altKey === event.altKey &&
@@ -67,7 +67,7 @@ export function useKeyboardNavigation(
   }, [handleKeyDown, isEnabled]);
   
   // Return formatted shortcuts for documentation
-  const formattedShortcuts = shortcuts.map((shortcut) => {
+  const formattedShortcuts = shortcuts.map((shortcut: any) => {
     const modifiers = [
       shortcut.ctrlKey && 'Ctrl',
       shortcut.altKey && 'Alt',

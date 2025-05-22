@@ -98,7 +98,7 @@ export default function App() {
           audioElementRef.current.currentTime = projectState.currentTime;
         }
         
-        audioElementRef.current.play().catch(error => {
+        audioElementRef.current.play().catch((error: any) => {
           console.error('Playback failed:', error);
           dispatch({ type: 'SET_PLAYING', payload: false });
         });

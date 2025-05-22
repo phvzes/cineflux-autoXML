@@ -9,7 +9,7 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Music, Video, FileUp, X, Info, Settings, Film } from 'lucide-react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { ProjectSettings } from '../../types/workflow';
+import { ProjectSettings, WorkflowStep } from '../../types/workflow';
 
 const InputStep: React.FC = () => {
   // Get workflow context
@@ -150,7 +150,7 @@ const InputStep: React.FC = () => {
       }
     }));
     
-    goToStep('analysis');
+    goToStep(WorkflowStep.ANALYSIS);
   };
   
   // Format file size
@@ -425,8 +425,8 @@ const InputStep: React.FC = () => {
                 <label className="mb-1 text-sm">Export:</label>
                 <select 
                   className="bg-gray-800 border border-gray-600 rounded p-2"
-                  value={state.project.settings.exportFormat}
-                  onChange={(e: any) => handleSettingChange('exportFormat', e.target.value)}
+                  value={state.project.settings.customSettings?.exportFormatType || ''}
+                  onChange={(e: any) => handleSettingChange('customSettings', {...state.project.settings.customSettings, exportFormatType: e.target.value})}
                 >
                   <option>Premiere Pro XML</option>
                   <option>Final Cut Pro XML</option>

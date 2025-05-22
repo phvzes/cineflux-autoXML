@@ -62,7 +62,7 @@ export function logApiError(endpoint: string, error: any, requestData?: any): vo
  */
 export function setupGlobalErrorHandlers(): void {
   // Handle uncaught exceptions
-  window.addEventListener('error', (event) => {
+  window.addEventListener('error', (event: any) => {
     logError(event.error || new Error(event.message), undefined, {
       type: 'window.onerror',
       filename: event.filename,
@@ -75,7 +75,7 @@ export function setupGlobalErrorHandlers(): void {
   });
   
   // Handle unhandled promise rejections
-  window.addEventListener('unhandledrejection', (event) => {
+  window.addEventListener('unhandledrejection', (event: any) => {
     const error = event.reason instanceof Error 
       ? event.reason 
       : new Error(String(event.reason));

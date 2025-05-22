@@ -7,8 +7,7 @@
 
 import React, { useState } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { EditDecision } from '../../types/workflow';
-
+import { WorkflowStep } from '../../types/workflow';
 // Import icons 
 import { 
   Play,
@@ -80,12 +79,12 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }: any) => {
   
   // Handle back to editing
   const handleBackToEdit = () => {
-    goToStep('editing');
+    goToStep(WorkflowStep.EDIT);
   };
   
   // Handle export
   const handleExport = () => {
-    goToStep('export');
+    goToStep(WorkflowStep.EXPORT);
   };
   
   // Format time as MM:SS
@@ -96,7 +95,7 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }: any) => {
   };
   
   // Simulate video files if none exist
-  const videoFiles = data.project.videoFiles.length > 0 
+  const _videoFiles = data.project.videoFiles.length > 0 
     ? data.project.videoFiles 
     : [
         { name: 'video1.mp4', size: 1000000, duration: 30, type: 'video/mp4', url: '' },

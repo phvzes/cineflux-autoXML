@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { TransitionType } from '../../types/edit-types';
 import { EditDecision } from '../../types/workflow-types';
 import { AppState } from '../../types/workflow-types';
 import useAudioService from '../../hooks/useAudioService';

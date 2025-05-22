@@ -1,17 +1,4 @@
-/**
- * EditDecisionEngine.ts
- * 
- * Service for generating edit decisions based on audio and video analysis
- */
-
-import { v4 as uuidv4 } from 'uuid';
-import { 
-  VideoAnalysis, 
-  Scene, 
-  ClipType, 
-  TimelineMarker, 
-  MarkerType 
-} from '../types/video-types';
+import { VideoAnalysis, ClipType, TimelineMarker, MarkerType } from '../types/video-types';
 import { 
   Beat, 
   AudioSegment, 

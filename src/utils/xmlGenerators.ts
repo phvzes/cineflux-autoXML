@@ -1,7 +1,5 @@
 // src/utils/xmlGenerators.ts
 
-import { EditDecision } from '@/context/ProjectContext';
-
 /**
  * Generates Adobe Premiere Pro XML from edit decisions
  * @param editDecisions Array of edit decisions

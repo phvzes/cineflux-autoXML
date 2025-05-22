@@ -188,7 +188,7 @@ export async function estimateBPM(audioBuffer: AudioBuffer): Promise<number> {
   }
   
   // Calculate the median interval
-  intervals.sort((a, b) => a - b);
+  intervals.sort((a: any, b: any) => a - b);
   const medianInterval = intervals[Math.floor(intervals.length / 2)];
   
   // Convert to BPM

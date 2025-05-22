@@ -175,3 +175,10 @@ export function generateWast(module: WastModule): string {
   // In a real implementation, this would generate WebAssembly text format
   throw new Error('Not implemented: generateWast');
 }
+
+// Default export for the module
+export default {
+  parseWast,
+  generateWast,
+  WastValueType: ['i32', 'i64', 'f32', 'f64', 'v128', 'funcref', 'externref']
+};

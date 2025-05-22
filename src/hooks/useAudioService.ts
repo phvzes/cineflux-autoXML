@@ -17,7 +17,7 @@ export const useAudioService = () => {
   const [duration, setDuration] = useState<number>(0);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
-  const [startedAt, setStartedAt] = useState<number>(0);
+  const [_startedAt, setStartedAt] = useState<number>(0);
   const [timeUpdateInterval, setTimeUpdateInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Initialize the AudioService if it doesn't exist
