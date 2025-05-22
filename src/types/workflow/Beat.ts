@@ -19,5 +19,3 @@ export interface Beat {
   /** Beat index in the sequence */
   index?: number;
 }
-
-export default Beat;

@@ -4,8 +4,8 @@
  * This file exports all workflow-related types from the workflow directory.
  */
 
-export { default as Beat } from './Beat';
-export { default as AudioSegment } from './AudioSegment';
+export type { Beat } from './Beat';
+export type { AudioSegment } from './AudioSegment';
 export { default as TransitionType } from './TransitionType';
 export { WorkflowStep } from './WorkflowStep';
 

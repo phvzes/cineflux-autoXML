@@ -27,5 +27,3 @@ export interface AudioSegment {
   /** Additional metadata for the segment */
   metadata?: Record<string, any>;
 }
-
-export default AudioSegment;

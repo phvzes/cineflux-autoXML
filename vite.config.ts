@@ -17,9 +17,13 @@ export default defineConfig({
           // Set correct MIME types for various file types
           const url = req.url?.split('?')[0];
           if (url?.endsWith('.js') || url?.endsWith('.mjs')) {
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+            // Add module type for ES modules
+            if (url?.includes('type=module') || url?.endsWith('.mjs')) {
+              res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+            }
           } else if (url?.endsWith('.ts') || url?.endsWith('.tsx') || url?.endsWith('.jsx')) {
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
           } else if (url?.endsWith('.css')) {
             res.setHeader('Content-Type', 'text/css; charset=utf-8');
           } else if (url?.endsWith('.svg')) {
@@ -35,7 +39,7 @@ export default defineConfig({
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
           } else if (url?.includes('/src/types/wasm/flow/')) {
             // Handle WASM type files
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
           }
           
           next();

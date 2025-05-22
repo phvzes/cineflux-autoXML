@@ -97,15 +97,39 @@ export async function loadWasmModule(
     // Check if module is already loaded
     if (loadedModules[path]) {
       console.log(`WebAssembly module ${path} already loaded`);
+      // We should still return the module even if it's already loaded
+      // This would require storing module instances, which we're not doing currently
+      // For now, we'll proceed with reloading to ensure we have a valid instance
     }
     
-    const response = await fetch(path);
+    console.log(`Loading WebAssembly module from ${path}...`);
+    
+    // First check if the file exists
+    const headResponse = await fetch(path, { method: 'HEAD' }).catch(error => {
+      throw new WasmLoadError(`Failed to check WebAssembly module existence: ${error.message}`);
+    });
+    
+    if (!headResponse.ok) {
+      throw new WasmLoadError(`WebAssembly module not found at ${path}: ${headResponse.statusText}`);
+    }
+    
+    // Now fetch the actual file
+    const response = await fetch(path).catch(error => {
+      throw new WasmLoadError(`Failed to fetch WebAssembly module: ${error.message}`);
+    });
+    
     if (!response.ok) {
       throw new WasmLoadError(`Failed to fetch WebAssembly module: ${response.statusText}`);
     }
     
-    const buffer = await response.arrayBuffer();
-    const module = await WebAssembly.compile(buffer);
+    // Get the buffer and compile
+    const buffer = await response.arrayBuffer().catch(error => {
+      throw new WasmLoadError(`Failed to read WebAssembly module data: ${error.message}`);
+    });
+    
+    const module = await WebAssembly.compile(buffer).catch(error => {
+      throw new WasmLoadError(`Failed to compile WebAssembly module: ${error.message}`);
+    });
     
     // Create default import object if none provided
     const imports = importObject || {};
@@ -119,13 +143,27 @@ export async function loadWasmModule(
       imports.env.memory = new WebAssembly.Memory({ initial: 10, maximum: 100 });
     }
     
-    const instance = await WebAssembly.instantiate(module, imports);
+    // Add console logging capability to the WASM module
+    if (!imports.env.consoleLog) {
+      imports.env.consoleLog = (ptr: number, len: number) => {
+        // This assumes a UTF-8 encoded string in linear memory
+        // A real implementation would need to convert from the memory buffer
+        console.log(`WASM log: ${ptr}, ${len}`);
+      };
+    }
+    
+    // Instantiate the module
+    const instance = await WebAssembly.instantiate(module, imports).catch(error => {
+      throw new WasmLoadError(`Failed to instantiate WebAssembly module: ${error.message}`);
+    });
     
     // Mark the module as loaded
     loadedModules[path] = true;
     
     // Ensure memory is of the correct type
     const memory = imports.env.memory as WebAssembly.Memory;
+    
+    console.log(`WebAssembly module ${path} loaded successfully`);
     
     return {
       instance,
@@ -135,8 +173,10 @@ export async function loadWasmModule(
     };
   } catch (error) {
     if (error instanceof WasmLoadError) {
+      console.error(`WebAssembly load error: ${error.message}`);
       throw error;
     }
+    console.error(`Unexpected error loading WebAssembly module: ${error.message}`);
     throw new WasmLoadError(`Failed to load WebAssembly module: ${error.message}`);
   }
 }
@@ -440,15 +480,33 @@ export function copyFromWasmMemory(
  */
 export async function loadFFmpeg(ffmpeg: any): Promise<void> {
   try {
+    // Check if WebAssembly is supported
+    if (typeof WebAssembly === 'undefined') {
+      throw new Error('WebAssembly is not supported in this browser');
+    }
+
+    // Check if the required files exist before loading
+    const coreURL = '/assets/ffmpeg-core/ffmpeg-core.js';
+    const wasmURL = '/assets/ffmpeg-core/ffmpeg-core.wasm';
+    const workerURL = '/assets/ffmpeg-core/ffmpeg-core.worker.js';
+    
+    // Verify WASM file exists
+    const wasmResponse = await fetch(wasmURL, { method: 'HEAD' });
+    if (!wasmResponse.ok) {
+      throw new Error(`WASM file not found at ${wasmURL}`);
+    }
+    
+    // Load FFmpeg with proper error handling
     await ffmpeg.load({
-      coreURL: '/assets/ffmpeg-core/ffmpeg-core.js',
-      wasmURL: '/assets/ffmpeg-core/ffmpeg-core.wasm',
-      workerURL: '/assets/ffmpeg-core/ffmpeg-core.worker.js',
+      coreURL,
+      wasmURL,
+      workerURL,
     });
+    
     console.log('FFmpeg loaded successfully');
   } catch (error) {
     console.error('Failed to load FFmpeg:', error);
-    throw new Error('Failed to load video processing library');
+    throw new Error(`Failed to load video processing library: ${error.message}`);
   }
 }
 
@@ -458,35 +516,62 @@ export async function loadFFmpeg(ffmpeg: any): Promise<void> {
  */
 export function ensureOpenCVLoaded(): Promise<void> {
   return new Promise((resolve: any, reject: any) => {
-    // If cv.Mat exists, OpenCV is already loaded
-    if ((window as any).cv && (window as any).cv.Mat) {
-      resolve();
-      return;
+    try {
+      // Check if WebAssembly is supported
+      if (typeof WebAssembly === 'undefined') {
+        throw new Error('WebAssembly is not supported in this browser');
+      }
+      
+      // If cv.Mat exists, OpenCV is already loaded
+      if ((window as any).cv && (window as any).cv.Mat) {
+        console.log('OpenCV.js already loaded');
+        resolve();
+        return;
+      }
+
+      console.log('Loading OpenCV.js...');
+      
+      // Check if the OpenCV.js file exists before loading
+      fetch('/assets/opencv.js', { method: 'HEAD' })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`OpenCV.js file not found at /assets/opencv.js`);
+          }
+          
+          // Load OpenCV.js from local path
+          const script = document.createElement('script');
+          script.src = '/assets/opencv.js';
+          script.async = true;
+          script.type = 'text/javascript';
+          document.head.appendChild(script);
+
+          // Set a timeout to reject the promise if OpenCV doesn't load
+          const timeoutId = setTimeout(() => {
+            reject(new Error('OpenCV.js failed to load within timeout'));
+          }, 30000);
+
+          // Set the callback for when OpenCV is ready
+          (window as any).cv = (window as any).cv || {};
+          (window as any).cv.onRuntimeInitialized = () => {
+            clearTimeout(timeoutId);
+            console.log('OpenCV.js loaded successfully');
+            resolve();
+          };
+
+          // Handle script loading errors
+          script.onerror = (error) => {
+            clearTimeout(timeoutId);
+            console.error('Failed to load OpenCV.js script:', error);
+            reject(new Error('Failed to load OpenCV.js script'));
+          };
+        })
+        .catch(error => {
+          console.error('Error checking OpenCV.js file:', error);
+          reject(error);
+        });
+    } catch (error) {
+      console.error('Error in ensureOpenCVLoaded:', error);
+      reject(error);
     }
-
-    // Load OpenCV.js from local path
-    const script = document.createElement('script');
-    script.src = '/assets/opencv.js';
-    script.async = true;
-    script.type = 'text/javascript';
-    document.head.appendChild(script);
-
-    // Set a timeout to reject the promise if OpenCV doesn't load
-    const timeoutId = setTimeout(() => {
-      reject(new Error('OpenCV.js failed to load within timeout'));
-    }, 30000);
-
-    // Set the callback for when OpenCV is ready
-    (window as any).cv = (window as any).cv || {};
-    (window as any).cv.onRuntimeInitialized = () => {
-      clearTimeout(timeoutId);
-      resolve();
-    };
-
-    // Handle script loading errors
-    script.onerror = () => {
-      clearTimeout(timeoutId);
-      reject(new Error('Failed to load OpenCV.js script'));
-    };
   });
 }

@@ -7,7 +7,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { Beat, AudioSegment, WorkflowStep } from '../../types/workflow';
+import { AudioSegment, WorkflowStep } from '../../types/workflow';
+import { Beat } from '../../types/AudioAnalysis';
 import useAudioService from '../../hooks/useAudioService';
 import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
 import { AppState } from '../../types/workflow-types';
