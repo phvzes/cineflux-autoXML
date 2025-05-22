@@ -22,3 +22,7 @@ export * from './application.types';
 
 /* ---------- UI / View layer --------- */
 export * from './ui.types';
+
+/* ---------- Direct imports to fix issues ---------- */
+// Remove direct import to avoid circular dependencies
+// The ProjectSettings will be imported from ProjectSettingsFix.ts instead
