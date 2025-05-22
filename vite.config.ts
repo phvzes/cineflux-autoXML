@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import * as path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,7 +14,7 @@ export default defineConfig({
           res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
           res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
           
-          // Set correct MIME types for JavaScript modules
+          // Set correct MIME types for various file types
           const url = req.url?.split('?')[0];
           if (url?.endsWith('.js') || url?.endsWith('.mjs')) {
             res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
@@ -26,6 +26,10 @@ export default defineConfig({
             res.setHeader('Content-Type', 'image/svg+xml');
           } else if (url?.endsWith('.html')) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          } else if (url?.endsWith('.wasm')) {
+            res.setHeader('Content-Type', 'application/wasm');
+          } else if (url?.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
           }
           
           next();
@@ -63,7 +67,7 @@ export default defineConfig({
       strict: false,
     },
     headers: {
-      'Content-Type': 'application/javascript',
+      // Remove global Content-Type header as it's handled by the mime-type-fix plugin
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
     },

@@ -124,10 +124,13 @@ export async function loadWasmModule(
     // Mark the module as loaded
     loadedModules[path] = true;
     
+    // Ensure memory is of the correct type
+    const memory = imports.env.memory as WebAssembly.Memory;
+    
     return {
       instance,
       module,
-      memory: imports.env.memory,
+      memory,
       exports: instance.exports
     };
   } catch (error) {
@@ -456,7 +459,7 @@ export async function loadFFmpeg(ffmpeg: any): Promise<void> {
 export function ensureOpenCVLoaded(): Promise<void> {
   return new Promise((resolve: any, reject: any) => {
     // If cv.Mat exists, OpenCV is already loaded
-    if (window.cv && window.cv.Mat) {
+    if ((window as any).cv && (window as any).cv.Mat) {
       resolve();
       return;
     }
@@ -474,8 +477,8 @@ export function ensureOpenCVLoaded(): Promise<void> {
     }, 30000);
 
     // Set the callback for when OpenCV is ready
-    window.cv = window.cv || {};
-    window.cv.onRuntimeInitialized = () => {
+    (window as any).cv = (window as any).cv || {};
+    (window as any).cv.onRuntimeInitialized = () => {
       clearTimeout(timeoutId);
       resolve();
     };
