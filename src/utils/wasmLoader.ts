@@ -18,7 +18,7 @@ export interface WasmModuleInstance {
   instance: WebAssembly.Instance;
   module: WebAssembly.Module;
   memory: WebAssembly.Memory;
-  exports: any;
+  exports: Record<string, any>;
 }
 
 /**
@@ -106,7 +106,7 @@ export async function loadWasmModule(
     
     // First check if the file exists
     const headResponse = await fetch(path, { method: 'HEAD' }).catch(error => {
-      throw new WasmLoadError(`Failed to check WebAssembly module existence: ${error.message}`);
+      throw new WasmLoadError(`Failed to check WebAssembly module existence: ${error instanceof Error ? error.message : String(error)}`);
     });
     
     if (!headResponse.ok) {
@@ -115,7 +115,7 @@ export async function loadWasmModule(
     
     // Now fetch the actual file
     const response = await fetch(path).catch(error => {
-      throw new WasmLoadError(`Failed to fetch WebAssembly module: ${error.message}`);
+      throw new WasmLoadError(`Failed to fetch WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
     });
     
     if (!response.ok) {
@@ -124,11 +124,11 @@ export async function loadWasmModule(
     
     // Get the buffer and compile
     const buffer = await response.arrayBuffer().catch(error => {
-      throw new WasmLoadError(`Failed to read WebAssembly module data: ${error.message}`);
+      throw new WasmLoadError(`Failed to read WebAssembly module data: ${error instanceof Error ? error.message : String(error)}`);
     });
     
     const module = await WebAssembly.compile(buffer).catch(error => {
-      throw new WasmLoadError(`Failed to compile WebAssembly module: ${error.message}`);
+      throw new WasmLoadError(`Failed to compile WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
     });
     
     // Create default import object if none provided
@@ -154,7 +154,7 @@ export async function loadWasmModule(
     
     // Instantiate the module
     const instance = await WebAssembly.instantiate(module, imports).catch(error => {
-      throw new WasmLoadError(`Failed to instantiate WebAssembly module: ${error.message}`);
+      throw new WasmLoadError(`Failed to instantiate WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
     });
     
     // Mark the module as loaded
@@ -169,15 +169,15 @@ export async function loadWasmModule(
       instance,
       module,
       memory,
-      exports: instance.exports
+      exports: instance.exports as Record<string, any>
     };
   } catch (error) {
     if (error instanceof WasmLoadError) {
       console.error(`WebAssembly load error: ${error.message}`);
       throw error;
     }
-    console.error(`Unexpected error loading WebAssembly module: ${error.message}`);
-    throw new WasmLoadError(`Failed to load WebAssembly module: ${error.message}`);
+    console.error(`Unexpected error loading WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
+    throw new WasmLoadError(`Failed to load WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -222,7 +222,7 @@ export async function initializeModule(
         module.memory = new WebAssembly.Memory({ initial, maximum });
         
         // Update memory reference in exports if possible
-        if (module.exports.__setMemory) {
+        if (typeof module.exports.__setMemory === 'function') {
           module.exports.__setMemory(module.memory);
         }
       }
@@ -240,7 +240,7 @@ export async function initializeModule(
     
     return true;
   } catch (error) {
-    throw new WasmInitError(`Failed to initialize WebAssembly module: ${error.message}`);
+    throw new WasmInitError(`Failed to initialize WebAssembly module: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -277,7 +277,7 @@ export async function callWasmFunction(
     if (error instanceof WasmFunctionError) {
       throw error;
     }
-    throw new WasmFunctionError(`Failed to call WebAssembly function '${functionName}': ${error.message}`);
+    throw new WasmFunctionError(`Failed to call WebAssembly function '${functionName}': ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -309,7 +309,7 @@ export function allocateMemory(
     if (error instanceof WasmMemoryError) {
       throw error;
     }
-    throw new WasmMemoryError(`Failed to allocate WebAssembly memory: ${error.message}`);
+    throw new WasmMemoryError(`Failed to allocate WebAssembly memory: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -343,7 +343,7 @@ export function freeMemory(
     if (error instanceof WasmMemoryError) {
       throw error;
     }
-    throw new WasmMemoryError(`Failed to free WebAssembly memory: ${error.message}`);
+    throw new WasmMemoryError(`Failed to free WebAssembly memory: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -389,7 +389,7 @@ export function copyToWasmMemory(
     if (error instanceof WasmMemoryError) {
       throw error;
     }
-    throw new WasmMemoryError(`Failed to copy data to WebAssembly memory: ${error.message}`);
+    throw new WasmMemoryError(`Failed to copy data to WebAssembly memory: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -412,22 +412,19 @@ export function copyFromWasmMemory(
   try {
     // Calculate actual length based on type
     let actualLength = length;
-    let bytesPerElement = 1;
     
+    // Calculate element size for different array types
     switch (type) {
       case 'Int16Array':
       case 'Uint16Array':
-        bytesPerElement = 2;
         actualLength = Math.floor(length / 2);
         break;
       case 'Int32Array':
       case 'Uint32Array':
       case 'Float32Array':
-        bytesPerElement = 4;
         actualLength = Math.floor(length / 4);
         break;
       case 'Float64Array':
-        bytesPerElement = 8;
         actualLength = Math.floor(length / 8);
         break;
     }
@@ -469,8 +466,32 @@ export function copyFromWasmMemory(
     if (error instanceof WasmMemoryError) {
       throw error;
     }
-    throw new WasmMemoryError(`Failed to copy data from WebAssembly memory: ${error.message}`);
+    throw new WasmMemoryError(`Failed to copy data from WebAssembly memory: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+/**
+ * Type definition for FFmpeg module
+ * 
+ * TODO: This is a simplified interface. For a complete type definition,
+ * consider using @ffmpeg/types package or creating a more comprehensive interface.
+ */
+export interface FFmpegModule {
+  load: (options?: {
+    coreURL?: string;
+    wasmURL?: string;
+    workerURL?: string;
+  }) => Promise<void>;
+  isLoaded: () => boolean;
+  run: (...args: string[]) => Promise<void>;
+  FS: {
+    writeFile: (path: string, data: Uint8Array, options?: any) => void;
+    readFile: (path: string, options?: any) => Uint8Array;
+    unlink: (path: string) => void;
+    mkdir: (path: string) => void;
+    rmdir: (path: string) => void;
+  };
+  [key: string]: any;
 }
 
 /**
@@ -478,7 +499,7 @@ export function copyFromWasmMemory(
  * @param ffmpeg The FFmpeg instance to load
  * @returns A promise that resolves when FFmpeg is loaded
  */
-export async function loadFFmpeg(ffmpeg: any): Promise<void> {
+export async function loadFFmpeg(ffmpeg: FFmpegModule): Promise<void> {
   try {
     // Check if WebAssembly is supported
     if (typeof WebAssembly === 'undefined') {
@@ -505,9 +526,24 @@ export async function loadFFmpeg(ffmpeg: any): Promise<void> {
     
     console.log('FFmpeg loaded successfully');
   } catch (error) {
-    console.error('Failed to load FFmpeg:', error);
-    throw new Error(`Failed to load video processing library: ${error.message}`);
+    console.error('Failed to load FFmpeg:', error instanceof Error ? error.message : String(error));
+    throw new Error(`Failed to load video processing library: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+/**
+ * Type definition for OpenCV module
+ * 
+ * TODO: This is a simplified interface. For a more complete type definition,
+ * consider using a dedicated type package or extending this interface.
+ */
+export interface OpenCVModule {
+  Mat: any;
+  imread: (imageSource: HTMLImageElement | HTMLCanvasElement) => any;
+  imshow: (canvasSource: string | HTMLCanvasElement, mat: any) => void;
+  VideoCapture: any;
+  onRuntimeInitialized?: () => void;
+  [key: string]: any;
 }
 
 /**
@@ -515,7 +551,7 @@ export async function loadFFmpeg(ffmpeg: any): Promise<void> {
  * @returns A promise that resolves when OpenCV.js is ready
  */
 export function ensureOpenCVLoaded(): Promise<void> {
-  return new Promise((resolve: any, reject: any) => {
+  return new Promise((resolve, reject) => {
     try {
       // Check if WebAssembly is supported
       if (typeof WebAssembly === 'undefined') {

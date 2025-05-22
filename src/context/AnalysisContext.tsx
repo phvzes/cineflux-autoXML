@@ -1,7 +1,8 @@
+
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AudioAnalysis } from '../types/AudioAnalysis';
-import { VideoAnalysisResult } from '../types/VideoAnalysis';
-import { EditDecisionResult } from '../engine/EditDecisionEngine';
+import { AudioAnalysis } from '@/types/consolidated/audio.types';
+import { VideoAnalysis } from '@/types/consolidated/video.types';
+import { EditDecisionResult } from '@/engine/EditDecisionEngine';
 
 // Define the state interface
 interface AnalysisState {
@@ -13,7 +14,7 @@ interface AnalysisState {
   
   // Analysis results
   audioAnalysis: AudioAnalysis | null;
-  videoAnalyses: Record<string, VideoAnalysisResult>;
+  videoAnalyses: Record<string, VideoAnalysis>;
   editDecisionResult: EditDecisionResult | null;
 }
 
@@ -24,7 +25,7 @@ type AnalysisAction =
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }
   | { type: 'SET_AUDIO_ANALYSIS'; payload: AudioAnalysis }
-  | { type: 'SET_VIDEO_ANALYSIS'; payload: { id: string; analysis: VideoAnalysisResult } }
+  | { type: 'SET_VIDEO_ANALYSIS'; payload: { id: string; analysis: VideoAnalysis } }
   | { type: 'SET_EDIT_DECISION_RESULT'; payload: EditDecisionResult }
   | { type: 'FINISH_PROCESSING' }
   | { type: 'RESET_STATE' };
@@ -120,7 +121,7 @@ interface AnalysisProviderProps {
   children: ReactNode;
 }
 
-export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({ children }: any) => {
+export const AnalysisProvider: React.FC<AnalysisProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(analysisReducer, initialState);
   
   return (

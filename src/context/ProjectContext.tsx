@@ -1,77 +1,47 @@
+
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import { 
+  AudioAnalysis, 
+  VideoAnalysis, 
+  EditDecision, 
+  WorkflowStep, 
+  ProjectSettings,
+  VideoResolution,
+  VideoCodec,
+  AudioCodec
+} from '@/types/consolidated';
 
-// Define types
-type Step = 'welcome' | 'input' | 'analyzing' | 'editing' | 'preview';
-
-interface AnalysisProgress {
-  progress: number;
-  step: string;
-}
-
-interface AudioAnalysis {
-  beats: number[];
-  segments: {
-    start: number;
-    duration: number;
-    energy: number;
-  }[];
-}
-
-interface VideoAnalysis {
-  clip: {
-    name: string;
-    duration: number;
-  };
-  scenes: {
-    start: number;
-    end: number;
-    energy: number;
-  }[];
-}
-
-interface EditDecision {
-  time: number;
-  videoId: string;
-  sceneIndex: number;
-  start: number;
-  duration: number;
-}
-
-interface Settings {
-  genre: string;
-  style: string;
-  transitions: string;
-}
-
+// Define the project state interface
 interface ProjectState {
-  currentStep: Step;
+  currentStep: WorkflowStep;
   musicFile: File | null;
   videoFiles: File[];
   isAnalyzing: boolean;
-  analysisProgress: AnalysisProgress;
+  analysisProgress: { progress: number; step: string };
   audioAnalysis: AudioAnalysis | null;
   videoAnalyses: Record<string, VideoAnalysis>;
   editDecisions: EditDecision[];
   isPlaying: boolean;
   currentTime: number;
   duration: number;
-  settings: Settings;
+  settings: ProjectSettings;
   showExportModal: boolean;
 }
 
+// Define action types
 type ProjectAction =
-  | { type: 'SET_STEP'; payload: Step }
+  | { type: 'SET_STEP'; payload: WorkflowStep }
   | { type: 'SET_MUSIC_FILE'; payload: File | null }
   | { type: 'SET_VIDEO_FILES'; payload: File[] }
   | { type: 'SET_ANALYZING'; payload: boolean }
-  | { type: 'SET_ANALYSIS_PROGRESS'; payload: AnalysisProgress }
+  | { type: 'SET_ANALYSIS_PROGRESS'; payload: { progress: number; step: string } }
   | { type: 'SET_AUDIO_ANALYSIS'; payload: AudioAnalysis | null }
   | { type: 'SET_VIDEO_ANALYSES'; payload: Record<string, VideoAnalysis> }
   | { type: 'SET_EDIT_DECISIONS'; payload: EditDecision[] }
   | { type: 'SET_PLAYING'; payload: boolean }
   | { type: 'SET_PLAYBACK_TIME'; payload: number }
   | { type: 'SET_DURATION'; payload: number }
-  | { type: 'SET_SETTINGS'; payload: Settings }
+  | { type: 'SET_SETTINGS'; payload: ProjectSettings }
   | { type: 'SHOW_EXPORT_MODAL'; payload: boolean };
 
 // Create context
@@ -84,7 +54,8 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 // Initial state
 const initialState: ProjectState = {
-  currentStep: 'welcome',
+  // Use enum value directly instead of accessing via WorkflowStep.WELCOME
+  currentStep: 'welcome' as WorkflowStep,
   musicFile: null,
   videoFiles: [],
   isAnalyzing: false,
@@ -96,9 +67,27 @@ const initialState: ProjectState = {
   currentTime: 0,
   duration: 0,
   settings: {
+    projectName: 'New Music Video Project', // Add required projectName
     genre: 'Hip-Hop/Rap',
     style: 'Dynamic',
     transitions: 'Auto (Based on Music)',
+    // Use proper export format settings with all required properties
+    exportFormat: {
+      resolution: '1080p' as VideoResolution,
+      videoCodec: 'h264' as VideoCodec,
+      audioCodec: 'aac' as AudioCodec,
+      videoBitrate: 8,
+      audioBitrate: 192,
+      frameRate: 30,
+      quality: 80,
+      useCRF: true,
+      crfValue: 23,
+      useHardwareAcceleration: false,
+      fileFormat: 'mp4',
+      includeChapters: true,
+      embedMetadata: true,
+      optimizeForWeb: true
+    }
   },
   showExportModal: false,
 };
@@ -142,7 +131,7 @@ interface ProjectProviderProps {
   children: ReactNode;
 }
 
-export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }: any) => {
+export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(projectReducer, initialState);
 
   return (
