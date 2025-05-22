@@ -4,29 +4,31 @@
  * Main application entry point with routing setup for the CineFlux-AutoXML application.
  */
 
-import React, { Suspense, lazy, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useRef, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useProject } from './context/ProjectContext';
-import { useAnalysis } from './context/AnalysisContext';
-import Loading from './components/Loading';
-import WelcomePage from './components/welcome/WelcomePage';
-import ErrorBoundary from './components/ErrorBoundary';
-import errorLogger from './utils/errorLogger';
+import { useProject } from '@/context/ProjectContext';
+import { useAnalysis } from '@/context/AnalysisContext';
+import Loading from '@/components/Loading';
+import WelcomePage from '@/components/welcome/WelcomePage';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import errorLogger from '@/utils/errorLogger';
+import AudioService from '@/services/AudioService';
 
 // Import main container
-import WorkflowContainer from './components/WorkflowContainer';
+import WorkflowContainer from '@/components/workflow/WorkflowContainer';
 
 // Lazy load step components for better performance
-const InputStep = lazy(() => import('./components/steps/InputStep'));
-const AnalysisStep = lazy(() => import('./components/steps/AnalysisStep'));
-const EditingStep = lazy(() => import('./components/steps/EditingStep'));
-const PreviewStep = lazy(() => import('./components/steps/PreviewStep'));
-const ExportStep = lazy(() => import('./components/steps/ExportStep'));
+const InputStep = lazy(() => import('@/components/steps/InputStep'));
+const AnalysisStep = lazy(() => import('@/components/steps/AnalysisStep'));
+const EditingStep = lazy(() => import('@/components/steps/EditingStep'));
+const PreviewStep = lazy(() => import('@/components/steps/PreviewStep'));
+const ExportStep = lazy(() => import('@/components/steps/ExportStep'));
 
 export default function App() {
   const { state: projectState, dispatch } = useProject();
   const { state: _analysisState } = useAnalysis();
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const [audioService] = useState(() => new AudioService());
   
   // Set up global error handlers
   useEffect(() => {
@@ -121,7 +123,7 @@ export default function App() {
           <Route path="/welcome" element={<WelcomePage onGetStarted={() => dispatch({ type: 'SET_STEP', payload: 'input' })} />} />
           
           {/* Main workflow routes nested under WorkflowContainer */}
-          <Route path="/" element={<WorkflowContainer />}>
+          <Route path="/" element={<WorkflowContainer audioService={audioService} />}>
             <Route index element={<Navigate to="/input" replace />} />
             <Route path="input" element={
               <Suspense fallback={<Loading message="Loading input step..." />}>

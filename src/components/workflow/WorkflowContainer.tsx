@@ -8,9 +8,9 @@
 
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { WorkflowProvider, useWorkflow } from '../../context/WorkflowContext';
-import { AppState } from '../../types/workflow';
-import AudioService from '../../services/AudioService';
+import { WorkflowProvider, useWorkflow } from '@/context/WorkflowContext';
+import { AppState } from '@/types/consolidated';
+import AudioService from '@/services/AudioService';
 
 // Import components
 import WorkflowStepper from './WorkflowStepper';
@@ -55,7 +55,7 @@ const WorkflowContainerInner: React.FC = () => {
 const WorkflowContainer: React.FC<WorkflowContainerProps> = ({ 
   initialState,
   audioService
-}: any) => {
+}) => {
   return (
     <WorkflowProvider initialState={initialState} audioService={audioService}>
       <WorkflowContainerInner />

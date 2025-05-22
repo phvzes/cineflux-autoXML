@@ -4,21 +4,12 @@
  * This file defines the types related to project state in the application.
  */
 
-import { VideoFile } from './FileTypes';
+import { VideoFile } from './video-types';
 
 /**
- * Project settings interface
+ * Re-export ProjectSettings from ProjectSettings.ts
  */
-export interface ProjectSettings {
-  /** Music genre for the project */
-  genre: string;
-  /** Editing style */
-  style: string;
-  /** Transition preference */
-  transitions: string;
-  /** Export format */
-  exportFormat: string;
-}
+export { ProjectSettings } from './ProjectSettings';
 
 /**
  * Raw video file interface

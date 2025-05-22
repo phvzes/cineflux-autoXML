@@ -1,4 +1,4 @@
-import { AudioAnalysisResult } from './AudioAnalysis';
+import { AudioAnalysis } from './AudioAnalysis';
 import { VideoAnalysisResult } from './VideoAnalysis';
 import { EditDecisionList } from './EditDecision';
 import { ProjectSettings } from './ProjectSettings';
@@ -174,7 +174,7 @@ export interface ProcessingState {
   /** History of completed processing tasks */
   history: ProcessingHistoryEntry[];
   /** Audio analysis results by file ID */
-  audioAnalysisResults: Record<string, AudioAnalysisResult>;
+  audioAnalysisResults: Record<string, AudioAnalysis>;
   /** Video analysis results by file ID */
   videoAnalysisResults: Record<string, VideoAnalysisResult>;
   /** Current edit decision list */

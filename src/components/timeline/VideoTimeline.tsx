@@ -6,9 +6,9 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useVideoService } from '../hooks/useVideoService';
-import { useAudioService } from '../hooks/useAudioService';
-import { TimelineMarker, MarkerType } from '../types/video-types';
+import { useVideoService } from '../../hooks/useVideoService';
+import { useAudioService } from '../../hooks/useAudioService';
+import { TimelineMarker, MarkerType } from '../../types/video-types';
 
 interface VideoTimelineProps {
   videoFile?: File;

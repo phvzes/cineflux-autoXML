@@ -7,10 +7,10 @@
 export type { Beat } from './Beat';
 export type { AudioSegment } from './AudioSegment';
 export { default as TransitionType } from './TransitionType';
-export { WorkflowStep } from './WorkflowStep';
+export type { WorkflowStep } from './WorkflowStep';
 
 // Re-export types from parent directory that are related to workflow
 export { ProjectSettings } from '../ProjectState';
 export type { ProjectState } from '../ProjectState';
-export type { VideoFile } from '../FileTypes';
-export type { AppState } from '../ApplicationState';
+export type { VideoFile } from '../video-types';
+// AppState is not exported from ApplicationState, removing this import

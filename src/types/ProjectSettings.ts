@@ -354,3 +354,6 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   isTemplate: false,
   tags: []
 };
+
+// Add default export
+export default ProjectSettings;

@@ -7,7 +7,7 @@
  * for automated video editing and XML generation.
  */
 
-import { AudioAnalysisResult } from './AudioAnalysis';
+import { AudioAnalysis } from './AudioAnalysis';
 import { VideoAnalysisResult } from './VideoAnalysis';
 
 /**
