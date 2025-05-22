@@ -9,7 +9,8 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Music, Video, FileUp, X, Info, Settings, Film } from 'lucide-react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { ProjectSettings, WorkflowStep } from '../../types/workflow';
+import { ProjectSettings } from '../../types/ProjectSettingsFix';
+import { WorkflowStep } from '../../types/workflow/WorkflowStepFix';
 
 const InputStep: React.FC = () => {
   // Get workflow context
@@ -150,7 +151,7 @@ const InputStep: React.FC = () => {
       }
     }));
     
-    goToStep(WorkflowStep.ANALYSIS);
+    goToStep('analysis');
   };
   
   // Format file size

@@ -15,7 +15,7 @@ import { useProject } from '../context/ProjectContext';
 import { useWorkflow } from '../context/WorkflowContext';
 import { colorPalette } from '../theme';
 // import { ApplicationStep } from '../types/UITypes';
-import { WorkflowStep } from '../types/workflow';
+import { WorkflowStep, WorkflowStepUtils } from '../types/workflow/WorkflowStepFix';
 import useKeyboardNavigation from '../hooks/useKeyboardNavigation';
 import ErrorBoundary from './ErrorBoundary';
 
@@ -47,9 +47,9 @@ const WorkflowContainer: React.FC = () => {
       altKey: true,
       handler: () => {
         if (!state.analysis.isAnalyzing) {
-          const currentStepIndex = Object.values(WorkflowStep).indexOf(state.workflow.currentStep as WorkflowStep);
-          if (currentStepIndex < Object.values(WorkflowStep).length - 1) {
-            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex + 1]);
+          const nextStep = WorkflowStepUtils.getNextStep(state.workflow.currentStep as WorkflowStep);
+          if (nextStep) {
+            navigation.goToStep(nextStep);
           }
         }
       },
@@ -60,9 +60,9 @@ const WorkflowContainer: React.FC = () => {
       altKey: true,
       handler: () => {
         if (!state.analysis.isAnalyzing) {
-          const currentStepIndex = Object.values(WorkflowStep).indexOf(state.workflow.currentStep as WorkflowStep);
-          if (currentStepIndex > 0) {
-            navigation.goToStep(Object.values(WorkflowStep)[currentStepIndex - 1]);
+          const prevStep = WorkflowStepUtils.getPreviousStep(state.workflow.currentStep as WorkflowStep);
+          if (prevStep) {
+            navigation.goToStep(prevStep);
           }
         }
       },
@@ -148,7 +148,7 @@ const WorkflowContainer: React.FC = () => {
           isProcessing={workflowState.isProcessing}
           progressPercentage={workflowState.progressPercentage}
           statusMessage={workflowState.statusMessage}
-          onStepClick={(step: any) => navigation.goToStep(step as unknown as WorkflowStep)}
+          onStepClick={(step: any) => navigation.goToStep(step as WorkflowStep)}
         />
       </div>
     );
@@ -213,7 +213,7 @@ const WorkflowContainer: React.FC = () => {
               style={{ backgroundColor: colorPalette.darkGrey }}
             >
               <div className="grid grid-cols-2 gap-2" role="list">
-                {shortcuts.map((shortcut: any, index: any) => (
+                {shortcuts.map((shortcut: any, index: number) => (
                   <React.Fragment key={index}>
                     <div style={{ color: colorPalette.lightGrey }} role="listitem">{shortcut.description}</div>
                     <div style={{ color: colorPalette.offWhite }} role="listitem">{shortcut.key}</div>

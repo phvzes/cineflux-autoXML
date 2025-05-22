@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { WorkflowStep } from '../../types/workflow';
+import { WorkflowStep } from '../../types/workflow/WorkflowStepFix';
 
 interface StatusBarProps {
   currentStep: WorkflowStep;
@@ -26,15 +26,15 @@ const StatusBar: React.FC<StatusBarProps> = ({
     if (statusMessage) return statusMessage;
     
     switch (currentStep) {
-      case WorkflowStep.INPUT:
+      case 'input':
         return 'Select audio and video files to begin';
-      case WorkflowStep.ANALYSIS:
+      case 'analysis':
         return isAnalyzing 
           ? `Analyzing audio: ${progress}% complete` 
           : 'Ready to analyze audio';
-      case WorkflowStep.EDIT:
+      case 'edit':
         return 'Edit your video based on audio analysis';
-      case WorkflowStep.EXPORT:
+      case 'export':
         return 'Configure export settings and generate your video';
       default:
         return '';

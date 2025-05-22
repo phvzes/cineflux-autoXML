@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { WorkflowStep } from '../../types/workflow';
+import { WorkflowStep } from '../../types/workflow/WorkflowStepFix';
 // Import icons 
 import { 
   Play,
@@ -28,7 +28,7 @@ interface PreviewStepProps {
 
 const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }: any) => {
   // Get workflow context
-  const { _currentStep, goToStep, data, _setData } = useWorkflow();
+  const { goToStep, data } = useWorkflow();
   
   // Local state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -79,12 +79,12 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }: any) => {
   
   // Handle back to editing
   const handleBackToEdit = () => {
-    goToStep(WorkflowStep.EDIT);
+    goToStep('edit');
   };
   
   // Handle export
   const handleExport = () => {
-    goToStep(WorkflowStep.EXPORT);
+    goToStep('export');
   };
   
   // Format time as MM:SS
@@ -93,15 +93,6 @@ const PreviewStep: React.FC<PreviewStepProps> = ({ audioElement }: any) => {
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-  
-  // Simulate video files if none exist
-  const _videoFiles = data.project.videoFiles.length > 0 
-    ? data.project.videoFiles 
-    : [
-        { name: 'video1.mp4', size: 1000000, duration: 30, type: 'video/mp4', url: '' },
-        { name: 'video2.mp4', size: 2000000, duration: 45, type: 'video/mp4', url: '' },
-        { name: 'video3.mp4', size: 1500000, duration: 60, type: 'video/mp4', url: '' }
-      ];
   
   return (
     <div className="flex-grow flex flex-col">

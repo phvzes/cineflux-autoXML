@@ -7,7 +7,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useWorkflow } from '../../context/WorkflowContext';
-import { AudioSegment, WorkflowStep } from '../../types/workflow';
+import { AudioSegment } from '../../types/workflow';
+import { WorkflowStep } from '../../types/workflow/WorkflowStepFix';
 import { Beat } from '../../types/AudioAnalysis';
 import useAudioService from '../../hooks/useAudioService';
 import WaveformVisualizer from '../../components/audio/WaveformVisualizer';
@@ -24,7 +25,7 @@ import {
 
 const AnalysisStep: React.FC = () => {
   // Get workflow context
-  const { _currentStep, goToStep, data, setData } = useWorkflow();
+  const { goToStep, data, setData } = useWorkflow();
   
   // Use audio service hook
   const {
@@ -178,7 +179,7 @@ const AnalysisStep: React.FC = () => {
   // Handle continue to next step
   const handleContinue = () => {
     if (hasAnalysisResults) {
-      goToStep(WorkflowStep.EDIT);
+      goToStep('edit');
     }
   };
   
